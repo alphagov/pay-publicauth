@@ -4,12 +4,18 @@ import io.dropwizard.Application;
 import io.dropwizard.configuration.EnvironmentVariableSubstitutor;
 import io.dropwizard.configuration.SubstitutingSourceProvider;
 import io.dropwizard.db.DataSourceFactory;
+import io.dropwizard.jdbi.DBIFactory;
 import io.dropwizard.jdbi.bundles.DBIExceptionsBundle;
 import io.dropwizard.migrations.MigrationsBundle;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
+import org.skife.jdbi.v2.DBI;
+import uk.gov.pay.publicauth.dao.AuthTokenDao;
+import uk.gov.pay.publicauth.resources.PublicAuthResource;
 
 public class PublicAuthApp extends Application<PublicAuthConfiguration> {
+
+    private DBI jdbi;
 
     @Override
     public void initialize(Bootstrap<PublicAuthConfiguration> bootstrap) {
@@ -30,8 +36,18 @@ public class PublicAuthApp extends Application<PublicAuthConfiguration> {
 
 
     @Override
-    public void run(PublicAuthConfiguration configuration, Environment environment) throws Exception {
-        System.out.println("Hello world!");
+    public void run(PublicAuthConfiguration conf, Environment environment) throws Exception {
+
+        DataSourceFactory dataSourceFactory = conf.getDataSourceFactory();
+
+        jdbi = new DBIFactory()
+                .build(environment, dataSourceFactory, "postgresql");
+
+        environment.jersey().register(new PublicAuthResource(new AuthTokenDao(jdbi)));
+    }
+
+    public DBI getJdbi() {
+        return jdbi;
     }
 
 

@@ -15,14 +15,6 @@ logging:
         target: stdout
         logFormat: "[%thread] %highlight(%-5level) %cyan(%logger{15}) - %msg %n"
 
-links:
-  cardDetailsUrl: http://Frontend/charge/{chargeId}?chargeTokenId={chargeTokenId}
-
-worldpay:
-  url: http://dummy.com
-  username: myUsernameDummy
-  password: myPasswordDummy
-
 database:
   driverClass: org.postgresql.Driver
   user: postgres
