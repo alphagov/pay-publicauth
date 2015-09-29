@@ -22,7 +22,7 @@ public class PublicAuthResourceITest {
     public DropwizardAppWithPostgresRule app = new DropwizardAppWithPostgresRule();
 
     @Test
-    public void respondWith200_whenAuthWithVValidToken() throws Exception {
+    public void respondWith200_whenAuthWithValidToken() throws Exception {
         app.getDatabaseHelper().insertAccount(BEARER_TOKEN, ACCOUNT_ID);
         authResponse().statusCode(200).body("account_id", is(ACCOUNT_ID));
 
@@ -45,6 +45,28 @@ public class PublicAuthResourceITest {
     public void respondWith400_ifBodyIsMissing() throws Exception {
         authCreateResponse("")
                 .statusCode(400).body("message", is("Missing fields: [account_id]"));
+    }
+
+    @Test
+    public void respondWith200_whenTokenIsRevoked() throws Exception {
+        app.getDatabaseHelper().insertAccount(BEARER_TOKEN, ACCOUNT_ID);
+
+        authRevokeResponse().statusCode(200);
+
+        authResponse().statusCode(401);
+    }
+
+    @Test
+    public void respondWith404_whenAccountIsMissing() throws Exception {
+        authRevokeResponse().statusCode(404);
+    }
+
+    private ValidatableResponse authRevokeResponse() {
+        return given().port(app.getLocalPort())
+                .accept(JSON)
+                .contentType(JSON)
+                .post(AUTH_PATH + "/" + ACCOUNT_ID + "/revoke")
+                .then();
     }
 
     private ValidatableResponse authCreateResponse(String body) {

@@ -27,13 +27,19 @@ public class AuthTokenDao {
     }
 
     public void createToken(String token, String accountId) {
-        Integer insertStatus = jdbi.withHandle(handle ->
+        Integer rowsUpdated = jdbi.withHandle(handle ->
                         handle.insert("INSERT INTO tokens(token_id, account_id) VALUES (?,?)", token, accountId)
         );
-        if (insertStatus != 1) {
+        if (rowsUpdated != 1) {
             log.error("Unable to store newToken for account {}", accountId);
             throw new RuntimeException("Server error when issuing a new token");
         }
     }
 
+    public boolean revokeToken(String accountId) {
+        int rowsUpdated = jdbi.withHandle(handle ->
+            handle.update("UPDATE tokens SET revoked_date=CURRENT_DATE WHERE account_id=? AND revoked_date IS NULL", accountId)
+        );
+        return rowsUpdated == 1;
+    }
 }

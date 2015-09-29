@@ -51,6 +51,18 @@ public class PublicAuthResource {
         });
     }
 
+    @Path(AUTH_PATH + "/{accountId}/revoke")
+    @Produces(APPLICATION_JSON)
+    @Consumes(APPLICATION_JSON)
+    @POST
+    public Response createToken(@PathParam("accountId") String accountId) {
+        if (authDao.revokeToken(accountId)) {
+            return Response.ok().build();
+        }
+        return Response.status(404).build();
+    }
+
+
     private Response withValidAccountId(JsonNode payload, Function<String, Response> handler) {
         if (payload == null) {
             return Response.status(BAD_REQUEST).entity(ImmutableMap.of("message","Missing fields: [account_id]")).build();
