@@ -1,18 +1,18 @@
 package uk.gov.pay.publicauth.resources;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableMap;
 import uk.gov.pay.publicauth.dao.AuthTokenDao;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.HeaderParam;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
+import javax.ws.rs.*;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
-
 import java.util.Optional;
+import java.util.function.Function;
 
+import static java.util.UUID.randomUUID;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 
 @Path("/")
 public class PublicAuthResource {
@@ -39,4 +39,26 @@ public class PublicAuthResource {
                 .build();
     }
 
+    @Path(AUTH_PATH)
+    @Produces(APPLICATION_JSON)
+    @Consumes(APPLICATION_JSON)
+    @POST
+    public Response createToken(JsonNode payload) {
+        return withValidAccountId(payload, (accountId) -> {
+            String newToken = randomUUID().toString();
+            authDao.createToken(newToken, accountId);
+            return Response.ok(ImmutableMap.of("token", newToken)).build();
+        });
+    }
+
+    private Response withValidAccountId(JsonNode payload, Function<String, Response> handler) {
+        if (payload == null) {
+            return Response.status(BAD_REQUEST).entity(ImmutableMap.of("message","Missing fields: [account_id]")).build();
+        }
+        JsonNode accountIdNode = payload.get("account_id");
+        if (accountIdNode == null) {
+            return Response.status(BAD_REQUEST).entity(ImmutableMap.of("message","Missing fields: [account_id]")).build();
+        }
+        return handler.apply(accountIdNode.asText());
+    }
 }
