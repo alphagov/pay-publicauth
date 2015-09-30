@@ -7,8 +7,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
 
-import static java.util.UUID.randomUUID;
-
 public class AuthTokenDao {
     private DBI jdbi;
     public static Logger log = LoggerFactory.getLogger(AuthTokenDao.class);
@@ -20,7 +18,7 @@ public class AuthTokenDao {
 
     public Optional<String> findAccount(String bearerToken) {
         return Optional.ofNullable(jdbi.withHandle(handle ->
-                handle.createQuery("SELECT account_id FROM tokens WHERE token_id = :token_id and revoked_date IS NULL")
+                handle.createQuery("SELECT account_id FROM tokens WHERE token_id = :token_id and revoked IS NULL")
                         .bind("token_id", bearerToken)
                         .map(StringMapper.FIRST)
                         .first()));
@@ -38,7 +36,7 @@ public class AuthTokenDao {
 
     public boolean revokeToken(String accountId) {
         int rowsUpdated = jdbi.withHandle(handle ->
-            handle.update("UPDATE tokens SET revoked_date=CURRENT_DATE WHERE account_id=? AND revoked_date IS NULL", accountId)
+            handle.update("UPDATE tokens SET revoked=(now() at time zone 'utc') WHERE account_id=? AND revoked IS NULL", accountId)
         );
         return rowsUpdated == 1;
     }

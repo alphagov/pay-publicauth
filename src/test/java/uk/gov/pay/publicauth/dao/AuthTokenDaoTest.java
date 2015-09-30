@@ -1,5 +1,8 @@
 package uk.gov.pay.publicauth.dao;
 
+import org.hamcrest.Matcher;
+import org.joda.time.DateTime;
+import org.joda.time.ReadableInstant;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -9,7 +12,8 @@ import uk.gov.pay.publicauth.utils.DropwizardAppWithPostgresRule;
 import java.util.Optional;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
+import static org.joda.time.DateTimeZone.UTC;
 
 public class AuthTokenDaoTest {
 
@@ -44,9 +48,27 @@ public class AuthTokenDaoTest {
 
     @Test
     public void shouldInsertANewToken() throws Exception {
-        authTokenDao.createToken(BEARER_TOKEN, "an-account");
-        Optional<String> accountId = authTokenDao.findAccount(BEARER_TOKEN);
-        assertThat(accountId, is(Optional.of("an-account")));
+        String expectedAccountId = "an-account";
+        authTokenDao.createToken(BEARER_TOKEN, expectedAccountId);
+        Optional<String> storedAccountId = authTokenDao.findAccount(BEARER_TOKEN);
+        assertThat(storedAccountId, is(Optional.of(expectedAccountId)));
+
+        DateTime issueTimestamp = app.getDatabaseHelper().issueTimestampForAccount(expectedAccountId);
+        DateTime now = DateTime.now(UTC);
+
+        assertThat(issueTimestamp, isCloseTo(now));
+    }
+
+    @Test
+    public void shouldAllowTokensToBeRevoked() throws Exception {
+        app.getDatabaseHelper().insertAccount(BEARER_TOKEN, ACCOUNT_ID);
+        assertThat(authTokenDao.revokeToken(ACCOUNT_ID), is(true));
+        assertThat(authTokenDao.findAccount(ACCOUNT_ID), is(Optional.empty()));
+
+        DateTime revokeTimestamp = app.getDatabaseHelper().revokeTimestampForAccount(ACCOUNT_ID);
+        DateTime now = DateTime.now(UTC);
+
+        assertThat(revokeTimestamp, isCloseTo(now));
     }
 
     @Test(expected = RuntimeException.class)
@@ -56,4 +78,7 @@ public class AuthTokenDaoTest {
         authTokenDao.createToken(BEARER_TOKEN, ACCOUNT_ID);
     }
 
+    private Matcher<ReadableInstant> isCloseTo(DateTime now) {
+        return both(greaterThan(now.minusSeconds(5))).and(lessThan(now.plusSeconds(5)));
+    }
 }

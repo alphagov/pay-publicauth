@@ -14,7 +14,10 @@
             <column name="account_id" type="varchar(255)">
                 <constraints nullable="false"/>
             </column>
-            <column name="revoked_date" type="date">
+            <column name="issued" type="timestamp without timezone" defaultValueComputed="(now() at time zone 'utc')">
+                <constraints nullable="false" />
+            </column>
+            <column name="revoked" type="timestamp without timezone">
                 <constraints nullable="true"/>
             </column>
         </createTable>
