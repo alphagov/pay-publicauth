@@ -16,7 +16,7 @@ public class DatabaseTestHelper {
     }
 
     public void insertAccount(String bearerToken, String accountId) {
-        jdbi.withHandle(handle -> handle.insert("INSERT INTO tokens(token_id, account_id) VALUES (?, ?)", bearerToken, accountId));
+        jdbi.withHandle(handle -> handle.insert("INSERT INTO tokens(token_hash, account_id) VALUES (?, ?)", bearerToken, accountId));
     }
 
     public DateTime issueTimestampForAccount(String accountId) {
@@ -29,7 +29,7 @@ public class DatabaseTestHelper {
 
     public String lookupTokenFor(String accountId) {
         return jdbi.withHandle(handle ->
-                handle.createQuery("SELECT token_id FROM tokens WHERE account_id=:accountId")
+                handle.createQuery("SELECT token_hash FROM tokens WHERE account_id=:accountId")
                         .bind("accountId", accountId)
                         .map(StringMapper.FIRST)
                         .first());

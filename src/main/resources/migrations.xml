@@ -8,8 +8,11 @@
 
     <changeSet id="build token table" author="">
         <createTable tableName="tokens">
-            <column name="token_id" type="varchar(255)">
-                <constraints primaryKey="true" nullable="false" unique="true"/>
+            <column name="token_id" type="bigserial" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="token_hash" type="varchar(255)">
+                <constraints nullable="false" unique="true"/>
             </column>
             <column name="account_id" type="varchar(255)">
                 <constraints nullable="false"/>
