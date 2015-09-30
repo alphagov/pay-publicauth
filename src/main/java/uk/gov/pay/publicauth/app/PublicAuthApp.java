@@ -12,6 +12,7 @@ import io.dropwizard.setup.Environment;
 import org.skife.jdbi.v2.DBI;
 import uk.gov.pay.publicauth.dao.AuthTokenDao;
 import uk.gov.pay.publicauth.resources.PublicAuthResource;
+import uk.gov.pay.publicauth.service.TokenHasher;
 
 public class PublicAuthApp extends Application<PublicAuthConfiguration> {
 
@@ -43,7 +44,7 @@ public class PublicAuthApp extends Application<PublicAuthConfiguration> {
         jdbi = new DBIFactory()
                 .build(environment, dataSourceFactory, "postgresql");
 
-        environment.jersey().register(new PublicAuthResource(new AuthTokenDao(jdbi)));
+        environment.jersey().register(new PublicAuthResource(new AuthTokenDao(jdbi), new TokenHasher()));
     }
 
     public DBI getJdbi() {

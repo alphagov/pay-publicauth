@@ -3,6 +3,7 @@ package uk.gov.pay.publicauth.resources;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableMap;
 import uk.gov.pay.publicauth.dao.AuthTokenDao;
+import uk.gov.pay.publicauth.service.TokenHasher;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.HttpHeaders;
@@ -19,11 +20,13 @@ public class PublicAuthResource {
 
     public static final String AUTH_PATH = "v1/auth";
     private AuthTokenDao authDao;
+    private TokenHasher tokenHasher;
 
     private final static String BEARER_PREFIX = "Bearer ";
 
-    public PublicAuthResource(AuthTokenDao authDao) {
+    public PublicAuthResource(AuthTokenDao authDao, TokenHasher tokenHasher) {
         this.authDao = authDao;
+        this.tokenHasher = tokenHasher;
     }
 
     @Path(AUTH_PATH)
@@ -31,7 +34,7 @@ public class PublicAuthResource {
     @GET
     public Response authenticate(@HeaderParam(HttpHeaders.AUTHORIZATION) String bearerToken) {
         String tokenId = bearerToken.substring(BEARER_PREFIX.length());
-        Optional<String> account = authDao.findAccount(tokenId);
+        Optional<String> account = authDao.findAccount(tokenHasher.hash(tokenId));
         return account.map(
                         accountId -> Response.ok(ImmutableMap.of("account_id", accountId)))
                 .orElseGet(
@@ -43,10 +46,10 @@ public class PublicAuthResource {
     @Produces(APPLICATION_JSON)
     @Consumes(APPLICATION_JSON)
     @POST
-    public Response createToken(JsonNode payload) {
+    public Response revokeToken(JsonNode payload) {
         return withValidAccountId(payload, (accountId) -> {
             String newToken = randomUUID().toString();
-            authDao.createToken(newToken, accountId);
+            authDao.createToken(tokenHasher.hash(newToken), accountId);
             return Response.ok(ImmutableMap.of("token", newToken)).build();
         });
     }
@@ -55,7 +58,7 @@ public class PublicAuthResource {
     @Produces(APPLICATION_JSON)
     @Consumes(APPLICATION_JSON)
     @POST
-    public Response createToken(@PathParam("accountId") String accountId) {
+    public Response revokeToken(@PathParam("accountId") String accountId) {
         if (authDao.revokeToken(accountId)) {
             return Response.ok().build();
         }
