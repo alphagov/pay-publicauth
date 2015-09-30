@@ -9,4 +9,4 @@ WORKDIR /app
 ADD target/*.yaml /app/
 ADD target/pay-*-allinone.jar /app/
 
-CMD sleep 2 && java -jar *-allinone.jar server *.yaml
+CMD sleep 2 && java -jar *-allinone.jar db migrate *.yaml && java -jar *-allinone.jar server *.yaml
