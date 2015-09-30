@@ -23,6 +23,8 @@ The command to run the integration tests is:
 | Path                          | Supported Methods | Description                        |
 | ----------------------------- | ----------------- | ---------------------------------- |
 |[```/v1/auth```](#get-v1auth)              | GET    |  Look up the account id for a token.            |
+|[```/v1/auth```](#post-v1auth)             | POST   |  Generates a new dev token for a given account. |
+|[```/v1/auth/{account_id}/revoke```](#post-v1authaccount_idrevoke) | POST  |  Disables all dev tokens currently enabled for this account.  |
 
 
 ### GET /v1/auth
@@ -63,3 +65,42 @@ Or if the token does not exist or has been revoked:
 
 -----------------------------------------------------------------------------------------------------------
 
+### POST /v1/auth
+
+
+#### Request example
+
+```
+Content-Type: application/json
+
+```
+
+#### Response example
+
+```
+200 OK
+Content-Type: application/json
+
+{
+    "token": "GENERATED_TOKEN"
+}
+```
+
+
+### POST /v1/auth/{account_id}/revoke
+
+#### Request example
+
+```
+POST WITH EMPTY BODY
+{
+}
+```
+
+
+#### Response example
+
+```
+200 OK
+
+```
