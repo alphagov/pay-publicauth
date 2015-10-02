@@ -24,13 +24,13 @@ public class AuthTokenDao {
                         .first()));
     }
 
-    public void createToken(String token, String accountId) {
+    public void storeToken(String token, String accountId) {
         Integer rowsUpdated = jdbi.withHandle(handle ->
                         handle.insert("INSERT INTO tokens(token_hash, account_id) VALUES (?,?)", token, accountId)
         );
         if (rowsUpdated != 1) {
-            log.error("Unable to store newToken for account {}", accountId);
-            throw new RuntimeException("Server error when issuing a new token");
+            log.error("Unable to store new token for account {}", accountId);
+            throw new RuntimeException(String.format("Unable to store new token for account %s}", accountId));
         }
     }
 

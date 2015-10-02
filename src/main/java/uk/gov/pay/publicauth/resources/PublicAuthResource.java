@@ -53,7 +53,7 @@ public class PublicAuthResource {
     public Response revokeToken(JsonNode payload) {
         return withValidAccountId(payload, (accountId) -> {
             String newToken = randomUUID().toString();
-            authDao.createToken(tokenHasher.hash(newToken), accountId);
+            authDao.storeToken(tokenHasher.hash(newToken), accountId);
             return Response.ok(ImmutableMap.of("token", newToken)).build();
         });
     }

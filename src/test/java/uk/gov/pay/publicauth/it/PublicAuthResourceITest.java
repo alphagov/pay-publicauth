@@ -32,7 +32,7 @@ public class PublicAuthResourceITest {
     }
 
     @Test
-    public void respondWith200_whenCreateAAccountWithAToken() throws Exception {
+    public void respondWith200_whenCreateAccountWithAToken() throws Exception {
         createTokenFor("{\"account_id\" : \"" + ACCOUNT_ID + "\"}")
                 .statusCode(200).body("token", is(notNullValue()));
     }

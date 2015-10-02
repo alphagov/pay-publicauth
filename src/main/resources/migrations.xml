@@ -18,12 +18,23 @@
                 <constraints nullable="false"/>
             </column>
             <column name="issued" type="timestamp without timezone" defaultValueComputed="(now() at time zone 'utc')">
-                <constraints nullable="false" />
+                <constraints nullable="false"/>
             </column>
             <column name="revoked" type="timestamp without timezone">
                 <constraints nullable="true"/>
             </column>
         </createTable>
+        <createIndex indexName="idx_token_hash_revoked"
+                     tableName="tokens">
+            <column name="token_hash" type="varchar(255)"/>
+            <column name="revoked" type="timestamp without timezone"/>
+        </createIndex>
+        <createIndex indexName="idx_account_id_revoked"
+                     tableName="tokens">
+            <column name="account_id" type="varchar(255)"/>
+            <column name="revoked" type="timestamp without timezone"/>
+        </createIndex>
+
     </changeSet>
 
 

@@ -49,7 +49,7 @@ public class AuthTokenDaoTest {
     @Test
     public void shouldInsertANewToken() throws Exception {
         String expectedAccountId = "an-account";
-        authTokenDao.createToken(BEARER_TOKEN, expectedAccountId);
+        authTokenDao.storeToken(BEARER_TOKEN, expectedAccountId);
         Optional<String> storedAccountId = authTokenDao.findAccount(BEARER_TOKEN);
         assertThat(storedAccountId, is(Optional.of(expectedAccountId)));
 
@@ -75,7 +75,7 @@ public class AuthTokenDaoTest {
     public void shouldErrorIfTriesToSaveTheSameTokenTwice() throws Exception {
         app.getDatabaseHelper().insertAccount(BEARER_TOKEN, ACCOUNT_ID);
 
-        authTokenDao.createToken(BEARER_TOKEN, ACCOUNT_ID);
+        authTokenDao.storeToken(BEARER_TOKEN, ACCOUNT_ID);
     }
 
     private Matcher<ReadableInstant> isCloseTo(DateTime now) {
