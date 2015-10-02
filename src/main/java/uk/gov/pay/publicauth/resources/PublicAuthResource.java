@@ -19,6 +19,7 @@ import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 public class PublicAuthResource {
 
     public static final String AUTH_PATH = "v1/auth";
+    public static final Response.ResponseBuilder UNAUTHORISED = Response.status(Response.Status.UNAUTHORIZED);
     private AuthTokenDao authDao;
     private TokenHasher tokenHasher;
 
@@ -33,12 +34,15 @@ public class PublicAuthResource {
     @Produces(APPLICATION_JSON)
     @GET
     public Response authenticate(@HeaderParam(HttpHeaders.AUTHORIZATION) String bearerToken) {
+        if (bearerToken == null) {
+            return UNAUTHORISED.build();
+        }
         String tokenId = bearerToken.substring(BEARER_PREFIX.length());
         Optional<String> account = authDao.findAccount(tokenHasher.hash(tokenId));
         return account.map(
                         accountId -> Response.ok(ImmutableMap.of("account_id", accountId)))
                 .orElseGet(
-                        () -> Response.status(Response.Status.UNAUTHORIZED))
+                        () -> UNAUTHORISED)
                 .build();
     }
 

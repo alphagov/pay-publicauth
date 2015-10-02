@@ -27,25 +27,25 @@ public class PublicAuthResourceITest {
     @Test
     public void respondWith200_whenAuthWithValidToken() throws Exception {
         app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, ACCOUNT_ID);
-        authResponse().statusCode(200).body("account_id", is(ACCOUNT_ID));
+        tokenResponse().statusCode(200).body("account_id", is(ACCOUNT_ID));
 
     }
 
     @Test
     public void respondWith200_whenCreateAAccountWithAToken() throws Exception {
-        authCreateResponse("{\"account_id\" : \"" + ACCOUNT_ID + "\"}")
+        createTokenFor("{\"account_id\" : \"" + ACCOUNT_ID + "\"}")
                 .statusCode(200).body("token", is(notNullValue()));
     }
 
     @Test
     public void respondWith400_ifAccountIdIsMissing() throws Exception {
-        authCreateResponse("{}")
+        createTokenFor("{}")
                 .statusCode(400).body("message", is("Missing fields: [account_id]"));
     }
 
     @Test
     public void respondWith400_ifBodyIsMissing() throws Exception {
-        authCreateResponse("")
+        createTokenFor("")
                 .statusCode(400).body("message", is("Missing fields: [account_id]"));
     }
 
@@ -55,7 +55,7 @@ public class PublicAuthResourceITest {
 
         authRevokeResponse().statusCode(200);
 
-        authResponse().statusCode(401);
+        tokenResponse().statusCode(401);
     }
 
     @Test
@@ -64,8 +64,27 @@ public class PublicAuthResourceITest {
     }
 
     @Test
+    public void respondWith401_whenAuthHeaderIsMissing() throws Exception {
+        given().port(app.getLocalPort())
+                .get(AUTH_PATH)
+                .then()
+                .statusCode(401);
+    }
+
+    @Test
+    public void respondWith401_whenAuthHeaderIsBasicEvenWithValidToken() throws Exception {
+        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, ACCOUNT_ID);
+
+        given().port(app.getLocalPort())
+                .header(AUTHORIZATION, "Basic " + BEARER_TOKEN)
+                .get(AUTH_PATH)
+                .then()
+                .statusCode(401);
+    }
+
+    @Test
     public void shouldNotStoreTheTokenInThePlain() throws Exception {
-        String token = authCreateResponse("{\"account_id\" : \"" + ACCOUNT_ID + "\"}")
+        String token = createTokenFor("{\"account_id\" : \"" + ACCOUNT_ID + "\"}")
                 .statusCode(200)
                 .extract()
                 .body()
@@ -83,7 +102,7 @@ public class PublicAuthResourceITest {
                 .then();
     }
 
-    private ValidatableResponse authCreateResponse(String body) {
+    private ValidatableResponse createTokenFor(String body) {
         return given().port(app.getLocalPort())
                 .accept(JSON)
                 .contentType(JSON)
@@ -92,7 +111,7 @@ public class PublicAuthResourceITest {
                 .then();
     }
 
-    private ValidatableResponse authResponse() {
+    private ValidatableResponse tokenResponse() {
         return given().port(app.getLocalPort())
                 .header(AUTHORIZATION, "Bearer " + BEARER_TOKEN)
                 .get(AUTH_PATH)
