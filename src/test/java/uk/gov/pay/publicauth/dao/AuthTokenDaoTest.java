@@ -13,7 +13,6 @@ import java.util.Optional;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.joda.time.DateTimeZone.UTC;
 
 public class AuthTokenDaoTest {
 
@@ -54,7 +53,7 @@ public class AuthTokenDaoTest {
         assertThat(storedAccountId, is(Optional.of(expectedAccountId)));
 
         DateTime issueTimestamp = app.getDatabaseHelper().issueTimestampForAccount(expectedAccountId);
-        DateTime now = DateTime.now(UTC);
+        DateTime now = app.getDatabaseHelper().getCurrentTime();
 
         assertThat(issueTimestamp, isCloseTo(now));
     }
@@ -66,7 +65,7 @@ public class AuthTokenDaoTest {
         assertThat(authTokenDao.findAccount(ACCOUNT_ID), is(Optional.empty()));
 
         DateTime revokeTimestamp = app.getDatabaseHelper().revokeTimestampForAccount(ACCOUNT_ID);
-        DateTime now = DateTime.now(UTC);
+        DateTime now = app.getDatabaseHelper().getCurrentTime();
 
         assertThat(revokeTimestamp, isCloseTo(now));
     }

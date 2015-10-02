@@ -42,4 +42,11 @@ public class DatabaseTestHelper {
                         .map(new JodaDateTimeMapper(Optional.of(TimeZone.getTimeZone("UTC"))))
                         .first());
     }
+
+    public DateTime getCurrentTime() {
+        return jdbi.withHandle(handle ->
+                handle.createQuery("SELECT (now() at time zone 'utc')")
+                .map(new JodaDateTimeMapper(Optional.of(TimeZone.getTimeZone("UTC"))))
+                .first());
+    }
 }
