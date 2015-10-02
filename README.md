@@ -34,7 +34,7 @@ This endpoint looks up the account id for a token.
 
 ```
 GET /v1/auth
-Content-Type: application/json
+Accept: application/json
 Authorization: Bearer BEARER_TOKEN
 
 ```
