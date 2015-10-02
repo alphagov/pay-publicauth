@@ -4,7 +4,6 @@ Payments Public API Authentication Service
 ## Integration tests
 
 To run the integration tests, the `DOCKER_HOST` and `DOCKER_CERT_PATH` environment variables must be set up correctly. On OS X the environment can be set up with:
-Also `$GDS_CONNECTOR_WORLDPAY_PASSWORD` and`$GDS_CONNECTOR_WORLDPAY_PASSWORD` environment variable must be set for Worlpay integration tests.
 
 ```
     eval $(boot2docker shellinit)
@@ -72,6 +71,9 @@ Or if the token does not exist or has been revoked:
 
 ```
 Content-Type: application/json
+{
+    "account_id": "GATEWAY_ACCOUNT_1"
+}
 
 ```
 
