@@ -66,6 +66,7 @@ Or if the token does not exist or has been revoked:
 
 ### POST /v1/auth
 
+Generate and return a new token for the given gateway account id.
 
 #### Request example
 
