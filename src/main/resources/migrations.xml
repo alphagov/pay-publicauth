@@ -26,13 +26,13 @@
         </createTable>
         <createIndex indexName="idx_token_hash_revoked"
                      tableName="tokens">
-            <column name="token_hash" type="varchar(255)"/>
-            <column name="revoked" type="timestamp without timezone"/>
+            <column name="token_hash"/>
+            <column name="revoked" />
         </createIndex>
         <createIndex indexName="idx_account_id_revoked"
                      tableName="tokens">
-            <column name="account_id" type="varchar(255)"/>
-            <column name="revoked" type="timestamp without timezone"/>
+            <column name="account_id"/>
+            <column name="revoked"/>
         </createIndex>
 
     </changeSet>
