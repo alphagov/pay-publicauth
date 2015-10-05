@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+
+    <changeSet id="build token table" author="">
+        <createTable tableName="tokens">
+            <column name="token_id" type="bigserial" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="token_hash" type="varchar(255)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="account_id" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="issued" type="timestamp without timezone" defaultValueComputed="(now() at time zone 'utc')">
+                <constraints nullable="false"/>
+            </column>
+            <column name="revoked" type="timestamp without timezone">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+        <createIndex indexName="idx_token_hash_revoked"
+                     tableName="tokens">
+            <column name="token_hash"/>
+            <column name="revoked" />
+        </createIndex>
+        <createIndex indexName="idx_account_id_revoked"
+                     tableName="tokens">
+            <column name="account_id"/>
+            <column name="revoked"/>
+        </createIndex>
+
+    </changeSet>
+
+
+</databaseChangeLog>
