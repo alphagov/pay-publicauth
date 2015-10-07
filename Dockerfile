@@ -1,7 +1,7 @@
 FROM java:8-jre
 
 ENV DEBIAN_FRONTEND noninteractive
-CMD apt-get update && apt-get -y install netcat
+RUN apt-get update && apt-get -y install netcat
 
 ENV JAVA_HOME /usr/lib/jvm/java-8-*/
 ENV PORT 8080
