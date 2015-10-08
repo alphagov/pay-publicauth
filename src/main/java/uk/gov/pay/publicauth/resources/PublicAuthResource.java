@@ -50,7 +50,7 @@ public class PublicAuthResource {
     @Produces(APPLICATION_JSON)
     @Consumes(APPLICATION_JSON)
     @POST
-    public Response revokeToken(JsonNode payload) {
+    public Response createTokenForAccount(JsonNode payload) {
         return withValidAccountId(payload, (accountId) -> {
             String newToken = randomUUID().toString();
             authDao.storeToken(tokenHasher.hash(newToken), accountId);
