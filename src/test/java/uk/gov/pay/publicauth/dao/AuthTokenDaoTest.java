@@ -59,7 +59,7 @@ public class AuthTokenDaoTest {
     }
 
     @Test
-    public void shouldAllowTokensToBeRevoked() throws Exception {
+    public void shouldAllowATokenToBeRevoked() throws Exception {
         app.getDatabaseHelper().insertAccount(BEARER_TOKEN, ACCOUNT_ID);
         assertThat(authTokenDao.revokeToken(ACCOUNT_ID), is(true));
         assertThat(authTokenDao.findAccount(ACCOUNT_ID), is(Optional.empty()));
@@ -69,6 +69,20 @@ public class AuthTokenDaoTest {
 
         assertThat(revokeTimestamp, isCloseTo(now));
     }
+
+    @Test
+    public void shouldAllowTokensToBeRevoked() throws Exception {
+        app.getDatabaseHelper().insertAccount(BEARER_TOKEN, ACCOUNT_ID);
+        app.getDatabaseHelper().insertAccount("TOKEN_2", ACCOUNT_ID);
+        assertThat(authTokenDao.revokeToken(ACCOUNT_ID), is(true));
+        assertThat(authTokenDao.findAccount(ACCOUNT_ID), is(Optional.empty()));
+
+        DateTime revokeTimestamp = app.getDatabaseHelper().revokeTimestampForAccount(ACCOUNT_ID);
+        DateTime now = app.getDatabaseHelper().getCurrentTime();
+
+        assertThat(revokeTimestamp, isCloseTo(now));
+    }
+
 
     @Test(expected = RuntimeException.class)
     public void shouldErrorIfTriesToSaveTheSameTokenTwice() throws Exception {

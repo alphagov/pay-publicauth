@@ -59,6 +59,18 @@ public class PublicAuthResourceITest {
     }
 
     @Test
+    public void respondWith200_whenMultipleTokensAreRevoked() throws Exception {
+        String second_bearer_token = new TokenHasher().hash("SECOND_BEARER_TOKEN");
+        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, ACCOUNT_ID);
+        app.getDatabaseHelper().insertAccount(second_bearer_token, ACCOUNT_ID);
+
+        authRevokeResponse().statusCode(200);
+
+        tokenResponse().statusCode(401);
+        tokenResponse(second_bearer_token).statusCode(401);
+    }
+    
+    @Test
     public void respondWith404_whenAccountIsMissing() throws Exception {
         authRevokeResponse().statusCode(404);
     }
@@ -112,8 +124,12 @@ public class PublicAuthResourceITest {
     }
 
     private ValidatableResponse tokenResponse() {
+        return tokenResponse(BEARER_TOKEN);
+    }
+
+    private ValidatableResponse tokenResponse(String token) {
         return given().port(app.getLocalPort())
-                .header(AUTHORIZATION, "Bearer " + BEARER_TOKEN)
+                .header(AUTHORIZATION, "Bearer " + token)
                 .get(AUTH_PATH)
                 .then();
     }

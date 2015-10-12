@@ -38,6 +38,6 @@ public class AuthTokenDao {
         int rowsUpdated = jdbi.withHandle(handle ->
             handle.update("UPDATE tokens SET revoked=(now() at time zone 'utc') WHERE account_id=? AND revoked IS NULL", accountId)
         );
-        return rowsUpdated == 1;
+        return rowsUpdated > 0;
     }
 }
