@@ -18,7 +18,8 @@ public class PublicAuthResourceITest {
 
     private static final String BEARER_TOKEN = "TEST-BEARER-TOKEN";
     private static final String HASHED_BEARER_TOKEN = new TokenHasher().hash(BEARER_TOKEN);
-    private static final String AUTH_PATH = "/v1/auth";
+    private static final String API_AUTH_PATH = "/v1/api/auth";
+    private static final String FRONTEND_AUTH_PATH = "/v1/frontend/auth";
     private static final String ACCOUNT_ID = "ACCOUNT-ID";
 
     @Rule
@@ -78,7 +79,7 @@ public class PublicAuthResourceITest {
     @Test
     public void respondWith401_whenAuthHeaderIsMissing() throws Exception {
         given().port(app.getLocalPort())
-                .get(AUTH_PATH)
+                .get(API_AUTH_PATH)
                 .then()
                 .statusCode(401);
     }
@@ -89,7 +90,7 @@ public class PublicAuthResourceITest {
 
         given().port(app.getLocalPort())
                 .header(AUTHORIZATION, "Basic " + BEARER_TOKEN)
-                .get(AUTH_PATH)
+                .get(API_AUTH_PATH)
                 .then()
                 .statusCode(401);
     }
@@ -110,7 +111,7 @@ public class PublicAuthResourceITest {
         return given().port(app.getLocalPort())
                 .accept(JSON)
                 .contentType(JSON)
-                .post(AUTH_PATH + "/" + ACCOUNT_ID + "/revoke")
+                .post(FRONTEND_AUTH_PATH + "/" + ACCOUNT_ID + "/revoke")
                 .then();
     }
 
@@ -119,7 +120,7 @@ public class PublicAuthResourceITest {
                 .accept(JSON)
                 .contentType(JSON)
                 .body(body)
-                .post(AUTH_PATH)
+                .post(FRONTEND_AUTH_PATH)
                 .then();
     }
 
@@ -130,7 +131,7 @@ public class PublicAuthResourceITest {
     private ValidatableResponse tokenResponse(String token) {
         return given().port(app.getLocalPort())
                 .header(AUTHORIZATION, "Bearer " + token)
-                .get(AUTH_PATH)
+                .get(API_AUTH_PATH)
                 .then();
     }
 

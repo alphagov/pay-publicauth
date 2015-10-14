@@ -21,12 +21,12 @@ The command to run the integration tests is:
 
 | Path                          | Supported Methods | Description                        |
 | ----------------------------- | ----------------- | ---------------------------------- |
-|[```/v1/auth```](#get-v1auth)              | GET    |  Look up the account id for a token.            |
-|[```/v1/auth```](#post-v1auth)             | POST   |  Generates a new dev token for a given account. |
-|[```/v1/auth/{account_id}/revoke```](#post-v1authaccount_idrevoke) | POST  |  Disables all dev tokens currently enabled for this account.  |
+|[```/v1/api/auth```](#get-v1apiauth)              | GET    |  Look up the account id for a token.            |
+|[```/v1/frontend/auth```](#post-v1frontendauth)             | POST   |  Generates a new dev token for a given account. |
+|[```/v1/frontend/auth/{account_id}/revoke```](#post-v1frontendauthaccount_idrevoke) | POST  |  Disables all dev tokens currently enabled for this account.  |
 
 
-### GET /v1/auth
+### GET /v1/api/auth
 
 This endpoint looks up the account id for a token.
 
@@ -64,7 +64,7 @@ Or if the token does not exist or has been revoked:
 
 -----------------------------------------------------------------------------------------------------------
 
-### POST /v1/auth
+### POST /v1/frontend/auth
 
 Generate and return a new token for the given gateway account id.
 
@@ -90,7 +90,7 @@ Content-Type: application/json
 ```
 
 
-### POST /v1/auth/{account_id}/revoke
+### POST /v1/frontend/auth/{account_id}/revoke
 
 #### Request example
 

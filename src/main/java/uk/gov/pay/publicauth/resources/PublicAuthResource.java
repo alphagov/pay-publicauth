@@ -18,7 +18,9 @@ import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 @Path("/")
 public class PublicAuthResource {
 
-    public static final String AUTH_PATH = "v1/auth";
+    public static final String API_AUTH_PATH = "/v1/api/auth";
+    private static final String FRONTEND_AUTH_PATH = "/v1/frontend/auth";
+
     public static final Response.ResponseBuilder UNAUTHORISED = Response.status(Response.Status.UNAUTHORIZED);
     private AuthTokenDao authDao;
     private TokenHasher tokenHasher;
@@ -30,7 +32,7 @@ public class PublicAuthResource {
         this.tokenHasher = tokenHasher;
     }
 
-    @Path(AUTH_PATH)
+    @Path(API_AUTH_PATH)
     @Produces(APPLICATION_JSON)
     @GET
     public Response authenticate(@HeaderParam(HttpHeaders.AUTHORIZATION) String bearerToken) {
@@ -46,7 +48,7 @@ public class PublicAuthResource {
                 .build();
     }
 
-    @Path(AUTH_PATH)
+    @Path(FRONTEND_AUTH_PATH)
     @Produces(APPLICATION_JSON)
     @Consumes(APPLICATION_JSON)
     @POST
@@ -58,7 +60,7 @@ public class PublicAuthResource {
         });
     }
 
-    @Path(AUTH_PATH + "/{accountId}/revoke")
+    @Path(FRONTEND_AUTH_PATH + "/{accountId}/revoke")
     @Produces(APPLICATION_JSON)
     @Consumes(APPLICATION_JSON)
     @POST
