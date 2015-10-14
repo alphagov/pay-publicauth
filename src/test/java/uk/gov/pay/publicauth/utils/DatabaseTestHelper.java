@@ -15,8 +15,8 @@ public class DatabaseTestHelper {
         this.jdbi = jdbi;
     }
 
-    public void insertAccount(String bearerToken, String accountId) {
-        jdbi.withHandle(handle -> handle.insert("INSERT INTO tokens(token_hash, account_id) VALUES (?, ?)", bearerToken, accountId));
+    public void insertAccount(String tokenHash, String accountId, String description) {
+        jdbi.withHandle(handle -> handle.insert("INSERT INTO tokens(token_hash, account_id, description) VALUES (?,?,?)", tokenHash, accountId, description));
     }
 
     public DateTime issueTimestampForAccount(String accountId) {
@@ -48,5 +48,13 @@ public class DatabaseTestHelper {
                 handle.createQuery("SELECT (now() at time zone 'utc')")
                 .map(new JodaDateTimeMapper(Optional.of(TimeZone.getTimeZone("UTC"))))
                 .first());
+    }
+
+    public String getColumnForTokenHash(String column, String tokenHash) {
+        return jdbi.withHandle(handle ->
+                handle.createQuery("SELECT " + column + " FROM tokens WHERE token_hash=:tokenHash")
+                        .bind("tokenHash", tokenHash)
+                        .map(StringMapper.FIRST)
+                        .first());
     }
 }

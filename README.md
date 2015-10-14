@@ -58,9 +58,9 @@ Or if the token does not exist or has been revoked:
 
 ##### Response field description
 
-| Field                    | always present | Description                               |
-| ------------------------ |:--------:| ----------------------------------------- |
-| `account_id`                 | X | The account Id for the bearer token|
+| Field                    | always present | Description                         |
+| ------------------------ |:--------------:| ----------------------------------- |
+| `account_id`             | X              | The account Id for the bearer token |
 
 -----------------------------------------------------------------------------------------------------------
 
@@ -73,12 +73,21 @@ Generate and return a new token for the given gateway account id.
 ```
 Content-Type: application/json
 {
-    "account_id": "GATEWAY_ACCOUNT_1"
+    "account_id": "GATEWAY_ACCOUNT_1",
+    "description": "Token description"
 }
 
 ```
 
-#### Response example
+##### Request body description
+
+| Field                    | required | Description                                   |
+| ------------------------ |:--------:| --------------------------------------------- |
+| `account_id`             | X        | Gateway account to associate the new token to |
+| `description`            | X        | Description of the new token                  |
+
+
+#### Successful response example
 
 ```
 200 OK
@@ -89,6 +98,29 @@ Content-Type: application/json
 }
 ```
 
+##### Successful response field description
+
+| Field                  | Description                               |
+| ---------------------- | ----------------------------------------- |
+| `token`                | The newly generated token                 |
+
+#### Unsuccessful response example
+
+```
+HTTP/1.1 400 Bad Request
+Content-Type: application/json
+
+{
+    "message": ""Missing fields: [account_id]"
+}
+```
+##### Unsuccessful response field description
+
+| Field              | Description                     |
+| ------------------ | ------------------------------- |
+| `message`          | The error message               |
+
+-----------------------------------------------------------------------------------------------------------
 
 ### POST /v1/frontend/auth/{account_id}/revoke
 

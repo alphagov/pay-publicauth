@@ -24,7 +24,8 @@ public class AuthTokenDaoTest {
 
     private AuthTokenDao authTokenDao;
     private static final String ACCOUNT_ID = "564532435";
-    private static final String BEARER_TOKEN = "TOKEN";
+    private static final String TOKEN_HASH = "TOKEN";
+    private static final String TOKEN_DESCRIPTION = "Token description";
 
     @Before
     public void setUp() throws Exception {
@@ -33,23 +34,34 @@ public class AuthTokenDaoTest {
 
     @Test
     public void findAnAccountIdByToken() throws Exception {
-        app.getDatabaseHelper().insertAccount(BEARER_TOKEN, ACCOUNT_ID);
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH, ACCOUNT_ID, TOKEN_DESCRIPTION);
 
-        Optional<String> chargeId = authTokenDao.findAccount(BEARER_TOKEN);
+        Optional<String> chargeId = authTokenDao.findAccount(TOKEN_HASH);
         assertThat(chargeId, is(Optional.of(ACCOUNT_ID)));
     }
 
     @Test
-    public void missingTokenHasNoAccount() throws Exception {
-        Optional<String> accountId = authTokenDao.findAccount(BEARER_TOKEN);
+    public void findDescriptionByToken() throws Exception {
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH, ACCOUNT_ID, TOKEN_DESCRIPTION);
+
+        Optional<String> description = authTokenDao.findDescription(TOKEN_HASH);
+        assertThat(description, is(Optional.of(TOKEN_DESCRIPTION)));
+    }
+
+    @Test
+    public void missingTokenHasNoAccountNorDescription() throws Exception {
+        Optional<String> accountId = authTokenDao.findAccount(TOKEN_HASH);
         assertThat(accountId, is(Optional.empty()));
+
+        Optional<String> description = authTokenDao.findDescription(TOKEN_HASH);
+        assertThat(description, is(Optional.empty()));
     }
 
     @Test
     public void shouldInsertANewToken() throws Exception {
         String expectedAccountId = "an-account";
-        authTokenDao.storeToken(BEARER_TOKEN, expectedAccountId);
-        Optional<String> storedAccountId = authTokenDao.findAccount(BEARER_TOKEN);
+        authTokenDao.storeToken(TOKEN_HASH, expectedAccountId, TOKEN_DESCRIPTION);
+        Optional<String> storedAccountId = authTokenDao.findAccount(TOKEN_HASH);
         assertThat(storedAccountId, is(Optional.of(expectedAccountId)));
 
         DateTime issueTimestamp = app.getDatabaseHelper().issueTimestampForAccount(expectedAccountId);
@@ -60,7 +72,7 @@ public class AuthTokenDaoTest {
 
     @Test
     public void shouldAllowATokenToBeRevoked() throws Exception {
-        app.getDatabaseHelper().insertAccount(BEARER_TOKEN, ACCOUNT_ID);
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH, ACCOUNT_ID, TOKEN_DESCRIPTION);
         assertThat(authTokenDao.revokeToken(ACCOUNT_ID), is(true));
         assertThat(authTokenDao.findAccount(ACCOUNT_ID), is(Optional.empty()));
 
@@ -72,8 +84,8 @@ public class AuthTokenDaoTest {
 
     @Test
     public void shouldAllowTokensToBeRevoked() throws Exception {
-        app.getDatabaseHelper().insertAccount(BEARER_TOKEN, ACCOUNT_ID);
-        app.getDatabaseHelper().insertAccount("TOKEN_2", ACCOUNT_ID);
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH, ACCOUNT_ID, TOKEN_DESCRIPTION);
+        app.getDatabaseHelper().insertAccount("TOKEN_2", ACCOUNT_ID, TOKEN_DESCRIPTION);
         assertThat(authTokenDao.revokeToken(ACCOUNT_ID), is(true));
         assertThat(authTokenDao.findAccount(ACCOUNT_ID), is(Optional.empty()));
 
@@ -86,9 +98,9 @@ public class AuthTokenDaoTest {
 
     @Test(expected = RuntimeException.class)
     public void shouldErrorIfTriesToSaveTheSameTokenTwice() throws Exception {
-        app.getDatabaseHelper().insertAccount(BEARER_TOKEN, ACCOUNT_ID);
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH, ACCOUNT_ID, TOKEN_DESCRIPTION);
 
-        authTokenDao.storeToken(BEARER_TOKEN, ACCOUNT_ID);
+        authTokenDao.storeToken(TOKEN_HASH, ACCOUNT_ID, TOKEN_DESCRIPTION);
     }
 
     private Matcher<ReadableInstant> isCloseTo(DateTime now) {

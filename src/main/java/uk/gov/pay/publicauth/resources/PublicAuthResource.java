@@ -2,14 +2,19 @@ package uk.gov.pay.publicauth.resources;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import uk.gov.pay.publicauth.dao.AuthTokenDao;
 import uk.gov.pay.publicauth.service.TokenHasher;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
+import java.util.LinkedList;
 import java.util.Optional;
-import java.util.function.Function;
+import java.util.Queue;
+import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 
 import static java.util.UUID.randomUUID;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -17,6 +22,8 @@ import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 
 @Path("/")
 public class PublicAuthResource {
+
+    private final Logger logger = LoggerFactory.getLogger(PublicAuthResource.class);
 
     public static final String API_AUTH_PATH = "/v1/api/auth";
     private static final String FRONTEND_AUTH_PATH = "/v1/frontend/auth";
@@ -53,9 +60,9 @@ public class PublicAuthResource {
     @Consumes(APPLICATION_JSON)
     @POST
     public Response createTokenForAccount(JsonNode payload) {
-        return withValidAccountId(payload, (accountId) -> {
+        return withValidAccountIdAndDescription(payload, (accountId, description) -> {
             String newToken = randomUUID().toString();
-            authDao.storeToken(tokenHasher.hash(newToken), accountId);
+            authDao.storeToken(tokenHasher.hash(newToken), accountId, description);
             return Response.ok(ImmutableMap.of("token", newToken)).build();
         });
     }
@@ -72,14 +79,19 @@ public class PublicAuthResource {
     }
 
 
-    private Response withValidAccountId(JsonNode payload, Function<String, Response> handler) {
+    private Response withValidAccountIdAndDescription(JsonNode payload, BiFunction<String, String, Response> handler) {
         if (payload == null) {
-            return Response.status(BAD_REQUEST).entity(ImmutableMap.of("message","Missing fields: [account_id]")).build();
+            return Response.status(BAD_REQUEST).entity(ImmutableMap.of("message","Missing fields: [account_id, description]")).build();
         }
+
+        Queue<String> missingFields = new LinkedList<>();
         JsonNode accountIdNode = payload.get("account_id");
-        if (accountIdNode == null) {
-            return Response.status(BAD_REQUEST).entity(ImmutableMap.of("message","Missing fields: [account_id]")).build();
-        }
-        return handler.apply(accountIdNode.asText());
+        if (accountIdNode == null) missingFields.add("account_id");
+        JsonNode descriptionNode = payload.get("description");
+        if (descriptionNode == null) missingFields.add("description");
+
+        return missingFields.size()>0 ?
+                Response.status(BAD_REQUEST).entity(ImmutableMap.of("message", "Missing fields: [" + missingFields.stream().collect(Collectors.joining(", "))+"]")).build() :
+                handler.apply(accountIdNode.asText(), descriptionNode.asText());
     }
 }

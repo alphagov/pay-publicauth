@@ -16,17 +16,25 @@ public class AuthTokenDao {
     }
 
 
-    public Optional<String> findAccount(String bearerToken) {
+    public Optional<String> findAccount(String tokenHash) {
         return Optional.ofNullable(jdbi.withHandle(handle ->
                 handle.createQuery("SELECT account_id FROM tokens WHERE token_hash = :token_hash and revoked IS NULL")
-                        .bind("token_hash", bearerToken)
+                        .bind("token_hash", tokenHash)
                         .map(StringMapper.FIRST)
                         .first()));
     }
 
-    public void storeToken(String token, String accountId) {
+    public Optional<String> findDescription(String tokenHash) {
+        return Optional.ofNullable(jdbi.withHandle(handle ->
+                handle.createQuery("SELECT description FROM tokens WHERE token_hash = :token_hash and revoked IS NULL")
+                        .bind("token_hash", tokenHash)
+                        .map(StringMapper.FIRST)
+                        .first()));
+    }
+
+    public void storeToken(String tokenHash, String accountId, String description) {
         Integer rowsUpdated = jdbi.withHandle(handle ->
-                        handle.insert("INSERT INTO tokens(token_hash, account_id) VALUES (?,?)", token, accountId)
+                        handle.insert("INSERT INTO tokens(token_hash, description, account_id) VALUES (?,?,?)", tokenHash, description, accountId)
         );
         if (rowsUpdated != 1) {
             log.error("Unable to store new token for account {}", accountId);
