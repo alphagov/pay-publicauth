@@ -5,6 +5,8 @@ import org.skife.jdbi.v2.util.StringMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public class AuthTokenDao {
@@ -30,6 +32,13 @@ public class AuthTokenDao {
                         .bind("token_hash", tokenHash)
                         .map(StringMapper.FIRST)
                         .first()));
+    }
+
+    public List<Map<String,Object>> findTokens(String accountId) {
+        return jdbi.withHandle(handle ->
+                handle.createQuery("SELECT token_hash, description FROM tokens WHERE  account_id = :account_id and revoked IS NULL")
+                        .bind("account_id", accountId)
+                        .list());
     }
 
     public void storeToken(String tokenHash, String accountId, String description) {

@@ -6,12 +6,14 @@ import org.junit.Test;
 import uk.gov.pay.publicauth.service.TokenHasher;
 import uk.gov.pay.publicauth.utils.DropwizardAppWithPostgresRule;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import static com.jayway.restassured.RestAssured.given;
 import static com.jayway.restassured.http.ContentType.JSON;
 import static javax.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.*;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNull.notNullValue;
 
@@ -71,6 +73,46 @@ public class PublicAuthResourceITest {
     public void respondWith400_ifBodyIsMissing() throws Exception {
         createTokenFor("")
                 .statusCode(400).body("message", is("Missing fields: [account_id, description]"));
+    }
+
+    @Test
+    public void respondWith200_andEmptyList_ifNoTokensHaveBeenIssuedForTheAccount() throws Exception {
+        getTokensFor(ACCOUNT_ID)
+                .statusCode(200).body("tokens", hasSize(0));
+    }
+
+    @Test
+    public void respondWith200_ifTokensHaveBeenIssuedForTheAccount() throws Exception {
+        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, ACCOUNT_ID, TOKEN_DESCRIPTION);
+        String secondHashedToken = new TokenHasher().hash(BEARER_TOKEN + "-2");
+        app.getDatabaseHelper().insertAccount(secondHashedToken, ACCOUNT_ID, TOKEN_DESCRIPTION + " 2");
+
+        Map<String, String> expectedMapForFirstToken = new HashMap<>();
+        expectedMapForFirstToken.put("token_hash", HASHED_BEARER_TOKEN);
+        expectedMapForFirstToken.put("description", TOKEN_DESCRIPTION);
+
+        Map<String, String> expectedMapForSecondToken = new HashMap<>();
+        expectedMapForSecondToken.put("token_hash", secondHashedToken);
+        expectedMapForSecondToken.put("description", TOKEN_DESCRIPTION + " 2");
+
+        getTokensFor(ACCOUNT_ID)
+                .statusCode(200)
+                .body("tokens", containsInAnyOrder(expectedMapForFirstToken, expectedMapForSecondToken));
+    }
+
+    @Test
+    public void respondWith200_butDoNotIncludeRevokedTokens() throws Exception {
+        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, ACCOUNT_ID, TOKEN_DESCRIPTION, true);
+        String secondHashedToken = new TokenHasher().hash(BEARER_TOKEN + "-2");
+        app.getDatabaseHelper().insertAccount(secondHashedToken, ACCOUNT_ID, TOKEN_DESCRIPTION + " 2");
+
+        Map<String, String> expectedMapForToken = new HashMap<>();
+        expectedMapForToken.put("token_hash", secondHashedToken);
+        expectedMapForToken.put("description", TOKEN_DESCRIPTION + " 2");
+
+        getTokensFor(ACCOUNT_ID)
+                .statusCode(200)
+                .body("tokens", containsInAnyOrder(expectedMapForToken));
     }
 
     @Test
@@ -144,6 +186,14 @@ public class PublicAuthResourceITest {
                 .contentType(JSON)
                 .body(body)
                 .post(FRONTEND_AUTH_PATH)
+                .then();
+    }
+
+    private ValidatableResponse getTokensFor(String accountId) {
+        return given().port(app.getLocalPort())
+                .accept(JSON)
+                .contentType(JSON)
+                .get(FRONTEND_AUTH_PATH + "/" + accountId)
                 .then();
     }
 

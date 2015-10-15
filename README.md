@@ -23,6 +23,7 @@ The command to run the integration tests is:
 | ----------------------------- | ----------------- | ---------------------------------- |
 |[```/v1/api/auth```](#get-v1apiauth)              | GET    |  Look up the account id for a token.            |
 |[```/v1/frontend/auth```](#post-v1frontendauth)             | POST   |  Generates a new dev token for a given account. |
+|[```/v1/frontend/auth/{account_id}```](#get-v1frontendauthaccount_id)             | GET   |  Retrieves all generated and not revoked tokens for this account. |
 |[```/v1/frontend/auth/{account_id}/revoke```](#post-v1frontendauthaccount_idrevoke) | POST  |  Disables all dev tokens currently enabled for this account.  |
 
 
@@ -119,6 +120,33 @@ Content-Type: application/json
 | Field              | Description                     |
 | ------------------ | ------------------------------- |
 | `message`          | The error message               |
+
+-----------------------------------------------------------------------------------------------------------
+
+### GET /v1/frontend/auth/{account_id}
+
+Retrieves all generated and not revoked tokens for this account.
+
+#### Request example
+
+```
+GET /v1/frontend/auth/15
+Accept: application/json
+```
+
+#### Response example
+
+```
+200 OK
+Content-Type: application/json
+
+{
+    "tokens": [
+                {"token_hash": "12345", "description":"token 1 description"},
+                {"token_hash": "56789", "description":"token 2 description"}
+              ]
+}
+```
 
 -----------------------------------------------------------------------------------------------------------
 

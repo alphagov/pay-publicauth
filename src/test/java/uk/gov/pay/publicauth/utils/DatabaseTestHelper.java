@@ -16,7 +16,15 @@ public class DatabaseTestHelper {
     }
 
     public void insertAccount(String tokenHash, String accountId, String description) {
-        jdbi.withHandle(handle -> handle.insert("INSERT INTO tokens(token_hash, account_id, description) VALUES (?,?,?)", tokenHash, accountId, description));
+        insertAccount(tokenHash, accountId, description, false);
+    }
+
+    public void insertAccount(String tokenHash, String accountId, String description, Boolean revoked) {
+        if (revoked) {
+            jdbi.withHandle(handle -> handle.insert("INSERT INTO tokens(token_hash, account_id, description, revoked) VALUES (?,?,?,(now() at time zone 'utc'))", tokenHash, accountId, description));
+        } else {
+            jdbi.withHandle(handle -> handle.insert("INSERT INTO tokens(token_hash, account_id, description) VALUES (?,?,?)", tokenHash, accountId, description));
+        }
     }
 
     public DateTime issueTimestampForAccount(String accountId) {

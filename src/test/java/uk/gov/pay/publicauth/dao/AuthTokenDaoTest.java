@@ -1,5 +1,6 @@
 package uk.gov.pay.publicauth.dao;
 
+import com.google.common.collect.Lists;
 import org.hamcrest.Matcher;
 import org.joda.time.DateTime;
 import org.joda.time.ReadableInstant;
@@ -9,6 +10,9 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import uk.gov.pay.publicauth.utils.DropwizardAppWithPostgresRule;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -55,6 +59,30 @@ public class AuthTokenDaoTest {
 
         Optional<String> description = authTokenDao.findDescription(TOKEN_HASH);
         assertThat(description, is(Optional.empty()));
+    }
+
+    @Test
+    public void missingAccountHasNoAssociatedTokens() throws Exception {
+        List<Map<String, Object>> tokens = authTokenDao.findTokens(ACCOUNT_ID);
+        assertThat(tokens, is(Lists.newArrayList()));
+    }
+
+    @Test
+    public void accountWithSeveralTokens() throws Exception {
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH, ACCOUNT_ID, TOKEN_DESCRIPTION);
+        app.getDatabaseHelper().insertAccount("TOKEN-2", ACCOUNT_ID, TOKEN_DESCRIPTION + " 2");
+
+        List<Map<String, Object>> tokens = authTokenDao.findTokens(ACCOUNT_ID);
+
+        Map<String, String> expectedMapForFirstToken = new HashMap<>();
+        expectedMapForFirstToken.put("token_hash", TOKEN_HASH);
+        expectedMapForFirstToken.put("description", TOKEN_DESCRIPTION);
+
+        Map<String, String> expectedMapForSecondToken = new HashMap<>();
+        expectedMapForSecondToken.put("token_hash", "TOKEN-2");
+        expectedMapForSecondToken.put("description", TOKEN_DESCRIPTION + " 2");
+
+        assertThat(tokens, containsInAnyOrder(expectedMapForFirstToken, expectedMapForSecondToken));
     }
 
     @Test

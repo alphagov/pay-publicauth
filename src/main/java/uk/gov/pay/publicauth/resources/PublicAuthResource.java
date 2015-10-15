@@ -10,9 +10,7 @@ import uk.gov.pay.publicauth.service.TokenHasher;
 import javax.ws.rs.*;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
-import java.util.LinkedList;
-import java.util.Optional;
-import java.util.Queue;
+import java.util.*;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
@@ -65,6 +63,14 @@ public class PublicAuthResource {
             authDao.storeToken(tokenHasher.hash(newToken), accountId, description);
             return Response.ok(ImmutableMap.of("token", newToken)).build();
         });
+    }
+
+    @Path(FRONTEND_AUTH_PATH + "/{accountId}")
+    @Produces(APPLICATION_JSON)
+    @GET
+    public Response getIssuedTokensForAccount(@PathParam("accountId") String accountId) {
+        List<Map<String, Object>> tokens = authDao.findTokens(accountId);
+        return Response.ok(ImmutableMap.of("tokens", tokens)).build();
     }
 
     @Path(FRONTEND_AUTH_PATH + "/{accountId}/revoke")
