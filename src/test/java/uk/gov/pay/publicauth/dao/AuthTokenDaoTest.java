@@ -10,7 +10,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import uk.gov.pay.publicauth.utils.DropwizardAppWithPostgresRule;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -29,7 +28,11 @@ public class AuthTokenDaoTest {
     private AuthTokenDao authTokenDao;
     private static final String ACCOUNT_ID = "564532435";
     private static final String TOKEN_HASH = "TOKEN";
+    private static final String TOKEN_HASH_2 = "TOKEN-2";
+    private static final String TOKEN_LINK = "123456789101112131415161718192021222";
+    private static final String TOKEN_LINK_2 = "123456789101112131415161718192021223";
     private static final String TOKEN_DESCRIPTION = "Token description";
+    private static final String TOKEN_DESCRIPTION_2 = "Token description 2";
 
     @Before
     public void setUp() throws Exception {
@@ -38,27 +41,16 @@ public class AuthTokenDaoTest {
 
     @Test
     public void findAnAccountIdByToken() throws Exception {
-        app.getDatabaseHelper().insertAccount(TOKEN_HASH, ACCOUNT_ID, TOKEN_DESCRIPTION);
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION);
 
-        Optional<String> chargeId = authTokenDao.findAccount(TOKEN_HASH);
-        assertThat(chargeId, is(Optional.of(ACCOUNT_ID)));
+        Optional<String> accountId = authTokenDao.findAccount(TOKEN_HASH);
+        assertThat(accountId, is(Optional.of(ACCOUNT_ID)));
     }
 
     @Test
-    public void findDescriptionByToken() throws Exception {
-        app.getDatabaseHelper().insertAccount(TOKEN_HASH, ACCOUNT_ID, TOKEN_DESCRIPTION);
-
-        Optional<String> description = authTokenDao.findDescription(TOKEN_HASH);
-        assertThat(description, is(Optional.of(TOKEN_DESCRIPTION)));
-    }
-
-    @Test
-    public void missingTokenHasNoAccountNorDescription() throws Exception {
+    public void missingTokenHasNoAccount() throws Exception {
         Optional<String> accountId = authTokenDao.findAccount(TOKEN_HASH);
         assertThat(accountId, is(Optional.empty()));
-
-        Optional<String> description = authTokenDao.findDescription(TOKEN_HASH);
-        assertThat(description, is(Optional.empty()));
     }
 
     @Test
@@ -69,26 +61,27 @@ public class AuthTokenDaoTest {
 
     @Test
     public void accountWithSeveralTokens() throws Exception {
-        app.getDatabaseHelper().insertAccount(TOKEN_HASH, ACCOUNT_ID, TOKEN_DESCRIPTION);
-        app.getDatabaseHelper().insertAccount("TOKEN-2", ACCOUNT_ID, TOKEN_DESCRIPTION + " 2");
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION);
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2);
 
         List<Map<String, Object>> tokens = authTokenDao.findTokens(ACCOUNT_ID);
 
-        Map<String, String> expectedMapForFirstToken = new HashMap<>();
-        expectedMapForFirstToken.put("token_hash", TOKEN_HASH);
-        expectedMapForFirstToken.put("description", TOKEN_DESCRIPTION);
+        tokens.stream().forEach((tokenMap) -> {
 
-        Map<String, String> expectedMapForSecondToken = new HashMap<>();
-        expectedMapForSecondToken.put("token_hash", "TOKEN-2");
-        expectedMapForSecondToken.put("description", TOKEN_DESCRIPTION + " 2");
+            String accountIdInDbForTokenLink = app.getDatabaseHelper().lookupColumnFor("account_id", "token_link", (String) tokenMap.get("token_link"));
+            assertThat(accountIdInDbForTokenLink, is(ACCOUNT_ID));
 
-        assertThat(tokens, containsInAnyOrder(expectedMapForFirstToken, expectedMapForSecondToken));
+            String descriptionInDbForTokenLink = app.getDatabaseHelper().lookupColumnFor("description", "token_link", (String) tokenMap.get("token_link"));
+            assertThat(descriptionInDbForTokenLink, is(tokenMap.get("description")));
+
+        });
     }
 
     @Test
     public void shouldInsertANewToken() throws Exception {
         String expectedAccountId = "an-account";
-        authTokenDao.storeToken(TOKEN_HASH, expectedAccountId, TOKEN_DESCRIPTION);
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, expectedAccountId, TOKEN_DESCRIPTION);
+
         Optional<String> storedAccountId = authTokenDao.findAccount(TOKEN_HASH);
         assertThat(storedAccountId, is(Optional.of(expectedAccountId)));
 
@@ -100,9 +93,10 @@ public class AuthTokenDaoTest {
 
     @Test
     public void shouldAllowATokenToBeRevoked() throws Exception {
-        app.getDatabaseHelper().insertAccount(TOKEN_HASH, ACCOUNT_ID, TOKEN_DESCRIPTION);
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION);
+
         assertThat(authTokenDao.revokeToken(ACCOUNT_ID), is(true));
-        assertThat(authTokenDao.findAccount(ACCOUNT_ID), is(Optional.empty()));
+        assertThat(authTokenDao.findAccount(TOKEN_HASH), is(Optional.empty()));
 
         DateTime revokeTimestamp = app.getDatabaseHelper().revokeTimestampForAccount(ACCOUNT_ID);
         DateTime now = app.getDatabaseHelper().getCurrentTime();
@@ -112,10 +106,12 @@ public class AuthTokenDaoTest {
 
     @Test
     public void shouldAllowTokensToBeRevoked() throws Exception {
-        app.getDatabaseHelper().insertAccount(TOKEN_HASH, ACCOUNT_ID, TOKEN_DESCRIPTION);
-        app.getDatabaseHelper().insertAccount("TOKEN_2", ACCOUNT_ID, TOKEN_DESCRIPTION);
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION);
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION);
+
         assertThat(authTokenDao.revokeToken(ACCOUNT_ID), is(true));
-        assertThat(authTokenDao.findAccount(ACCOUNT_ID), is(Optional.empty()));
+        assertThat(authTokenDao.findAccount(TOKEN_HASH), is(Optional.empty()));
+        assertThat(authTokenDao.findAccount(TOKEN_HASH_2), is(Optional.empty()));
 
         DateTime revokeTimestamp = app.getDatabaseHelper().revokeTimestampForAccount(ACCOUNT_ID);
         DateTime now = app.getDatabaseHelper().getCurrentTime();
@@ -126,9 +122,9 @@ public class AuthTokenDaoTest {
 
     @Test(expected = RuntimeException.class)
     public void shouldErrorIfTriesToSaveTheSameTokenTwice() throws Exception {
-        app.getDatabaseHelper().insertAccount(TOKEN_HASH, ACCOUNT_ID, TOKEN_DESCRIPTION);
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION);
 
-        authTokenDao.storeToken(TOKEN_HASH, ACCOUNT_ID, TOKEN_DESCRIPTION);
+        authTokenDao.storeToken(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION);
     }
 
     private Matcher<ReadableInstant> isCloseTo(DateTime now) {

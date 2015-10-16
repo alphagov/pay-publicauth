@@ -60,7 +60,8 @@ public class PublicAuthResource {
     public Response createTokenForAccount(JsonNode payload) {
         return withValidAccountIdAndDescription(payload, (accountId, description) -> {
             String newToken = randomUUID().toString();
-            authDao.storeToken(tokenHasher.hash(newToken), accountId, description);
+            String randomTokenLink = randomUUID().toString();
+            authDao.storeToken(tokenHasher.hash(newToken), randomTokenLink, accountId, description);
             return Response.ok(ImmutableMap.of("token", newToken)).build();
         });
     }

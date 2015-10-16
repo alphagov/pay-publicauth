@@ -142,8 +142,8 @@ Content-Type: application/json
 
 {
     "tokens": [
-                {"token_hash": "12345", "description":"token 1 description"},
-                {"token_hash": "56789", "description":"token 2 description"}
+                {"token_link": "550e8400-e29b-41d4-a716-446655440000", "description":"token 1 description"},
+                {"token_link": "550e8400-e29b-41d4-a716-446655441234", "description":"token 2 description"}
               ]
 }
 ```
