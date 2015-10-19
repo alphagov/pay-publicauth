@@ -5,9 +5,11 @@ import org.skife.jdbi.v2.util.StringMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class AuthTokenDao {
     private DBI jdbi;
@@ -27,10 +29,21 @@ public class AuthTokenDao {
     }
 
     public List<Map<String,Object>> findTokens(String accountId) {
-        return jdbi.withHandle(handle ->
-                handle.createQuery("SELECT token_link, description FROM tokens WHERE  account_id = :account_id AND revoked IS NULL ORDER BY issued DESC")
+
+        List<Map<String, Object>> tokens = jdbi.withHandle(handle ->
+                handle.createQuery("SELECT token_link, description, to_char(revoked,'DD Mon YYYY') as revoked FROM tokens WHERE account_id = :account_id ORDER BY issued DESC")
                         .bind("account_id", accountId)
                         .list());
+
+        return tokens.stream().map(tokenMap -> {
+            if (tokenMap.get("revoked") != null) return tokenMap;
+            else {
+                Map<String, Object> newMap = new HashMap<>();
+                newMap.put("token_link", tokenMap.get("token_link"));
+                newMap.put("description", tokenMap.get("description"));
+                return newMap;
+            }
+        }).collect(Collectors.toList());
     }
 
     public boolean updateTokenDescription(String tokenLink, String newDescription) {
@@ -50,7 +63,16 @@ public class AuthTokenDao {
         }
     }
 
-    public boolean revokeToken(String accountId) {
+    public Optional<String> revokeSingleToken(String accountId, String tokenLink) {
+        return Optional.ofNullable(jdbi.withHandle(handle ->
+                handle.createQuery("UPDATE tokens SET revoked=(now() at time zone 'utc') WHERE account_id=:accountId AND token_link=:tokenLink AND revoked IS NULL RETURNING to_char(revoked,'DD Mon YYYY')")
+                        .bind("accountId", accountId)
+                        .bind("tokenLink", tokenLink)
+                        .map(StringMapper.FIRST)
+                        .first()));
+    }
+
+    public boolean revokeMultipleTokens(String accountId) {
         int rowsUpdated = jdbi.withHandle(handle ->
             handle.update("UPDATE tokens SET revoked=(now() at time zone 'utc') WHERE account_id=? AND revoked IS NULL", accountId)
         );

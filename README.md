@@ -25,7 +25,8 @@ The command to run the integration tests is:
 |[```/v1/frontend/auth```](#post-v1frontendauth)             | POST   |  Generates a new dev token for a given account. |
 |[```/v1/frontend/auth```](#put-v1frontendauth)             | PUT   |  Updates the description of an existing dev token. |
 |[```/v1/frontend/auth/{account_id}```](#get-v1frontendauthaccount_id)             | GET   |  Retrieves all generated and not revoked tokens for this account. |
-|[```/v1/frontend/auth/{account_id}/revoke```](#post-v1frontendauthaccount_idrevoke) | POST  |  Disables all dev tokens currently enabled for this account.  |
+|[```/v1/frontend/auth/{account_id}```](#delete-v1frontendauthaccount_id)             | DELETE   |  Revokes the supplied dev token for this account. |
+|[```/v1/frontend/auth/{account_id}/revoke```](#post-v1frontendauthaccount_idrevoke) | POST  |  Revokes all dev tokens currently enabled for this account.  |
 
 
 ### GET /v1/api/auth
@@ -204,15 +205,68 @@ Content-Type: application/json
 
 {
     "tokens": [
-                {"token_link": "550e8400-e29b-41d4-a716-446655440000", "description":"token 1 description"},
-                {"token_link": "550e8400-e29b-41d4-a716-446655441234", "description":"token 2 description"}
+                {"token_link": "550e8400-e29b-41d4-a716-446655440000", "description": "token 1 description"},
+                {"token_link": "550e8400-e29b-41d4-a716-446655441234", "description": "token 2 description", "revoked": "10 Oct 2015"}
               ]
 }
 ```
 
 -----------------------------------------------------------------------------------------------------------
 
+### DELETE /v1/frontend/auth/{account_id}
+
+Revokes the supplied dev token for this account.
+
+#### Request example
+
+```
+Content-Type: application/json
+{
+    "token_link": "550e8400-e29b-41d4-a716-446655440000"
+}
+
+```
+
+##### Request body description
+
+| Field                    | required | Description                                                |
+| ------------------------ |:--------:| ---------------------------------------------------------- |
+| `token_link`             | X        | Token link as return by [GET /v1/frontend/auth/{account_id}](#get-v1frontendauthaccount_id) |
+
+
+#### Successful response example
+
+```
+200 OK
+Content-Type: application/json
+
+{
+    "revoked": "10 Oct 2015"
+}
+```
+
+#### Unsuccessful response example
+
+```
+HTTP/1.1 404 Not Found
+Content-Type: application/json
+
+{
+    "message": "Could not revoke token"
+}
+```
+##### Unsuccessful response field description
+
+| Field              | Description                     |
+| ------------------ | ------------------------------- |
+| `message`          | The error message               |
+
+
+-----------------------------------------------------------------------------------------------------------
+
 ### POST /v1/frontend/auth/{account_id}/revoke
+
+Revokes all dev tokens currently enabled for this account.
 
 #### Request example
 

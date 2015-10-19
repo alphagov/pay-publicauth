@@ -16,8 +16,11 @@ import java.util.Optional;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
+import static org.hamcrest.core.Is.is;
 
 public class AuthTokenDaoTest {
+
+    private  DateTime now = DateTime.now();
 
     @Rule
     public DropwizardAppWithPostgresRule app = new DropwizardAppWithPostgresRule();
@@ -27,6 +30,7 @@ public class AuthTokenDaoTest {
 
     private AuthTokenDao authTokenDao;
     private static final String ACCOUNT_ID = "564532435";
+    private static final String ACCOUNT_ID_2 = "123456";
     private static final String TOKEN_HASH = "TOKEN";
     private static final String TOKEN_HASH_2 = "TOKEN-2";
     private static final String TOKEN_LINK = "123456789101112131415161718192021222";
@@ -61,20 +65,21 @@ public class AuthTokenDaoTest {
 
     @Test
     public void accountWithSeveralTokens() throws Exception {
-        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION);
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, true);
         app.getDatabaseHelper().insertAccount(TOKEN_HASH_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2);
 
         List<Map<String, Object>> tokens = authTokenDao.findTokens(ACCOUNT_ID);
 
-        tokens.stream().forEach((tokenMap) -> {
+        //Retrieved in issued order from newest to oldest
+        Map<String, Object> firstToken = tokens.get(0);
+        assertThat(firstToken.get("token_link"), is(TOKEN_LINK_2));
+        assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION_2));
+        assertThat(firstToken.get("revoked"), nullValue());
 
-            Optional<String> accountIdInDbForTokenLink = app.getDatabaseHelper().lookupColumnFor("account_id", "token_link", (String) tokenMap.get("token_link"));
-            assertThat(accountIdInDbForTokenLink.get(), is(ACCOUNT_ID));
-
-            Optional<String> descriptionInDbForTokenLink = app.getDatabaseHelper().lookupColumnFor("description", "token_link", (String) tokenMap.get("token_link"));
-            assertThat(descriptionInDbForTokenLink.get(), is(tokenMap.get("description")));
-
-        });
+        Map<String, Object> secondToken = tokens.get(1);
+        assertThat(secondToken.get("token_link"), is(TOKEN_LINK));
+        assertThat(secondToken.get("description"), is(TOKEN_DESCRIPTION));
+        assertThat(secondToken.get("revoked"), is(now.toString("dd MMM YYYY")));
     }
 
     @Test
@@ -123,10 +128,47 @@ public class AuthTokenDaoTest {
     }
 
     @Test
-    public void shouldAllowATokenToBeRevoked() throws Exception {
+    public void shouldRevokeASingleToken() throws Exception {
         app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION);
 
-        assertThat(authTokenDao.revokeToken(ACCOUNT_ID), is(true));
+        Optional<String> revokedDate = authTokenDao.revokeSingleToken(ACCOUNT_ID, TOKEN_LINK);
+
+        assertThat(revokedDate.get(), is(now.toString("dd MMM YYYY")));
+
+        Optional<String> revokedInDb = app.getDatabaseHelper().lookupColumnFor("revoked", "token_link", TOKEN_LINK);
+        assertThat(revokedInDb.isPresent(), is(true));
+    }
+
+    @Test
+    public void shouldNotRevokeATokenForAnotherAccount() throws Exception {
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION);
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH_2, TOKEN_LINK_2, ACCOUNT_ID_2, TOKEN_DESCRIPTION_2);
+
+        Optional<String> revokedDate  = authTokenDao.revokeSingleToken(ACCOUNT_ID, TOKEN_LINK_2);
+
+        assertThat(revokedDate.isPresent(), is(false));
+
+        Optional<String> revokedInDb = app.getDatabaseHelper().lookupColumnFor("revoked", "token_link", TOKEN_LINK);
+        assertThat(revokedInDb.isPresent(), is(false));
+    }
+
+    @Test
+    public void shouldNotRevokeATokenAlreadyRevoked() throws Exception {
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, true);
+
+        Optional<String> revokedDate = authTokenDao.revokeSingleToken(ACCOUNT_ID, TOKEN_LINK);
+
+        assertThat(revokedDate.isPresent(), is(false));
+
+        Optional<String> revokedInDb = app.getDatabaseHelper().lookupColumnFor("revoked", "token_link", TOKEN_LINK);
+        assertThat(revokedInDb.isPresent(), is(true));
+    }
+
+    @Test
+    public void shouldAllowMultipleTokensToBeRevoked_forOneIssuedToken() throws Exception {
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION);
+
+        assertThat(authTokenDao.revokeMultipleTokens(ACCOUNT_ID), is(true));
         assertThat(authTokenDao.findAccount(TOKEN_HASH), is(Optional.empty()));
 
         DateTime revokeTimestamp = app.getDatabaseHelper().revokeTimestampForAccount(ACCOUNT_ID);
@@ -136,11 +178,11 @@ public class AuthTokenDaoTest {
     }
 
     @Test
-    public void shouldAllowTokensToBeRevoked() throws Exception {
+    public void shouldAllowMultipleTokensToBeRevoked_forTwoIssuedTokens() throws Exception {
         app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION);
         app.getDatabaseHelper().insertAccount(TOKEN_HASH_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION);
 
-        assertThat(authTokenDao.revokeToken(ACCOUNT_ID), is(true));
+        assertThat(authTokenDao.revokeMultipleTokens(ACCOUNT_ID), is(true));
         assertThat(authTokenDao.findAccount(TOKEN_HASH), is(Optional.empty()));
         assertThat(authTokenDao.findAccount(TOKEN_HASH_2), is(Optional.empty()));
 

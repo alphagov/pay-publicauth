@@ -89,12 +89,29 @@ public class PublicAuthResource {
         });
     }
 
+    @Path(FRONTEND_AUTH_PATH + "/{accountId}")
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
+    @DELETE
+    public Response revokeSingleToken(@PathParam("accountId") String accountId, JsonNode payload) {
+        JsonNode jsonNode;
+        if (payload == null ||  (jsonNode = payload.get("token_link")) == null) {
+            return Response.status(BAD_REQUEST).entity(ImmutableMap.of("message","Missing fields: [token_link]")).build();
+        }
+
+        Optional<String> revokedDate = authDao.revokeSingleToken(accountId, jsonNode.asText());
+        if (revokedDate.isPresent()) {
+            return Response.ok(ImmutableMap.of("revoked", revokedDate.get())).build();
+        }
+        return Response.status(NOT_FOUND).entity(ImmutableMap.of("message","Could not revoke token")).build();
+    }
+
     @Path(FRONTEND_AUTH_PATH + "/{accountId}/revoke")
     @Produces(APPLICATION_JSON)
     @Consumes(APPLICATION_JSON)
     @POST
-    public Response revokeToken(@PathParam("accountId") String accountId) {
-        if (authDao.revokeToken(accountId)) {
+    public Response revokeMultipleTokens(@PathParam("accountId") String accountId) {
+        if (authDao.revokeMultipleTokens(accountId)) {
             return Response.ok().build();
         }
         return Response.status(404).build();
@@ -129,7 +146,7 @@ public class PublicAuthResource {
         List<String> missingFields = new LinkedList<>();
         List<String> existingFields = new LinkedList<>();
 
-        expectedFields.stream().forEach( expectedField -> {
+        expectedFields.stream().forEach(expectedField -> {
             JsonNode jsonNode = payload.get(expectedField);
             if (jsonNode == null) missingFields.add(expectedField);
             else existingFields.add(jsonNode.asText());

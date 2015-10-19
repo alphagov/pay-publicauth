@@ -1,6 +1,7 @@
 package uk.gov.pay.publicauth.it;
 
 import com.jayway.restassured.response.ValidatableResponse;
+import org.joda.time.DateTime;
 import org.junit.Rule;
 import org.junit.Test;
 import uk.gov.pay.publicauth.service.TokenHasher;
@@ -27,8 +28,11 @@ public class PublicAuthResourceITest {
     private static final String API_AUTH_PATH = "/v1/api/auth";
     private static final String FRONTEND_AUTH_PATH = "/v1/frontend/auth";
     private static final String ACCOUNT_ID = "ACCOUNT-ID";
+    private static final String ACCOUNT_ID_2 = "ACCOUNT-ID-2";
     private static final String TOKEN_DESCRIPTION = "TOKEN DESCRIPTION";
     private static final String TOKEN_DESCRIPTION_2 = "Token description 2";
+
+    private DateTime now = DateTime.now();
 
     @Rule
     public DropwizardAppWithPostgresRule app = new DropwizardAppWithPostgresRule();
@@ -102,15 +106,16 @@ public class PublicAuthResourceITest {
                 .body("tokens", hasSize(2))
                 .extract().path("tokens");
 
-        retrievedTokens.stream().forEach((retrievedTokenMap) -> {
+        //Retrieved in issued order from newest to oldest
+        Map<String, String> firstToken = retrievedTokens.get(0);
+        assertThat(firstToken.get("token_link"), is(TOKEN_LINK_2));
+        assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION_2));
+        assertThat(firstToken.get("revoked"), nullValue());
 
-            Optional<String> accountIdInDbForRetrievedTokenLink = app.getDatabaseHelper().lookupColumnFor("account_id", "token_link", retrievedTokenMap.get("token_link"));
-            assertThat(accountIdInDbForRetrievedTokenLink.get(), is(ACCOUNT_ID));
-
-            Optional<String> descriptionInDbForRetrievedTokenLink = app.getDatabaseHelper().lookupColumnFor("description", "token_link", retrievedTokenMap.get("token_link"));
-            assertThat(descriptionInDbForRetrievedTokenLink.get(), is(retrievedTokenMap.get("description")));
-
-        });
+        Map<String, String> secondToken = retrievedTokens.get(1);
+        assertThat(secondToken.get("token_link"), is(TOKEN_LINK));
+        assertThat(secondToken.get("description"), is(TOKEN_DESCRIPTION));
+        assertThat(secondToken.get("revoked"), nullValue());
     }
 
     @Test
@@ -120,18 +125,19 @@ public class PublicAuthResourceITest {
 
         List<Map<String,String>> retrievedTokens = getTokensFor(ACCOUNT_ID)
                 .statusCode(200)
-                .body("tokens", hasSize(1))
+                .body("tokens", hasSize(2))
                 .extract().path("tokens");
 
-        retrievedTokens.stream().forEach((retrievedTokenMap) -> {
+        //Retrieved in issued order from newest to oldest
+        Map<String, String> firstToken = retrievedTokens.get(0);
+        assertThat(firstToken.get("token_link"), is(TOKEN_LINK_2));
+        assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION_2));
+        assertThat(firstToken.get("revoked"), nullValue());
 
-            Optional<String> accountIdInDbForRetrievedTokenLink = app.getDatabaseHelper().lookupColumnFor("account_id", "token_link", retrievedTokenMap.get("token_link"));
-            assertThat(accountIdInDbForRetrievedTokenLink.get(), is(ACCOUNT_ID));
-
-            Optional<String> descriptionInDbForRetrievedTokenLink = app.getDatabaseHelper().lookupColumnFor("description", "token_link", retrievedTokenMap.get("token_link"));
-            assertThat(descriptionInDbForRetrievedTokenLink.get(), is(retrievedTokenMap.get("description")));
-
-        });
+        Map<String, String> secondToken = retrievedTokens.get(1);
+        assertThat(secondToken.get("token_link"), is(TOKEN_LINK));
+        assertThat(secondToken.get("description"), is(TOKEN_DESCRIPTION));
+        assertThat(secondToken.get("revoked"), is(now.toString("dd MMM YYYY")));
     }
 
     @Test
@@ -226,7 +232,80 @@ public class PublicAuthResourceITest {
     }
 
     @Test
-    public void respondWith200_whenTokenIsRevoked() throws Exception {
+    public void respondWith400_ifNotProvidingBody_whenRevokingAToken() throws Exception {
+        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION);
+
+        revokeSingleToken(ACCOUNT_ID, "")
+                .statusCode(400)
+                .body("message", is("Missing fields: [token_link]"));
+
+        Optional<String> revokedInDb = app.getDatabaseHelper().lookupColumnFor("revoked", "token_link", TOKEN_LINK);
+        assertThat(revokedInDb.isPresent(), is(false));
+    }
+
+    @Test
+    public void respondWith400_ifProvidingEmptyBody_whenRevokingAToken() throws Exception {
+        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION);
+
+        revokeSingleToken(ACCOUNT_ID, "{}")
+                .statusCode(400)
+                .body("message", is("Missing fields: [token_link]"));
+
+        Optional<String> revokedInDb = app.getDatabaseHelper().lookupColumnFor("revoked", "token_link", TOKEN_LINK);
+        assertThat(revokedInDb.isPresent(), is(false));
+    }
+
+    @Test
+    public void respondWith200_whenSingleTokenIsRevoked() throws Exception {
+        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION);
+
+        revokeSingleToken(ACCOUNT_ID, "{\"token_link\" : \"" + TOKEN_LINK + "\"}")
+            .statusCode(200)
+            .body("revoked", is(now.toString("dd MMM YYYY")));
+
+        Optional<String> revokedInDb = app.getDatabaseHelper().lookupColumnFor("revoked", "token_link", TOKEN_LINK);
+        assertThat(revokedInDb.isPresent(), is(true));
+    }
+
+    @Test
+    public void respondWith404_whenRevokingTokenForAnotherAccount() throws Exception {
+        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION);
+        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, ACCOUNT_ID_2, TOKEN_DESCRIPTION);
+
+        revokeSingleToken(ACCOUNT_ID, "{\"token_link\" : \"" + TOKEN_LINK_2 + "\"}")
+            .statusCode(404)
+            .body("message", is("Could not revoke token"));
+
+        Optional<String> token1RevokedInDb = app.getDatabaseHelper().lookupColumnFor("revoked", "token_link", TOKEN_LINK);
+        assertThat(token1RevokedInDb.isPresent(), is(false));
+        Optional<String> token2RevokedInDb = app.getDatabaseHelper().lookupColumnFor("revoked", "token_link", TOKEN_LINK_2);
+        assertThat(token2RevokedInDb.isPresent(), is(false));
+    }
+
+    @Test
+    public void respondWith404_whenRevokingTokenAlreadyRevoked() throws Exception {
+        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, true);
+
+        revokeSingleToken(ACCOUNT_ID, "{\"token_link\" : \"" + TOKEN_LINK + "\"}")
+            .statusCode(404)
+            .body("message", is("Could not revoke token"));
+
+        Optional<String> token1RevokedInDb = app.getDatabaseHelper().lookupColumnFor("revoked", "token_link", TOKEN_LINK);
+        assertThat(token1RevokedInDb.isPresent(), is(true));
+    }
+
+   @Test
+    public void respondWith404_whenTokenDoesNotExist() throws Exception {
+        revokeSingleToken(ACCOUNT_ID, "{\"token_link\" : \"" + TOKEN_LINK + "\"}")
+            .statusCode(404)
+            .body("message", is("Could not revoke token"));
+
+        Optional<String> tokenLinkdInDb = app.getDatabaseHelper().lookupColumnFor("token_link", "token_link", TOKEN_LINK);
+        assertThat(tokenLinkdInDb.isPresent(), is(false));
+    }
+
+    @Test
+    public void respondWith200_whenAllTokensForAnAccountAreRevoked_forOneIssuedToken() throws Exception {
         app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION);
 
         authRevokeResponse().statusCode(200);
@@ -235,7 +314,7 @@ public class PublicAuthResourceITest {
     }
 
     @Test
-    public void respondWith200_whenMultipleTokensAreRevoked() throws Exception {
+    public void respondWith200_whenAllTokensForAnAccountAreRevoked_forTwoIssuedTokens() throws Exception {
         String second_bearer_token = new TokenHasher().hash("SECOND_BEARER_TOKEN");
         app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION);
         app.getDatabaseHelper().insertAccount(second_bearer_token, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2);
@@ -313,6 +392,15 @@ public class PublicAuthResourceITest {
                 .contentType(JSON)
                 .body(body)
                 .put(FRONTEND_AUTH_PATH)
+                .then();
+    }
+
+    private ValidatableResponse revokeSingleToken(String accountId, String body) {
+        return given().port(app.getLocalPort())
+                .accept(JSON)
+                .contentType(JSON)
+                .body(body)
+                .delete(FRONTEND_AUTH_PATH + "/" + accountId)
                 .then();
     }
 
