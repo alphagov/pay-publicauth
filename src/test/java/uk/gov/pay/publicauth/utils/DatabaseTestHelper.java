@@ -35,12 +35,12 @@ public class DatabaseTestHelper {
         return getDateTimeColumn("revoked", accountId);
     }
 
-    public String lookupColumnFor(String column, String idKey, String idValue) {
-        return jdbi.withHandle(handle ->
+    public java.util.Optional<String> lookupColumnFor(String column, String idKey, String idValue) {
+        return java.util.Optional.ofNullable(jdbi.withHandle(handle ->
                 handle.createQuery("SELECT " + column + " FROM tokens WHERE " + idKey + "=:placeholder")
                         .bind("placeholder", idValue)
                         .map(StringMapper.FIRST)
-                        .first());
+                        .first()));
 
     }
 

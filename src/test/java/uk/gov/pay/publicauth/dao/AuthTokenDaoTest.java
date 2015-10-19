@@ -68,11 +68,11 @@ public class AuthTokenDaoTest {
 
         tokens.stream().forEach((tokenMap) -> {
 
-            String accountIdInDbForTokenLink = app.getDatabaseHelper().lookupColumnFor("account_id", "token_link", (String) tokenMap.get("token_link"));
-            assertThat(accountIdInDbForTokenLink, is(ACCOUNT_ID));
+            Optional<String> accountIdInDbForTokenLink = app.getDatabaseHelper().lookupColumnFor("account_id", "token_link", (String) tokenMap.get("token_link"));
+            assertThat(accountIdInDbForTokenLink.get(), is(ACCOUNT_ID));
 
-            String descriptionInDbForTokenLink = app.getDatabaseHelper().lookupColumnFor("description", "token_link", (String) tokenMap.get("token_link"));
-            assertThat(descriptionInDbForTokenLink, is(tokenMap.get("description")));
+            Optional<String> descriptionInDbForTokenLink = app.getDatabaseHelper().lookupColumnFor("description", "token_link", (String) tokenMap.get("token_link"));
+            assertThat(descriptionInDbForTokenLink.get(), is(tokenMap.get("description")));
 
         });
     }
@@ -89,6 +89,37 @@ public class AuthTokenDaoTest {
         DateTime now = app.getDatabaseHelper().getCurrentTime();
 
         assertThat(issueTimestamp, isCloseTo(now));
+    }
+
+    @Test
+    public void updateAnExistingToken() throws Exception {
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION);
+
+        boolean updateResult = authTokenDao.updateTokenDescription(TOKEN_LINK, TOKEN_DESCRIPTION_2);
+
+        assertThat(updateResult, is(true));
+        Optional<String> descriptionInDb = app.getDatabaseHelper().lookupColumnFor("description", "token_link", TOKEN_LINK);
+        assertThat(descriptionInDb.get(), equalTo(TOKEN_DESCRIPTION_2));
+    }
+
+    @Test
+    public void notUpdateANonExistingToken() throws Exception {
+        boolean updateResult = authTokenDao.updateTokenDescription(TOKEN_LINK, TOKEN_DESCRIPTION_2);
+
+        assertThat(updateResult, is(false));
+        Optional<String> descriptionInDb = app.getDatabaseHelper().lookupColumnFor("description", "token_link", TOKEN_LINK);
+        assertThat(descriptionInDb.isPresent(), is(false));
+    }
+
+    @Test
+    public void notUpdateARevokedToken() throws Exception {
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, true);
+
+        boolean updateResult = authTokenDao.updateTokenDescription(TOKEN_LINK, TOKEN_DESCRIPTION_2);
+
+        assertThat(updateResult, is(false));
+        Optional<String> descriptionInDb = app.getDatabaseHelper().lookupColumnFor("description", "token_link", TOKEN_LINK);
+        assertThat(descriptionInDb.get(), equalTo(TOKEN_DESCRIPTION));
     }
 
     @Test

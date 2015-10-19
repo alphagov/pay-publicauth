@@ -1,7 +1,6 @@
 package uk.gov.pay.publicauth.it;
 
 import com.jayway.restassured.response.ValidatableResponse;
-import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
 import uk.gov.pay.publicauth.service.TokenHasher;
@@ -9,16 +8,14 @@ import uk.gov.pay.publicauth.utils.DropwizardAppWithPostgresRule;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static com.jayway.restassured.RestAssured.given;
 import static com.jayway.restassured.http.ContentType.JSON;
 import static javax.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.*;
 import static org.hamcrest.core.Is.is;
-import static org.hamcrest.core.IsNull.notNullValue;
 
 public class PublicAuthResourceITest {
 
@@ -52,11 +49,11 @@ public class PublicAuthResourceITest {
                                 .body("token", is(notNullValue()))
                                 .extract().path("token");
 
-        String newTokenDescription = app.getDatabaseHelper().lookupColumnFor("description", "token_hash", new TokenHasher().hash(newToken));
-        assertThat(newTokenDescription, equalTo(TOKEN_DESCRIPTION));
+        Optional<String> newTokenDescription = app.getDatabaseHelper().lookupColumnFor("description", "token_hash", new TokenHasher().hash(newToken));
+        assertThat(newTokenDescription.get(), equalTo(TOKEN_DESCRIPTION));
 
-        String newTokenAccountId = app.getDatabaseHelper().lookupColumnFor("account_id", "token_hash", new TokenHasher().hash(newToken));
-        assertThat(newTokenAccountId, equalTo(ACCOUNT_ID));
+        Optional<String> newTokenAccountId = app.getDatabaseHelper().lookupColumnFor("account_id", "token_hash", new TokenHasher().hash(newToken));
+        assertThat(newTokenAccountId.get(), equalTo(ACCOUNT_ID));
 
     }
 
@@ -107,11 +104,11 @@ public class PublicAuthResourceITest {
 
         retrievedTokens.stream().forEach((retrievedTokenMap) -> {
 
-            String accountIdInDbForRetrievedTokenLink = app.getDatabaseHelper().lookupColumnFor("account_id", "token_link", retrievedTokenMap.get("token_link"));
-            assertThat(accountIdInDbForRetrievedTokenLink, Matchers.is(ACCOUNT_ID));
+            Optional<String> accountIdInDbForRetrievedTokenLink = app.getDatabaseHelper().lookupColumnFor("account_id", "token_link", retrievedTokenMap.get("token_link"));
+            assertThat(accountIdInDbForRetrievedTokenLink.get(), is(ACCOUNT_ID));
 
-            String descriptionInDbForRetrievedTokenLink = app.getDatabaseHelper().lookupColumnFor("description", "token_link", retrievedTokenMap.get("token_link"));
-            assertThat(descriptionInDbForRetrievedTokenLink, Matchers.is(retrievedTokenMap.get("description")));
+            Optional<String> descriptionInDbForRetrievedTokenLink = app.getDatabaseHelper().lookupColumnFor("description", "token_link", retrievedTokenMap.get("token_link"));
+            assertThat(descriptionInDbForRetrievedTokenLink.get(), is(retrievedTokenMap.get("description")));
 
         });
     }
@@ -128,13 +125,104 @@ public class PublicAuthResourceITest {
 
         retrievedTokens.stream().forEach((retrievedTokenMap) -> {
 
-            String accountIdInDbForRetrievedTokenLink = app.getDatabaseHelper().lookupColumnFor("account_id", "token_link", retrievedTokenMap.get("token_link"));
-            assertThat(accountIdInDbForRetrievedTokenLink, Matchers.is(ACCOUNT_ID));
+            Optional<String> accountIdInDbForRetrievedTokenLink = app.getDatabaseHelper().lookupColumnFor("account_id", "token_link", retrievedTokenMap.get("token_link"));
+            assertThat(accountIdInDbForRetrievedTokenLink.get(), is(ACCOUNT_ID));
 
-            String descriptionInDbForRetrievedTokenLink = app.getDatabaseHelper().lookupColumnFor("description", "token_link", retrievedTokenMap.get("token_link"));
-            assertThat(descriptionInDbForRetrievedTokenLink, Matchers.is(retrievedTokenMap.get("description")));
+            Optional<String> descriptionInDbForRetrievedTokenLink = app.getDatabaseHelper().lookupColumnFor("description", "token_link", retrievedTokenMap.get("token_link"));
+            assertThat(descriptionInDbForRetrievedTokenLink.get(), is(retrievedTokenMap.get("description")));
 
         });
+    }
+
+    @Test
+    public void respondWith400_ifNotProvidingDescription_whenUpdating() throws Exception {
+        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION);
+
+        updateTokenDescription("{\"token_link\" : \"" + TOKEN_LINK + "\"}")
+            .statusCode(400)
+            .body("message", is("Missing fields: [description]"));
+
+        Optional<String> tokenLinkInDb = app.getDatabaseHelper().lookupColumnFor("token_link", "token_link", TOKEN_LINK);
+        Optional<String> descriptionInDb = app.getDatabaseHelper().lookupColumnFor("description", "token_link", TOKEN_LINK);
+        assertThat(descriptionInDb.get(), equalTo(TOKEN_DESCRIPTION));
+        assertThat(tokenLinkInDb.get(), equalTo(TOKEN_LINK));
+    }
+
+    @Test
+    public void respondWith400_ifNotProvidingTokenLink_whenUpdating() throws Exception {
+        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION);
+
+        updateTokenDescription("{\"description\" : \"" + TOKEN_DESCRIPTION + "\"}")
+            .statusCode(400)
+            .body("message", is("Missing fields: [token_link]"));
+
+        Optional<String> tokenLinkInDb = app.getDatabaseHelper().lookupColumnFor("token_link", "token_link", TOKEN_LINK);
+        Optional<String> descriptionInDb = app.getDatabaseHelper().lookupColumnFor("description", "token_link", TOKEN_LINK);
+        assertThat(descriptionInDb.get(), equalTo(TOKEN_DESCRIPTION));
+        assertThat(tokenLinkInDb.get(), equalTo(TOKEN_LINK));
+    }
+
+    @Test
+    public void respondWith400_ifNotProvidingTokenLinkNorDescription_whenUpdating() throws Exception {
+        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION);
+
+        updateTokenDescription("{}")
+            .statusCode(400)
+            .body("message", is("Missing fields: [token_link, description]"));
+
+        Optional<String> tokenLinkInDb = app.getDatabaseHelper().lookupColumnFor("token_link", "token_link", TOKEN_LINK);
+        Optional<String> descriptionInDb = app.getDatabaseHelper().lookupColumnFor("description", "token_link", TOKEN_LINK);
+        assertThat(descriptionInDb.get(), equalTo(TOKEN_DESCRIPTION));
+        assertThat(tokenLinkInDb.get(), equalTo(TOKEN_LINK));
+    }
+
+    @Test
+    public void respondWith400_ifNotProvidingBody_whenUpdating() throws Exception {
+        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION);
+
+        updateTokenDescription("")
+            .statusCode(400)
+            .body("message", is("Missing fields: [token_link, description]"));
+
+        Optional<String> tokenLinkInDb = app.getDatabaseHelper().lookupColumnFor("token_link", "token_link", TOKEN_LINK);
+        Optional<String> descriptionInDb = app.getDatabaseHelper().lookupColumnFor("description", "token_link", TOKEN_LINK);
+        assertThat(descriptionInDb.get(), equalTo(TOKEN_DESCRIPTION));
+        assertThat(tokenLinkInDb.get(), equalTo(TOKEN_LINK));
+    }
+
+    @Test
+    public void respondWith200_ifUpdatingDescriptionOfExistingToken() throws Exception {
+        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION);
+
+        updateTokenDescription("{\"token_link\" : \"" + TOKEN_LINK + "\", \"description\" : \"" + TOKEN_DESCRIPTION_2 + "\"}")
+            .statusCode(200)
+            .body("token_link", is(TOKEN_LINK))
+            .body("description", is(TOKEN_DESCRIPTION_2));
+
+        Optional<String> descriptionInDb = app.getDatabaseHelper().lookupColumnFor("description", "token_link", TOKEN_LINK);
+        assertThat(descriptionInDb.get(), equalTo(TOKEN_DESCRIPTION_2));
+    }
+
+    @Test
+    public void respondWith404_ifUpdatingDescriptionOfNonExistingToken() throws Exception {
+        updateTokenDescription("{\"token_link\" : \"" + TOKEN_LINK + "\", \"description\" : \"" + TOKEN_DESCRIPTION_2 + "\"}")
+            .statusCode(404)
+            .body("message", is("Could not update token description"));
+
+        Optional<String> descriptionInDb = app.getDatabaseHelper().lookupColumnFor("description", "token_link", TOKEN_LINK);
+        assertThat(descriptionInDb.isPresent(), is(false));
+    }
+
+    @Test
+    public void respondWith404_butDoNotUpdateRevokedTokens() throws Exception {
+        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, true);
+
+        updateTokenDescription("{\"token_link\" : \"" + TOKEN_LINK + "\", \"description\" : \"" + TOKEN_DESCRIPTION_2 + "\"}")
+            .statusCode(404)
+            .body("message", is("Could not update token description"));
+
+        Optional<String> descriptionInDb = app.getDatabaseHelper().lookupColumnFor("description", "token_link", TOKEN_LINK);
+        assertThat(descriptionInDb.get(), equalTo(TOKEN_DESCRIPTION));
     }
 
     @Test
@@ -190,8 +278,8 @@ public class PublicAuthResourceITest {
                 .body()
                 .path("token");
 
-        String storedTokenHash = app.getDatabaseHelper().lookupColumnFor("token_hash", "account_id", ACCOUNT_ID);
-        assertThat(storedTokenHash, is(not(newToken)));
+        Optional<String> storedTokenHash = app.getDatabaseHelper().lookupColumnFor("token_hash", "account_id", ACCOUNT_ID);
+        assertThat(storedTokenHash.get(), is(not(newToken)));
     }
 
 
@@ -216,6 +304,15 @@ public class PublicAuthResourceITest {
         return given().port(app.getLocalPort())
                 .accept(JSON)
                 .get(FRONTEND_AUTH_PATH + "/" + accountId)
+                .then();
+    }
+
+    private ValidatableResponse updateTokenDescription(String body) {
+        return given().port(app.getLocalPort())
+                .accept(JSON)
+                .contentType(JSON)
+                .body(body)
+                .put(FRONTEND_AUTH_PATH)
                 .then();
     }
 

@@ -20,7 +20,7 @@ public class AuthTokenDao {
 
     public Optional<String> findAccount(String tokenHash) {
         return Optional.ofNullable(jdbi.withHandle(handle ->
-                handle.createQuery("SELECT account_id FROM tokens WHERE token_hash = :token_hash and revoked IS NULL")
+                handle.createQuery("SELECT account_id FROM tokens WHERE token_hash = :token_hash AND revoked IS NULL")
                         .bind("token_hash", tokenHash)
                         .map(StringMapper.FIRST)
                         .first()));
@@ -28,9 +28,16 @@ public class AuthTokenDao {
 
     public List<Map<String,Object>> findTokens(String accountId) {
         return jdbi.withHandle(handle ->
-                handle.createQuery("SELECT token_link, description FROM tokens WHERE  account_id = :account_id and revoked IS NULL")
+                handle.createQuery("SELECT token_link, description FROM tokens WHERE  account_id = :account_id AND revoked IS NULL ORDER BY issued DESC")
                         .bind("account_id", accountId)
                         .list());
+    }
+
+    public boolean updateTokenDescription(String tokenLink, String newDescription) {
+        int rowsUpdated = jdbi.withHandle(handle ->
+            handle.update("UPDATE tokens SET description=? WHERE token_link=? AND revoked IS NULL", newDescription, tokenLink)
+        );
+        return rowsUpdated > 0;
     }
 
     public void storeToken(String tokenHash, String randomTokenLink, String accountId, String description) {
