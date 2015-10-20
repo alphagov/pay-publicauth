@@ -74,6 +74,7 @@ public class AuthTokenDaoTest {
         Map<String, Object> firstToken = tokens.get(0);
         assertThat(firstToken.get("token_link"), is(TOKEN_LINK_2));
         assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION_2));
+        assertThat(firstToken.containsKey("revoked"), is(true));
         assertThat(firstToken.get("revoked"), nullValue());
 
         Map<String, Object> secondToken = tokens.get(1);
@@ -163,35 +164,6 @@ public class AuthTokenDaoTest {
         Optional<String> revokedInDb = app.getDatabaseHelper().lookupColumnFor("revoked", "token_link", TOKEN_LINK);
         assertThat(revokedInDb.isPresent(), is(true));
     }
-
-    @Test
-    public void shouldAllowMultipleTokensToBeRevoked_forOneIssuedToken() throws Exception {
-        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION);
-
-        assertThat(authTokenDao.revokeMultipleTokens(ACCOUNT_ID), is(true));
-        assertThat(authTokenDao.findAccount(TOKEN_HASH), is(Optional.empty()));
-
-        DateTime revokeTimestamp = app.getDatabaseHelper().revokeTimestampForAccount(ACCOUNT_ID);
-        DateTime now = app.getDatabaseHelper().getCurrentTime();
-
-        assertThat(revokeTimestamp, isCloseTo(now));
-    }
-
-    @Test
-    public void shouldAllowMultipleTokensToBeRevoked_forTwoIssuedTokens() throws Exception {
-        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION);
-        app.getDatabaseHelper().insertAccount(TOKEN_HASH_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION);
-
-        assertThat(authTokenDao.revokeMultipleTokens(ACCOUNT_ID), is(true));
-        assertThat(authTokenDao.findAccount(TOKEN_HASH), is(Optional.empty()));
-        assertThat(authTokenDao.findAccount(TOKEN_HASH_2), is(Optional.empty()));
-
-        DateTime revokeTimestamp = app.getDatabaseHelper().revokeTimestampForAccount(ACCOUNT_ID);
-        DateTime now = app.getDatabaseHelper().getCurrentTime();
-
-        assertThat(revokeTimestamp, isCloseTo(now));
-    }
-
 
     @Test(expected = RuntimeException.class)
     public void shouldErrorIfTriesToSaveTheSameTokenTwice() throws Exception {

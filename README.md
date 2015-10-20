@@ -26,7 +26,6 @@ The command to run the integration tests is:
 |[```/v1/frontend/auth```](#put-v1frontendauth)             | PUT   |  Updates the description of an existing dev token. |
 |[```/v1/frontend/auth/{account_id}```](#get-v1frontendauthaccount_id)             | GET   |  Retrieves all generated and not revoked tokens for this account. |
 |[```/v1/frontend/auth/{account_id}```](#delete-v1frontendauthaccount_id)             | DELETE   |  Revokes the supplied dev token for this account. |
-|[```/v1/frontend/auth/{account_id}/revoke```](#post-v1frontendauthaccount_idrevoke) | POST  |  Revokes all dev tokens currently enabled for this account.  |
 
 
 ### GET /v1/api/auth
@@ -260,26 +259,3 @@ Content-Type: application/json
 | Field              | Description                     |
 | ------------------ | ------------------------------- |
 | `message`          | The error message               |
-
-
------------------------------------------------------------------------------------------------------------
-
-### POST /v1/frontend/auth/{account_id}/revoke
-
-Revokes all dev tokens currently enabled for this account.
-
-#### Request example
-
-```
-POST WITH EMPTY BODY
-{
-}
-```
-
-
-#### Response example
-
-```
-200 OK
-
-```

@@ -110,12 +110,12 @@ public class PublicAuthResourceITest {
         Map<String, String> firstToken = retrievedTokens.get(0);
         assertThat(firstToken.get("token_link"), is(TOKEN_LINK_2));
         assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION_2));
-        assertThat(firstToken.get("revoked"), nullValue());
+        assertThat(firstToken.containsKey("revoked"), is(false));
 
         Map<String, String> secondToken = retrievedTokens.get(1);
         assertThat(secondToken.get("token_link"), is(TOKEN_LINK));
         assertThat(secondToken.get("description"), is(TOKEN_DESCRIPTION));
-        assertThat(secondToken.get("revoked"), nullValue());
+        assertThat(firstToken.containsKey("revoked"), is(false));
     }
 
     @Test
@@ -132,7 +132,7 @@ public class PublicAuthResourceITest {
         Map<String, String> firstToken = retrievedTokens.get(0);
         assertThat(firstToken.get("token_link"), is(TOKEN_LINK_2));
         assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION_2));
-        assertThat(firstToken.get("revoked"), nullValue());
+        assertThat(firstToken.containsKey("revoked"), is(false));
 
         Map<String, String> secondToken = retrievedTokens.get(1);
         assertThat(secondToken.get("token_link"), is(TOKEN_LINK));
@@ -305,32 +305,6 @@ public class PublicAuthResourceITest {
     }
 
     @Test
-    public void respondWith200_whenAllTokensForAnAccountAreRevoked_forOneIssuedToken() throws Exception {
-        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION);
-
-        authRevokeResponse().statusCode(200);
-
-        tokenResponse().statusCode(401);
-    }
-
-    @Test
-    public void respondWith200_whenAllTokensForAnAccountAreRevoked_forTwoIssuedTokens() throws Exception {
-        String second_bearer_token = new TokenHasher().hash("SECOND_BEARER_TOKEN");
-        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION);
-        app.getDatabaseHelper().insertAccount(second_bearer_token, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2);
-
-        authRevokeResponse().statusCode(200);
-
-        tokenResponse().statusCode(401);
-        tokenResponse(second_bearer_token).statusCode(401);
-    }
-
-    @Test
-    public void respondWith404_whenAccountIsMissing() throws Exception {
-        authRevokeResponse().statusCode(404);
-    }
-
-    @Test
     public void respondWith401_whenAuthHeaderIsMissing() throws Exception {
         given().port(app.getLocalPort())
                 .get(API_AUTH_PATH)
@@ -359,15 +333,6 @@ public class PublicAuthResourceITest {
 
         Optional<String> storedTokenHash = app.getDatabaseHelper().lookupColumnFor("token_hash", "account_id", ACCOUNT_ID);
         assertThat(storedTokenHash.get(), is(not(newToken)));
-    }
-
-
-    private ValidatableResponse authRevokeResponse() {
-        return given().port(app.getLocalPort())
-                .accept(JSON)
-                .contentType(JSON)
-                .post(FRONTEND_AUTH_PATH + "/" + ACCOUNT_ID + "/revoke")
-                .then();
     }
 
     private ValidatableResponse createTokenFor(String body) {

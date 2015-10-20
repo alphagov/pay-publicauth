@@ -1,6 +1,7 @@
 package uk.gov.pay.publicauth.resources;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,14 +11,17 @@ import uk.gov.pay.publicauth.service.TokenHasher;
 import javax.ws.rs.*;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static java.util.UUID.randomUUID;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
-import static javax.ws.rs.core.Response.Status.NOT_FOUND;
+import static javax.ws.rs.core.Response.ok;
+import static uk.gov.pay.publicauth.util.ResponseUtil.badRequestResponse;
+import static uk.gov.pay.publicauth.util.ResponseUtil.notFoundResponse;
 
 @Path("/")
 public class PublicAuthResource {
@@ -46,11 +50,9 @@ public class PublicAuthResource {
             return UNAUTHORISED.build();
         }
         String tokenId = bearerToken.substring(BEARER_PREFIX.length());
-        Optional<String> account = authDao.findAccount(tokenHasher.hash(tokenId));
-        return account.map(
-                        accountId -> Response.ok(ImmutableMap.of("account_id", accountId)))
-                .orElseGet(
-                        () -> UNAUTHORISED)
+        return authDao.findAccount(tokenHasher.hash(tokenId))
+                .map(accountId -> ok(ImmutableMap.of("account_id", accountId)))
+                .orElseGet(() -> UNAUTHORISED)
                 .build();
     }
 
@@ -63,7 +65,7 @@ public class PublicAuthResource {
             String newToken = randomUUID().toString();
             String randomTokenLink = randomUUID().toString();
             authDao.storeToken(tokenHasher.hash(newToken), randomTokenLink, accountId, description);
-            return Response.ok(ImmutableMap.of("token", newToken)).build();
+            return ok(ImmutableMap.of("token", newToken)).build();
         });
     }
 
@@ -71,8 +73,15 @@ public class PublicAuthResource {
     @Produces(APPLICATION_JSON)
     @GET
     public Response getIssuedTokensForAccount(@PathParam("accountId") String accountId) {
-        List<Map<String, Object>> tokens = authDao.findTokens(accountId);
-        return Response.ok(ImmutableMap.of("tokens", tokens)).build();
+        List<Map<String, Object>> tokensWithoutNullRevoked = authDao.findTokens(accountId)
+                .stream()
+                .map(tokenMap -> {
+                    if (tokenMap.get("revoked") == null) tokenMap.remove("revoked");
+                    return tokenMap;
+                })
+                .collect(Collectors.toList());
+
+        return ok(ImmutableMap.of("tokens", tokensWithoutNullRevoked)).build();
     }
 
     @Path(FRONTEND_AUTH_PATH)
@@ -83,9 +92,9 @@ public class PublicAuthResource {
         return withTokenLinkAndDescription(payload, (token_link, description) -> {
             boolean updated = authDao.updateTokenDescription(token_link, description);
             if (updated) {
-                return Response.ok(ImmutableMap.of("token_link", token_link, "description", description)).build();
+                return ok(ImmutableMap.of("token_link", token_link, "description", description)).build();
             }
-            return Response.status(NOT_FOUND).entity(ImmutableMap.of("message", "Could not update token description")).build();
+            return notFoundResponse(logger, "Could not update token description");
         });
     }
 
@@ -96,65 +105,43 @@ public class PublicAuthResource {
     public Response revokeSingleToken(@PathParam("accountId") String accountId, JsonNode payload) {
         JsonNode jsonNode;
         if (payload == null ||  (jsonNode = payload.get("token_link")) == null) {
-            return Response.status(BAD_REQUEST).entity(ImmutableMap.of("message","Missing fields: [token_link]")).build();
+            return badRequestResponse(logger, "Missing fields: [token_link]");
         }
 
-        Optional<String> revokedDate = authDao.revokeSingleToken(accountId, jsonNode.asText());
-        if (revokedDate.isPresent()) {
-            return Response.ok(ImmutableMap.of("revoked", revokedDate.get())).build();
-        }
-        return Response.status(NOT_FOUND).entity(ImmutableMap.of("message","Could not revoke token")).build();
+        return authDao.revokeSingleToken(accountId, jsonNode.asText())
+                .map(revokedDate -> ok(ImmutableMap.of("revoked", revokedDate)).build())
+                .orElseGet(() -> notFoundResponse(logger, "Could not revoke token"));
     }
 
-    @Path(FRONTEND_AUTH_PATH + "/{accountId}/revoke")
-    @Produces(APPLICATION_JSON)
-    @Consumes(APPLICATION_JSON)
-    @POST
-    public Response revokeMultipleTokens(@PathParam("accountId") String accountId) {
-        if (authDao.revokeMultipleTokens(accountId)) {
-            return Response.ok().build();
-        }
-        return Response.status(404).build();
-    }
-
-    private Response withTokenLinkAndDescription(JsonNode payload, BiFunction<String, String, Response> handler) {
-        if (payload == null) {
-            return Response.status(BAD_REQUEST).entity(ImmutableMap.of("message","Missing fields: [token_link, description]")).build();
+    private Response withTokenLinkAndDescription(JsonNode requestPayload, BiFunction<String, String, Response> handler) {
+        if (requestPayload == null) {
+            return badRequestResponse(logger, "Missing fields: [token_link, description]");
         }
 
-        List<String> expectedFields = new LinkedList<>();
-        expectedFields.add("token_link");
-        expectedFields.add("description");
+        List<String> missingFieldsInRequestPayload = findMissingFieldsInRequestPayload(requestPayload, "token_link", "description");
 
-        return with(payload, expectedFields, handler);
+        if (missingFieldsInRequestPayload.isEmpty()) {
+            return handler.apply(requestPayload.get("token_link").asText(), requestPayload.get("description").asText());
+        }
+        return badRequestResponse(logger, "Missing fields: [" + Joiner.on(", ").join(missingFieldsInRequestPayload) + "]");
     }
 
-    private Response withValidAccountIdAndDescription(JsonNode payload, BiFunction<String, String, Response> handler) {
-        if (payload == null) {
-            return Response.status(BAD_REQUEST).entity(ImmutableMap.of("message","Missing fields: [account_id, description]")).build();
+    private Response withValidAccountIdAndDescription(JsonNode requestPayload, BiFunction<String, String, Response> handler) {
+        if (requestPayload == null) {
+            return badRequestResponse(logger, "Missing fields: [account_id, description]");
         }
 
-        List<String> expectedFields = new LinkedList<>();
-        expectedFields.add("account_id");
-        expectedFields.add("description");
+        List<String> missingFieldsInRequestPayload = findMissingFieldsInRequestPayload(requestPayload, "account_id", "description");
 
-        return with(payload, expectedFields, handler);
+        if (missingFieldsInRequestPayload.isEmpty()) {
+            return handler.apply(requestPayload.get("account_id").asText(), requestPayload.get("description").asText());
+        }
+        return badRequestResponse(logger, "Missing fields: [" + Joiner.on(", ").join(missingFieldsInRequestPayload) + "]");
     }
 
-    private Response with(JsonNode payload, List<String> expectedFields, BiFunction<String, String, Response> handler) {
-
-        List<String> missingFields = new LinkedList<>();
-        List<String> existingFields = new LinkedList<>();
-
-        expectedFields.stream().forEach(expectedField -> {
-            JsonNode jsonNode = payload.get(expectedField);
-            if (jsonNode == null) missingFields.add(expectedField);
-            else existingFields.add(jsonNode.asText());
-        });
-
-        Iterator<String> expectedFieldIterator = existingFields.iterator();
-        return missingFields.size()>0 ?
-                Response.status(BAD_REQUEST).entity(ImmutableMap.of("message", "Missing fields: [" + missingFields.stream().collect(Collectors.joining(", "))+"]")).build() :
-                handler.apply(expectedFieldIterator.next(), expectedFieldIterator.next());
+    private List<String> findMissingFieldsInRequestPayload(JsonNode requestPayload, String... expectedFieldsInRequestPayload) {
+        return Stream.of(expectedFieldsInRequestPayload)
+                .filter(expectedKey -> requestPayload.get(expectedKey) == null)
+                .collect(Collectors.toList());
     }
 }
