@@ -14,6 +14,12 @@
             <column name="token_hash" type="varchar(255)">
                 <constraints nullable="false" unique="true"/>
             </column>
+            <column name="token_link" type="char(36)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="description" type="varchar(255)">
+                <constraints nullable="false" unique="false"/>
+            </column>
             <column name="account_id" type="varchar(255)">
                 <constraints nullable="false"/>
             </column>
