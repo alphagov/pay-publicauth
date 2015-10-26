@@ -7,6 +7,7 @@ import com.spotify.docker.client.LogStream;
 import com.spotify.docker.client.messages.ContainerConfig;
 import com.spotify.docker.client.messages.ContainerInfo;
 import com.spotify.docker.client.messages.HostConfig;
+import com.spotify.docker.client.messages.Image;
 import com.spotify.docker.client.messages.PortBinding;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,7 +18,9 @@ import java.sql.DriverManager;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
+import static com.spotify.docker.client.DockerClient.ListImagesParam.allImages;
 import static java.lang.Integer.parseInt;
 import static java.util.stream.Collectors.joining;
 
@@ -33,7 +36,7 @@ public class PostgresContainer {
 
     public static final String DB_PASSWORD = "mysecretpassword";
     public static final String DB_USERNAME = "postgres";
-    public static final String POSTGRES = "postgres:9.4.4";
+    public static final String GOVUK_POSTGRES_IMAGE = "govukpay/postgres:9.4.4";
     public static final String INTERNAL_PORT = "5432";
 
     public PostgresContainer(DockerClient docker, String host) throws DockerException, InterruptedException, IOException, ClassNotFoundException {
@@ -41,11 +44,16 @@ public class PostgresContainer {
 
         this.docker = docker;
         this.host = host;
-        docker.pull(POSTGRES);
+
+        List<Image> govukpayPostgresImages = docker.listImages(allImages())
+                .stream()
+                .filter(image -> image.repoTags().contains(GOVUK_POSTGRES_IMAGE))
+                .collect(Collectors.toList());
+        if (govukpayPostgresImages.isEmpty() ) throw new RuntimeException("Please manually pull '"+ GOVUK_POSTGRES_IMAGE + "'");
 
         final HostConfig hostConfig = HostConfig.builder().publishAllPorts(true).build();
         ContainerConfig containerConfig = ContainerConfig.builder()
-                .image(POSTGRES)
+                .image(GOVUK_POSTGRES_IMAGE)
                 .hostConfig(hostConfig)
                 .env("POSTGRES_USER=" + DB_USERNAME, "POSTGRES_PASSWORD=" + DB_PASSWORD)
                 .build();
