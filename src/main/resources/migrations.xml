@@ -14,12 +14,6 @@
             <column name="token_hash" type="varchar(255)">
                 <constraints nullable="false" unique="true"/>
             </column>
-            <column name="token_link" type="char(36)">
-                <constraints nullable="false" unique="true"/>
-            </column>
-            <column name="description" type="varchar(255)">
-                <constraints nullable="false" unique="false"/>
-            </column>
             <column name="account_id" type="varchar(255)">
                 <constraints nullable="false"/>
             </column>
@@ -33,15 +27,29 @@
         <createIndex indexName="idx_token_hash_revoked"
                      tableName="tokens">
             <column name="token_hash"/>
-            <column name="revoked" />
+            <column name="revoked"/>
         </createIndex>
         <createIndex indexName="idx_account_id_revoked"
                      tableName="tokens">
             <column name="account_id"/>
             <column name="revoked"/>
         </createIndex>
-
     </changeSet>
 
+    <changeSet id="add tokenlink and description columns to tokens table" author="">
+        <addColumn tableName="tokens">
+            <column name="token_link" type="char(36)" defaultValueComputed="(uuid_generate_v4())">
+                <constraints nullable="false" unique="true"/>
+            </column>
+        </addColumn>
+        <addColumn tableName="tokens">
+            <column name="description" type="varchar(255)" defaultValue="">
+                <constraints nullable="false" unique="false"/>
+            </column>
+        </addColumn>
+        <createIndex indexName="idx_token_link" tableName="tokens">
+            <column name="token_link"/>
+        </createIndex>
+    </changeSet>
 
 </databaseChangeLog>
