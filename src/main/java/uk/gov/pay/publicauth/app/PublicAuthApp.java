@@ -13,10 +13,9 @@ import org.skife.jdbi.v2.DBI;
 import uk.gov.pay.publicauth.dao.AuthTokenDao;
 import uk.gov.pay.publicauth.resources.PublicAuthResource;
 import uk.gov.pay.publicauth.service.TokenHasher;
-import uk.gov.pay.publicauth.util.DbConnectionChecker;
+import uk.gov.pay.publicauth.util.DbWaitCommand;
 
 public class PublicAuthApp extends Application<PublicAuthConfiguration> {
-
     private DBI jdbi;
 
     @Override
@@ -26,6 +25,7 @@ public class PublicAuthApp extends Application<PublicAuthConfiguration> {
                         new EnvironmentVariableSubstitutor()
                 )
         );
+
         bootstrap.addBundle(new DBIExceptionsBundle());
 
         bootstrap.addBundle(new MigrationsBundle<PublicAuthConfiguration>() {
@@ -34,24 +34,15 @@ public class PublicAuthApp extends Application<PublicAuthConfiguration> {
                 return configuration.getDataSourceFactory();
             }
         });
+
+        bootstrap.addCommand(new DbWaitCommand());
     }
 
 
     @Override
     public void run(PublicAuthConfiguration conf, Environment environment) throws Exception {
         DataSourceFactory dataSourceFactory = conf.getDataSourceFactory();
-
-        DbConnectionChecker checker = new DbConnectionChecker(
-                dataSourceFactory.getUrl(),
-                dataSourceFactory.getUser(),
-                dataSourceFactory.getPassword()
-        );
-
-        checker.waitForPostgresToStart();
-
-        jdbi = new DBIFactory()
-                .build(environment, dataSourceFactory, "postgresql");
-
+        jdbi = new DBIFactory().build(environment, dataSourceFactory, "postgresql");
         environment.jersey().register(new PublicAuthResource(new AuthTokenDao(jdbi), new TokenHasher()));
     }
 
@@ -59,9 +50,7 @@ public class PublicAuthApp extends Application<PublicAuthConfiguration> {
         return jdbi;
     }
 
-
     public static void main(String[] args) throws Exception {
         new PublicAuthApp().run(args);
     }
-
 }
