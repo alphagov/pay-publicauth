@@ -13,6 +13,7 @@ import org.skife.jdbi.v2.DBI;
 import uk.gov.pay.publicauth.dao.AuthTokenDao;
 import uk.gov.pay.publicauth.resources.PublicAuthResource;
 import uk.gov.pay.publicauth.service.TokenHasher;
+import uk.gov.pay.publicauth.util.DbConnectionChecker;
 
 public class PublicAuthApp extends Application<PublicAuthConfiguration> {
 
@@ -38,8 +39,15 @@ public class PublicAuthApp extends Application<PublicAuthConfiguration> {
 
     @Override
     public void run(PublicAuthConfiguration conf, Environment environment) throws Exception {
-
         DataSourceFactory dataSourceFactory = conf.getDataSourceFactory();
+
+        DbConnectionChecker checker = new DbConnectionChecker(
+                dataSourceFactory.getUrl(),
+                dataSourceFactory.getUser(),
+                dataSourceFactory.getPassword()
+        );
+
+        checker.waitForPostgresToStart();
 
         jdbi = new DBIFactory()
                 .build(environment, dataSourceFactory, "postgresql");
