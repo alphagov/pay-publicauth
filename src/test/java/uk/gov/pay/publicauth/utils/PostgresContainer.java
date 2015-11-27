@@ -36,6 +36,7 @@ public class PostgresContainer {
 
     public static final String DB_PASSWORD = "mysecretpassword";
     public static final String DB_USERNAME = "postgres";
+    public static final int DB_TIMEOUT_SEC = 15;
     public static final String GOVUK_POSTGRES_IMAGE = "govukpay/postgres:9.4.4";
     public static final String INTERNAL_PORT = "5432";
 
@@ -89,12 +90,12 @@ public class PostgresContainer {
     private void waitForPostgresToStart() throws DockerException, InterruptedException, IOException {
         Stopwatch timer = Stopwatch.createStarted();
         boolean succeeded = false;
-        while (!succeeded && timer.elapsed(TimeUnit.SECONDS) < 10) {
-            Thread.sleep(10);
+        while (!succeeded && timer.elapsed(TimeUnit.SECONDS) < DB_TIMEOUT_SEC) {
+            Thread.sleep(500);
             succeeded = checkPostgresConnection();
         }
         if (!succeeded) {
-            throw new RuntimeException("Postgres did not start in 10 seconds.");
+            throw new RuntimeException("Postgres did not start in " + DB_TIMEOUT_SEC + " seconds.");
         }
         logger.info("Postgres docker container started in {}.", timer.elapsed(TimeUnit.MILLISECONDS));
     }
