@@ -12,5 +12,6 @@ WORKDIR /app
 
 ADD target/*.yaml /app/
 ADD target/pay-*-allinone.jar /app/
+ADD newrelic/* /app/newrelic/
 
-CMD until nc -zv ${DB_HOST-postgres} 5432; do sleep 1; done && java -jar *-allinone.jar db migrate *.yaml && java -jar *-allinone.jar server *.yaml
+CMD until nc -zv ${DB_HOST-postgres} 5432; do sleep 1; done && java -jar *-allinone.jar db migrate *.yaml && java -javaagent:/app/newrelic/newrelic.jar -jar *-allinone.jar server *.yaml
