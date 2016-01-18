@@ -15,6 +15,6 @@ ADD target/pay-*-allinone.jar /app/
 ADD docker-startup.sh /app/docker-startup.sh
 ADD newrelic/* /app/newrelic/
 
-CMD java -jar *-allinone.jar dbwait *.yaml 30 && \
+CMD sleep 20 && \
     java -jar *-allinone.jar db migrate *.yaml && \
     bash ./docker-startup.sh
