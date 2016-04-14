@@ -1,28 +1,6 @@
 # pay-publicauth
 Payments Public API Authentication Service
 
-## Running in Development Mode
-
-Steps are as follows:
-
-1. Use a docker-compose environment to run everything (such as the database) that you don't want to develop on right now.
-2. Stop `pay-publicauth` in the docker (`docker stop pay-publicauth`), to get ready to run from your checked out copy instead.
-3. Because other services (inside or outside of docker) will try and talk to publicauth on dockerhost (not localhost), run the redirect script to send these requests to localhost.
-4. Use `env.sh` to pick up the same environment variables from `pay-scripts`, so configuration is set correctly (this assumes `$WORKSPACE/pay-scripts` exists).
-
-For example:
-
-```
-$ ./redirect.sh start
-$ ./env.sh mvn exec:java
-...
-(pay-publicauth log output)
-...
-(press CTRL+C to stop service)
-...
-$ ./redirect.sh stop
-```
-
 ## Integration tests
 
 To run the integration tests, the `DOCKER_HOST` and `DOCKER_CERT_PATH` environment variables must be set up correctly. On OS X the environment can be set up with:
