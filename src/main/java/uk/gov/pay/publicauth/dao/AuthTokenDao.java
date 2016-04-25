@@ -10,8 +10,10 @@ import java.util.Map;
 import java.util.Optional;
 
 public class AuthTokenDao {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(AuthTokenDao.class);
+
     private DBI jdbi;
-    public static Logger log = LoggerFactory.getLogger(AuthTokenDao.class);
 
     public AuthTokenDao(DBI jdbi) {
         this.jdbi = jdbi;
@@ -45,7 +47,7 @@ public class AuthTokenDao {
                         handle.insert("INSERT INTO tokens(token_hash, token_link, description, account_id) VALUES (?,?,?,?)", tokenHash, randomTokenLink, description, accountId)
         );
         if (rowsUpdated != 1) {
-            log.error("Unable to store new token for account '{}'. '{}' rows were updated", accountId, rowsUpdated);
+            LOGGER.error("Unable to store new token for account '{}'. '{}' rows were updated", accountId, rowsUpdated);
             throw new RuntimeException(String.format("Unable to store new token for account %s}", accountId));
         }
     }

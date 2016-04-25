@@ -1,10 +1,12 @@
 package uk.gov.pay.publicauth.it;
 
+import com.google.common.io.BaseEncoding;
 import com.jayway.restassured.response.ValidatableResponse;
+import org.apache.commons.codec.digest.HmacUtils;
 import org.joda.time.DateTime;
 import org.junit.Rule;
 import org.junit.Test;
-import uk.gov.pay.publicauth.service.TokenHasher;
+import org.mindrot.jbcrypt.BCrypt;
 import uk.gov.pay.publicauth.utils.DropwizardAppWithPostgresRule;
 
 import java.util.List;
@@ -20,11 +22,12 @@ import static org.hamcrest.core.Is.is;
 
 public class PublicAuthResourceITest {
 
+    private static final String SALT = "$2a$10$IhaXo6LIBhKIWOiGpbtPOu";
     private static final String BEARER_TOKEN = "TEST-BEARER-TOKEN";
     private static final String TOKEN_LINK = "123456789101112131415161718192021222";
     private static final String TOKEN_LINK_2 = "123456789101112131415161718192021223";
-    private static final String HASHED_BEARER_TOKEN = new TokenHasher().hash(BEARER_TOKEN);
-    private static final String HASHED_BEARER_TOKEN_2 = new TokenHasher().hash(BEARER_TOKEN+"-2");
+    private static final String HASHED_BEARER_TOKEN = BCrypt.hashpw(BEARER_TOKEN, SALT);
+    private static final String HASHED_BEARER_TOKEN_2 = BCrypt.hashpw(BEARER_TOKEN + "-2", SALT);
     private static final String API_AUTH_PATH = "/v1/api/auth";
     private static final String FRONTEND_AUTH_PATH = "/v1/frontend/auth";
     private static final String ACCOUNT_ID = "ACCOUNT-ID";
@@ -39,26 +42,34 @@ public class PublicAuthResourceITest {
 
     @Test
     public void respondWith200_whenAuthWithValidToken() throws Exception {
+
         app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION);
 
-        tokenResponse()
+        String apiKey = BEARER_TOKEN + encodedHmacValueOf(BEARER_TOKEN);
+
+        tokenResponse(apiKey)
                 .statusCode(200)
                 .body("account_id", is(ACCOUNT_ID));
     }
 
     @Test
     public void respondWith200_whenCreateAToken_ifProvidedBothAccountIdAndDescription() throws Exception {
+
         String newToken = createTokenFor("{\"account_id\" : \"" + ACCOUNT_ID + "\", \"description\" : \"" + TOKEN_DESCRIPTION + "\"}")
                                 .statusCode(200)
                                 .body("token", is(notNullValue()))
                                 .extract().path("token");
 
-        Optional<String> newTokenDescription = app.getDatabaseHelper().lookupColumnFor("description", "token_hash", new TokenHasher().hash(newToken));
+        int apiKeyHashSize = 32;
+        String tokenApiKey = newToken.substring(0, newToken.length() - apiKeyHashSize);
+        String hashedToken = BCrypt.hashpw(tokenApiKey, SALT);
+
+        Optional<String> newTokenDescription = app.getDatabaseHelper().lookupColumnFor("description", "token_hash", hashedToken);
+
         assertThat(newTokenDescription.get(), equalTo(TOKEN_DESCRIPTION));
 
-        Optional<String> newTokenAccountId = app.getDatabaseHelper().lookupColumnFor("account_id", "token_hash", new TokenHasher().hash(newToken));
+        Optional<String> newTokenAccountId = app.getDatabaseHelper().lookupColumnFor("account_id", "token_hash", hashedToken);
         assertThat(newTokenAccountId.get(), equalTo(ACCOUNT_ID));
-
     }
 
     @Test
@@ -108,11 +119,13 @@ public class PublicAuthResourceITest {
 
         //Retrieved in issued order from newest to oldest
         Map<String, String> firstToken = retrievedTokens.get(0);
+        assertThat(firstToken.size(), is(2));
         assertThat(firstToken.get("token_link"), is(TOKEN_LINK_2));
         assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION_2));
         assertThat(firstToken.containsKey("revoked"), is(false));
 
         Map<String, String> secondToken = retrievedTokens.get(1);
+        assertThat(secondToken.size(), is(2));
         assertThat(secondToken.get("token_link"), is(TOKEN_LINK));
         assertThat(secondToken.get("description"), is(TOKEN_DESCRIPTION));
         assertThat(firstToken.containsKey("revoked"), is(false));
@@ -314,10 +327,13 @@ public class PublicAuthResourceITest {
 
     @Test
     public void respondWith401_whenAuthHeaderIsBasicEvenWithValidToken() throws Exception {
+
         app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION);
 
+        String apiKey = BEARER_TOKEN + encodedHmacValueOf(BEARER_TOKEN);
+
         given().port(app.getLocalPort())
-                .header(AUTHORIZATION, "Basic " + BEARER_TOKEN)
+                .header(AUTHORIZATION, "Basic " + apiKey)
                 .get(API_AUTH_PATH)
                 .then()
                 .statusCode(401);
@@ -369,15 +385,15 @@ public class PublicAuthResourceITest {
                 .then();
     }
 
-    private ValidatableResponse tokenResponse() {
-        return tokenResponse(BEARER_TOKEN);
-    }
-
     private ValidatableResponse tokenResponse(String token) {
-        return given().port(app.getLocalPort())
+        return given()
+                .port(app.getLocalPort())
                 .header(AUTHORIZATION, "Bearer " + token)
                 .get(API_AUTH_PATH)
                 .then();
     }
 
+    private String encodedHmacValueOf(String input) {
+        return BaseEncoding.base32Hex().lowerCase().omitPadding().encode(HmacUtils.hmacSha1("qwer9yuhgf", input));
+    }
 }
