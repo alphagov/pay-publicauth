@@ -1,6 +1,8 @@
 package uk.gov.pay.publicauth.app;
 
 import io.dropwizard.Application;
+import io.dropwizard.auth.AuthFactory;
+import io.dropwizard.auth.oauth.OAuthFactory;
 import io.dropwizard.configuration.EnvironmentVariableSubstitutor;
 import io.dropwizard.configuration.SubstitutingSourceProvider;
 import io.dropwizard.db.DataSourceFactory;
@@ -10,9 +12,10 @@ import io.dropwizard.migrations.MigrationsBundle;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import org.skife.jdbi.v2.DBI;
+import uk.gov.pay.publicauth.TokenAuthenticator;
 import uk.gov.pay.publicauth.dao.AuthTokenDao;
 import uk.gov.pay.publicauth.resources.PublicAuthResource;
-import uk.gov.pay.publicauth.service.TokenHasher;
+import uk.gov.pay.publicauth.service.TokenService;
 import uk.gov.pay.publicauth.util.DbWaitCommand;
 
 public class PublicAuthApp extends Application<PublicAuthConfiguration> {
@@ -43,7 +46,9 @@ public class PublicAuthApp extends Application<PublicAuthConfiguration> {
     public void run(PublicAuthConfiguration conf, Environment environment) throws Exception {
         DataSourceFactory dataSourceFactory = conf.getDataSourceFactory();
         jdbi = new DBIFactory().build(environment, dataSourceFactory, "postgresql");
-        environment.jersey().register(new PublicAuthResource(new AuthTokenDao(jdbi), new TokenHasher()));
+        TokenService tokenService = new TokenService();
+        environment.jersey().register(AuthFactory.binder(new OAuthFactory<>(new TokenAuthenticator(new TokenService()), "", String.class)));
+        environment.jersey().register(new PublicAuthResource(new AuthTokenDao(jdbi), tokenService));
     }
 
     public DBI getJdbi() {

@@ -3,13 +3,15 @@ package uk.gov.pay.publicauth.resources;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
+import io.dropwizard.auth.Auth;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.gov.pay.publicauth.dao.AuthTokenDao;
-import uk.gov.pay.publicauth.service.TokenHasher;
+import uk.gov.pay.publicauth.model.Tokens;
+import uk.gov.pay.publicauth.service.TokenService;
 
+import javax.inject.Singleton;
 import javax.ws.rs.*;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.util.List;
 import java.util.Map;
@@ -19,38 +21,34 @@ import java.util.stream.Stream;
 
 import static java.util.UUID.randomUUID;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static javax.ws.rs.core.Response.ok;
+import static javax.ws.rs.core.Response.*;
 import static uk.gov.pay.publicauth.util.ResponseUtil.badRequestResponse;
 import static uk.gov.pay.publicauth.util.ResponseUtil.notFoundResponse;
 
+@Singleton
 @Path("/")
 public class PublicAuthResource {
 
-    private final Logger logger = LoggerFactory.getLogger(PublicAuthResource.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(PublicAuthResource.class);
 
-    public static final String API_AUTH_PATH = "/v1/api/auth";
+    private static final ResponseBuilder UNAUTHORISED = status(Status.UNAUTHORIZED);
+    private static final String API_AUTH_PATH = "/v1/api/auth";
     private static final String FRONTEND_AUTH_PATH = "/v1/frontend/auth";
 
-    public static final Response.ResponseBuilder UNAUTHORISED = Response.status(Response.Status.UNAUTHORIZED);
-    private AuthTokenDao authDao;
-    private TokenHasher tokenHasher;
+    private final AuthTokenDao authDao;
+    private final TokenService tokenService;
 
-    private final static String BEARER_PREFIX = "Bearer ";
-
-    public PublicAuthResource(AuthTokenDao authDao, TokenHasher tokenHasher) {
+    public PublicAuthResource(AuthTokenDao authDao,
+                              TokenService tokenService) {
         this.authDao = authDao;
-        this.tokenHasher = tokenHasher;
+        this.tokenService = tokenService;
     }
 
     @Path(API_AUTH_PATH)
     @Produces(APPLICATION_JSON)
     @GET
-    public Response authenticate(@HeaderParam(HttpHeaders.AUTHORIZATION) String bearerToken) {
-        if (bearerToken == null) {
-            return UNAUTHORISED.build();
-        }
-        String tokenId = bearerToken.substring(BEARER_PREFIX.length());
-        return authDao.findAccount(tokenHasher.hash(tokenId))
+    public Response authenticate(@Auth String token) {
+        return authDao.findAccount(token)
                 .map(accountId -> ok(ImmutableMap.of("account_id", accountId)))
                 .orElseGet(() -> UNAUTHORISED)
                 .build();
@@ -62,10 +60,9 @@ public class PublicAuthResource {
     @POST
     public Response createTokenForAccount(JsonNode payload) {
         return withValidAccountIdAndDescription(payload, (accountId, description) -> {
-            String newToken = randomUUID().toString();
-            String randomTokenLink = randomUUID().toString();
-            authDao.storeToken(tokenHasher.hash(newToken), randomTokenLink, accountId, description);
-            return ok(ImmutableMap.of("token", newToken)).build();
+            Tokens token = tokenService.issueTokens();
+            authDao.storeToken(token.getHashedToken(), randomUUID().toString(), accountId, description);
+            return ok(ImmutableMap.of("token", token.getApiKey())).build();
         });
     }
 
@@ -94,7 +91,7 @@ public class PublicAuthResource {
             if (updated) {
                 return ok(ImmutableMap.of("token_link", token_link, "description", description)).build();
             }
-            return notFoundResponse(logger, "Could not update token description");
+            return notFoundResponse(LOGGER, "Could not update token description");
         });
     }
 
@@ -104,18 +101,18 @@ public class PublicAuthResource {
     @DELETE
     public Response revokeSingleToken(@PathParam("accountId") String accountId, JsonNode payload) {
         JsonNode jsonNode;
-        if (payload == null ||  (jsonNode = payload.get("token_link")) == null) {
-            return badRequestResponse(logger, "Missing fields: [token_link]");
+        if (payload == null || (jsonNode = payload.get("token_link")) == null) {
+            return badRequestResponse(LOGGER, "Missing fields: [token_link]");
         }
 
         return authDao.revokeSingleToken(accountId, jsonNode.asText())
                 .map(revokedDate -> ok(ImmutableMap.of("revoked", revokedDate)).build())
-                .orElseGet(() -> notFoundResponse(logger, "Could not revoke token"));
+                .orElseGet(() -> notFoundResponse(LOGGER, "Could not revoke token"));
     }
 
     private Response withTokenLinkAndDescription(JsonNode requestPayload, BiFunction<String, String, Response> handler) {
         if (requestPayload == null) {
-            return badRequestResponse(logger, "Missing fields: [token_link, description]");
+            return badRequestResponse(LOGGER, "Missing fields: [token_link, description]");
         }
 
         List<String> missingFieldsInRequestPayload = findMissingFieldsInRequestPayload(requestPayload, "token_link", "description");
@@ -123,12 +120,12 @@ public class PublicAuthResource {
         if (missingFieldsInRequestPayload.isEmpty()) {
             return handler.apply(requestPayload.get("token_link").asText(), requestPayload.get("description").asText());
         }
-        return badRequestResponse(logger, "Missing fields: [" + Joiner.on(", ").join(missingFieldsInRequestPayload) + "]");
+        return badRequestResponse(LOGGER, "Missing fields: [" + Joiner.on(", ").join(missingFieldsInRequestPayload) + "]");
     }
 
     private Response withValidAccountIdAndDescription(JsonNode requestPayload, BiFunction<String, String, Response> handler) {
         if (requestPayload == null) {
-            return badRequestResponse(logger, "Missing fields: [account_id, description]");
+            return badRequestResponse(LOGGER, "Missing fields: [account_id, description]");
         }
 
         List<String> missingFieldsInRequestPayload = findMissingFieldsInRequestPayload(requestPayload, "account_id", "description");
@@ -136,7 +133,7 @@ public class PublicAuthResource {
         if (missingFieldsInRequestPayload.isEmpty()) {
             return handler.apply(requestPayload.get("account_id").asText(), requestPayload.get("description").asText());
         }
-        return badRequestResponse(logger, "Missing fields: [" + Joiner.on(", ").join(missingFieldsInRequestPayload) + "]");
+        return badRequestResponse(LOGGER, "Missing fields: [" + Joiner.on(", ").join(missingFieldsInRequestPayload) + "]");
     }
 
     private List<String> findMissingFieldsInRequestPayload(JsonNode requestPayload, String... expectedFieldsInRequestPayload) {
