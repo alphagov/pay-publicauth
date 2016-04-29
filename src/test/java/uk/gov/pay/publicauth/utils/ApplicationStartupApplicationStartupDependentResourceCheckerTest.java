@@ -13,8 +13,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.slf4j.LoggerFactory;
-
-import uk.gov.pay.publicauth.app.PublicAuthConfiguration;
+import uk.gov.pay.publicauth.app.config.PublicAuthConfiguration;
 import uk.gov.pay.publicauth.util.ApplicationStartupDependentResource;
 import uk.gov.pay.publicauth.util.ApplicationStartupDependentResourceChecker;
 

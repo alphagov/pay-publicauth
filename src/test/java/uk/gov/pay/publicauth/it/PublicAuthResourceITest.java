@@ -23,11 +23,11 @@ import static org.hamcrest.core.Is.is;
 public class PublicAuthResourceITest {
 
     private static final String SALT = "$2a$10$IhaXo6LIBhKIWOiGpbtPOu";
-    private static final String BEARER_TOKEN = "TEST-BEARER-TOKEN";
+    private static final String BEARER_TOKEN = "testbearertoken";
     private static final String TOKEN_LINK = "123456789101112131415161718192021222";
     private static final String TOKEN_LINK_2 = "123456789101112131415161718192021223";
     private static final String HASHED_BEARER_TOKEN = BCrypt.hashpw(BEARER_TOKEN, SALT);
-    private static final String HASHED_BEARER_TOKEN_2 = BCrypt.hashpw(BEARER_TOKEN + "-2", SALT);
+    private static final String HASHED_BEARER_TOKEN_2 = BCrypt.hashpw(BEARER_TOKEN + "2", SALT);
     private static final String API_AUTH_PATH = "/v1/api/auth";
     private static final String FRONTEND_AUTH_PATH = "/v1/frontend/auth";
     private static final String ACCOUNT_ID = "ACCOUNT-ID";

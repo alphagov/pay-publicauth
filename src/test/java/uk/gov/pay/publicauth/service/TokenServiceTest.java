@@ -5,7 +5,10 @@ import com.google.common.io.BaseEncoding;
 import org.apache.commons.codec.digest.HmacUtils;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.mindrot.jbcrypt.BCrypt;
+import org.mockito.runners.MockitoJUnitRunner;
+import uk.gov.pay.publicauth.app.config.TokensConfiguration;
 import uk.gov.pay.publicauth.model.Tokens;
 
 import java.util.List;
@@ -17,7 +20,10 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNull.notNullValue;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+@RunWith(MockitoJUnitRunner.class)
 public class TokenServiceTest {
 
     private static final String EXPECTED_SALT = "$2a$10$IhaXo6LIBhKIWOiGpbtPOu";
@@ -28,7 +34,10 @@ public class TokenServiceTest {
 
     @Before
     public void setup() {
-        tokenService = new TokenService();
+        TokensConfiguration mockConfig = mock(TokensConfiguration.class);
+        when(mockConfig.getEncryptDBSalt()).thenReturn(EXPECTED_SALT);
+        when(mockConfig.getApiKeyHmacSecret()).thenReturn(EXPECTED_SECRET_KEY);
+        tokenService = new TokenService(mockConfig);
     }
 
     @Test
@@ -51,7 +60,7 @@ public class TokenServiceTest {
         String apiKey = tokens.getApiKey();
 
         // Minimum length guarantee is 32 for Hmac and an extremely very unlikely
-        // minimum value of 1 length for the random Token this value is more likely to be 25~26 chars length
+        // minimum value of 1 length for the random Token this value is more likely to be 24~26 chars length
         assertThat(apiKey.length(), is(greaterThan(33)));
         assertThat(containsAll(BASE32_HEX_DICTIONARY, asList(apiKey.toCharArray())), is(true));
     }
@@ -108,7 +117,7 @@ public class TokenServiceTest {
     @Test
     public void extractEncryptedTokenFromApiKey_shouldNotBePresent_whenTokenDoesNotMatchHmac() {
 
-        String token = "thisIsMyPlainToken";
+        String token = "thisismvplaintoken";
         String hmac = BaseEncoding.base32Hex().omitPadding().lowerCase().encode(HmacUtils.hmacSha1(EXPECTED_SECRET_KEY, token));
 
         Optional<String> expectedValidTokenOptional = tokenService.extractEncryptedTokenFrom(token + hmac);
@@ -118,5 +127,41 @@ public class TokenServiceTest {
 
         Optional<String> expectedInvalidTokenOptional = tokenService.extractEncryptedTokenFrom(tokenInvalid + hmac);
         assertThat(expectedInvalidTokenOptional.isPresent(), is(false));
+    }
+
+    @Test
+    public void extractEncryptedTokenFromApiKey_shouldNotBePresent_whenLengthIsGreaterThanExpected() {
+
+        String tokenGreaterThan26Characters = "morethan26chartokenisnotval";
+        String hmac = BaseEncoding.base32Hex().omitPadding().lowerCase().encode(HmacUtils.hmacSha1(EXPECTED_SECRET_KEY, tokenGreaterThan26Characters));
+
+        Optional<String> expectedValidTokenOptional = tokenService.extractEncryptedTokenFrom(tokenGreaterThan26Characters + hmac);
+        assertThat(expectedValidTokenOptional.isPresent(), is(false));
+    }
+
+    @Test
+    public void extractEncryptedTokenFromApiKey_shouldBePresent_evenWhenCharacterSetIsNotExpectedBase32HexLowercase_asLongTheHmacIsValid() {
+
+        // Is more computationally expensive checking for character set validation than validating against the Hmac.
+        // Enough to be a lightweight mechanism to check the token is genuine.
+
+        String tokenLowercaseButNoInBase32Hex = "x";
+        String hmac = BaseEncoding.base32Hex().omitPadding().lowerCase().encode(HmacUtils.hmacSha1(EXPECTED_SECRET_KEY, tokenLowercaseButNoInBase32Hex));
+
+        Optional<String> expectedValidTokenOptional = tokenService.extractEncryptedTokenFrom(tokenLowercaseButNoInBase32Hex + hmac);
+        assertThat(expectedValidTokenOptional.isPresent(), is(true));
+    }
+
+    @Test
+    public void extractEncryptedTokenFromApiKey_shouldBePresent_evenWhenCharacterSetIsInBase32HexButUppercase_asLongTheHmacIsValid() {
+
+        // Is more computationally expensive checking for character set validation than validating against the Hmac.
+        // Enough to be a lightweight mechanism to check the token is genuine.
+
+        String tokenUppercaseBase32Hex = "A";
+        String hmac = BaseEncoding.base32Hex().omitPadding().lowerCase().encode(HmacUtils.hmacSha1(EXPECTED_SECRET_KEY, tokenUppercaseBase32Hex));
+
+        Optional<String> expectedValidTokenOptional = tokenService.extractEncryptedTokenFrom(tokenUppercaseBase32Hex + hmac);
+        assertThat(expectedValidTokenOptional.isPresent(), is(true));
     }
 }

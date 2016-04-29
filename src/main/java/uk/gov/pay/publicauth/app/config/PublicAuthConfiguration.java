@@ -1,4 +1,4 @@
-package uk.gov.pay.publicauth.app;
+package uk.gov.pay.publicauth.app.config;
 
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -9,12 +9,22 @@ import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 
 public class PublicAuthConfiguration extends Configuration {
+
     @Valid
     @NotNull
+    @JsonProperty("database")
     private DataSourceFactory dataSourceFactory = new DataSourceFactory();
 
-    @JsonProperty("database")
+    @Valid
+    @NotNull
+    @JsonProperty("tokensConfig")
+    private TokensConfiguration TokensConfiguration;
+
     public DataSourceFactory getDataSourceFactory() {
         return dataSourceFactory;
+    }
+
+    public TokensConfiguration getTokensConfiguration() {
+        return TokensConfiguration;
     }
 }

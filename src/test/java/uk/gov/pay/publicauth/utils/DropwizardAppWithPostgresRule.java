@@ -10,7 +10,7 @@ import org.skife.jdbi.v2.DBI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.gov.pay.publicauth.app.PublicAuthApp;
-import uk.gov.pay.publicauth.app.PublicAuthConfiguration;
+import uk.gov.pay.publicauth.app.config.PublicAuthConfiguration;
 
 import static io.dropwizard.testing.ConfigOverride.config;
 import static io.dropwizard.testing.ResourceHelpers.resourceFilePath;

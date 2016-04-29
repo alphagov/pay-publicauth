@@ -12,7 +12,8 @@ import io.dropwizard.migrations.MigrationsBundle;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import org.skife.jdbi.v2.DBI;
-import uk.gov.pay.publicauth.TokenAuthenticator;
+import uk.gov.pay.publicauth.app.config.PublicAuthConfiguration;
+import uk.gov.pay.publicauth.auth.TokenAuthenticator;
 import uk.gov.pay.publicauth.dao.AuthTokenDao;
 import uk.gov.pay.publicauth.resources.HealthCheckResource;
 import uk.gov.pay.publicauth.resources.PublicAuthResource;
@@ -48,8 +49,8 @@ public class PublicAuthApp extends Application<PublicAuthConfiguration> {
         DataSourceFactory dataSourceFactory = conf.getDataSourceFactory();
 
         jdbi = new DBIFactory().build(environment, dataSourceFactory, "postgresql");
-        TokenService tokenService = new TokenService();
-        environment.jersey().register(AuthFactory.binder(new OAuthFactory<>(new TokenAuthenticator(new TokenService()), "", String.class)));
+        TokenService tokenService = new TokenService(conf.getTokensConfiguration());
+        environment.jersey().register(AuthFactory.binder(new OAuthFactory<>(new TokenAuthenticator(tokenService), "", String.class)));
         environment.jersey().register(new PublicAuthResource(new AuthTokenDao(jdbi), tokenService));
         environment.jersey().register(new HealthCheckResource(environment));
     }

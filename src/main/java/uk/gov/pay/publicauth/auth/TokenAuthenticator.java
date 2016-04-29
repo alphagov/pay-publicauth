@@ -1,4 +1,4 @@
-package uk.gov.pay.publicauth;
+package uk.gov.pay.publicauth.auth;
 
 import com.google.common.base.Optional;
 import io.dropwizard.auth.AuthenticationException;
