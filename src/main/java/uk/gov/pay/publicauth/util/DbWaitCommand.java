@@ -8,7 +8,7 @@ import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import uk.gov.pay.publicauth.app.PublicAuthConfiguration;
+import uk.gov.pay.publicauth.app.config.PublicAuthConfiguration;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
