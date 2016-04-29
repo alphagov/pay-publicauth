@@ -6,6 +6,7 @@ import org.apache.commons.codec.digest.HmacUtils;
 import org.mindrot.jbcrypt.BCrypt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import uk.gov.pay.publicauth.app.config.TokensConfiguration;
 import uk.gov.pay.publicauth.model.Tokens;
 import uk.gov.pay.publicauth.util.RandomIdGenerator;
 
@@ -14,9 +15,15 @@ public class TokenService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TokenService.class);
 
-    private static final String HASH_SALT = "$2a$10$IhaXo6LIBhKIWOiGpbtPOu";
-    private static final String HMAC_SECRET_KEY = "qwer9yuhgf";
     private static final int HMAC_SHA1_LENGTH = 32;
+
+    private final String encryptDBSalt;
+    private final String apiKeyHmacSecret;
+
+    public TokenService(TokensConfiguration config) {
+        this.encryptDBSalt = config.getEncryptDBSalt();
+        this.apiKeyHmacSecret = config.getApiKeyHmacSecret();
+    }
 
     /**
      * Tokens includes:
@@ -42,11 +49,11 @@ public class TokenService {
     }
 
     private String encrypt(String token) {
-        return BCrypt.hashpw(token, HASH_SALT);
+        return BCrypt.hashpw(token, encryptDBSalt);
     }
 
     private String createApiKey(String token) {
-        byte[] hmacBytes = HmacUtils.hmacSha1(HMAC_SECRET_KEY, token);
+        byte[] hmacBytes = HmacUtils.hmacSha1(apiKeyHmacSecret, token);
         String encodedHmac = BaseEncoding.base32Hex().lowerCase().omitPadding().encode(hmacBytes);
         return token + encodedHmac;
     }
@@ -68,7 +75,7 @@ public class TokenService {
     private boolean tokenMatchesHmac(String token, String currentHmac) {
         final String hmacCalculatedFromToken = BaseEncoding.base32Hex()
                 .lowerCase().omitPadding()
-                .encode(HmacUtils.hmacSha1(HMAC_SECRET_KEY, token));
+                .encode(HmacUtils.hmacSha1(apiKeyHmacSecret, token));
 
         return hmacCalculatedFromToken.equals(currentHmac);
     }

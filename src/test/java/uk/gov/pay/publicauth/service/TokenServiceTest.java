@@ -5,7 +5,10 @@ import com.google.common.io.BaseEncoding;
 import org.apache.commons.codec.digest.HmacUtils;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.mindrot.jbcrypt.BCrypt;
+import org.mockito.runners.MockitoJUnitRunner;
+import uk.gov.pay.publicauth.app.config.TokensConfiguration;
 import uk.gov.pay.publicauth.model.Tokens;
 
 import java.util.List;
@@ -17,7 +20,10 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNull.notNullValue;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+@RunWith(MockitoJUnitRunner.class)
 public class TokenServiceTest {
 
     private static final String EXPECTED_SALT = "$2a$10$IhaXo6LIBhKIWOiGpbtPOu";
@@ -28,7 +34,10 @@ public class TokenServiceTest {
 
     @Before
     public void setup() {
-        tokenService = new TokenService();
+        TokensConfiguration mockConfig = mock(TokensConfiguration.class);
+        when(mockConfig.getEncryptDBSalt()).thenReturn(EXPECTED_SALT);
+        when(mockConfig.getApiKeyHmacSecret()).thenReturn(EXPECTED_SECRET_KEY);
+        tokenService = new TokenService(mockConfig);
     }
 
     @Test

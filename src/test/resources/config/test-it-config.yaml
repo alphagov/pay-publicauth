@@ -46,3 +46,7 @@ database:
 
   # the minimum amount of time an connection must sit idle in the pool before it is eligible for eviction
   minIdleTime: 1 minute
+
+tokensConfig:
+  encryptDBSalt: $2a$10$IhaXo6LIBhKIWOiGpbtPOu
+  apiKeyHmacSecret: qwer9yuhgf
