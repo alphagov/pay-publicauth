@@ -13,7 +13,7 @@ import org.skife.jdbi.v2.DBI;
 import uk.gov.pay.publicauth.dao.AuthTokenDao;
 import uk.gov.pay.publicauth.resources.PublicAuthResource;
 import uk.gov.pay.publicauth.service.TokenHasher;
-import uk.gov.pay.publicauth.util.DbWaitCommand;
+import uk.gov.pay.publicauth.util.DependentResourceWaitCommand;
 
 public class PublicAuthApp extends Application<PublicAuthConfiguration> {
     private DBI jdbi;
@@ -35,13 +35,14 @@ public class PublicAuthApp extends Application<PublicAuthConfiguration> {
             }
         });
 
-        bootstrap.addCommand(new DbWaitCommand());
+        bootstrap.addCommand(new DependentResourceWaitCommand());
     }
 
 
     @Override
     public void run(PublicAuthConfiguration conf, Environment environment) throws Exception {
         DataSourceFactory dataSourceFactory = conf.getDataSourceFactory();
+
         jdbi = new DBIFactory().build(environment, dataSourceFactory, "postgresql");
         environment.jersey().register(new PublicAuthResource(new AuthTokenDao(jdbi), new TokenHasher()));
     }
