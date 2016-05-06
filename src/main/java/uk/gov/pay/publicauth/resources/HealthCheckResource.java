@@ -1,18 +1,14 @@
 package uk.gov.pay.publicauth.resources;
 
 import com.codahale.metrics.health.HealthCheck;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.ImmutableMap;
 import io.dropwizard.setup.Environment;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Response;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.SortedMap;
