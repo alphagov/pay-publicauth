@@ -20,6 +20,10 @@ hs_err_pid*
 # Maven
 target
 
+# Floobits
+.floo
+.flooignore
+
 bin
 
 .DS_Store
