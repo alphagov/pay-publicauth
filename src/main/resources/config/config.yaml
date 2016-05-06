@@ -42,6 +42,9 @@ database:
   # whether or not idle connections should be validated
   checkConnectionWhileIdle: false
 
+  # whether or not connections should be validated before borrowing from the pool
+  checkConnectionOnBorrow: true
+
   # the amount of time to sleep between runs of the idle connection validation, abandoned cleaner and idle pool resizing
   evictionInterval: 10s
 
