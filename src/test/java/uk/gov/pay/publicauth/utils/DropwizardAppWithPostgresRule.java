@@ -1,5 +1,6 @@
 package uk.gov.pay.publicauth.utils;
 
+import io.dropwizard.setup.Environment;
 import io.dropwizard.testing.junit.DropwizardAppRule;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
@@ -61,6 +62,14 @@ public class DropwizardAppWithPostgresRule implements TestRule {
 
     public int getLocalPort() {
         return app.getLocalPort();
+    }
+
+    public void stopPostgres() {
+        postgres.stop();
+    }
+
+    public Environment getEnvironment(){
+        return app.getEnvironment();
     }
 
     private void restoreDropwizardsLogging() {
