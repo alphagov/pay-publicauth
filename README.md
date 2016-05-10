@@ -1,6 +1,21 @@
 # pay-publicauth
 Payments Public API Authentication Service
 
+## API Keys
+
+One of the responsabilities of this service is to issue Api keys so integrators can request operations throught the Public API. An API Key is composed by: Token + Hmac (Token, Secret).
+- _Tokens_ are randomly generated values and these values are stored in the database (encrypted) identifying a single accountId.
+- When issuing tokens, public auth stores this value (encrypted) along with the accountId in the DB and creates the API key with this
+token value as plain text plus an Hmac of the same token using a secret key (enabling public auth to do an extra validation
+confirming that the token provided when authorizing requests is genuine.
+
+## Environment variables
+| NAME                  | DESCRIPTION                                                                    |
+| ----------------------| ------------------------------------------------------------------------------ |
+| DB_SSL_OPTION         | To turn TLS on this value must be set as _“ssl=true”_. Otherwise must be empty |
+| TOKEN_DB_BCRYPT_SALT  | Salt used for the encryption algorithm (Bcrypt) to encrypt tokens stored in DB |
+| TOKEN_API_HMAC_SECRET | Hmac secret to create Hash composing the API Keys. |
+
 ## Integration tests
 
 To run the integration tests, the `DOCKER_HOST` and `DOCKER_CERT_PATH` environment variables must be set up correctly. On OS X the environment can be set up with:
@@ -26,7 +41,6 @@ The command to run the integration tests is:
 |[```/v1/frontend/auth```](#put-v1frontendauth)             | PUT   |  Updates the description of an existing dev token. |
 |[```/v1/frontend/auth/{account_id}```](#get-v1frontendauthaccount_id)             | GET   |  Retrieves all generated and not revoked tokens for this account. |
 |[```/v1/frontend/auth/{account_id}```](#delete-v1frontendauthaccount_id)             | DELETE   |  Revokes the supplied dev token for this account. |
-
 
 ### GET /v1/api/auth
 

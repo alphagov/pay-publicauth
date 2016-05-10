@@ -1,6 +1,7 @@
 package uk.gov.pay.publicauth.util;
 
-import uk.gov.pay.publicauth.app.PublicAuthConfiguration;
+
+import uk.gov.pay.publicauth.app.config.PublicAuthConfiguration;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -24,7 +25,8 @@ public class ApplicationStartupDependentResource {
     public void sleep(long durationSeconds) {
         try {
             Thread.sleep(durationSeconds);
-        } catch (InterruptedException ignored) {}
+        } catch (InterruptedException ignored) {
+        }
     }
 
 }
