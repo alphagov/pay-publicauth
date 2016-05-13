@@ -29,11 +29,13 @@ import static uk.gov.pay.publicauth.util.ResponseUtil.notFoundResponse;
 @Path("/")
 public class PublicAuthResource {
 
+    public static final String API_VERSION_PATH = "/v1";
+
     private static final Logger LOGGER = LoggerFactory.getLogger(PublicAuthResource.class);
 
     private static final ResponseBuilder UNAUTHORISED = status(Status.UNAUTHORIZED);
-    private static final String API_AUTH_PATH = "/v1/api/auth";
-    private static final String FRONTEND_AUTH_PATH = "/v1/frontend/auth";
+    private static final String API_AUTH_PATH = API_VERSION_PATH + "/api/auth";
+    private static final String FRONTEND_AUTH_PATH = API_VERSION_PATH + "/frontend/auth";
 
     private final AuthTokenDao authDao;
     private final TokenService tokenService;
