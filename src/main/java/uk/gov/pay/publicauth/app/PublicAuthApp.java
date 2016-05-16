@@ -15,10 +15,15 @@ import org.skife.jdbi.v2.DBI;
 import uk.gov.pay.publicauth.app.config.PublicAuthConfiguration;
 import uk.gov.pay.publicauth.auth.TokenAuthenticator;
 import uk.gov.pay.publicauth.dao.AuthTokenDao;
+import uk.gov.pay.publicauth.filters.LoggingFilter;
 import uk.gov.pay.publicauth.resources.HealthCheckResource;
 import uk.gov.pay.publicauth.resources.PublicAuthResource;
 import uk.gov.pay.publicauth.service.TokenService;
 import uk.gov.pay.publicauth.util.DependentResourceWaitCommand;
+
+import static java.util.EnumSet.of;
+import static javax.servlet.DispatcherType.REQUEST;
+import static uk.gov.pay.publicauth.resources.PublicAuthResource.API_VERSION_PATH;
 
 public class PublicAuthApp extends Application<PublicAuthConfiguration> {
     private DBI jdbi;
@@ -50,9 +55,13 @@ public class PublicAuthApp extends Application<PublicAuthConfiguration> {
 
         jdbi = new DBIFactory().build(environment, dataSourceFactory, "postgresql");
         TokenService tokenService = new TokenService(conf.getTokensConfiguration());
+
         environment.jersey().register(AuthFactory.binder(new OAuthFactory<>(new TokenAuthenticator(tokenService), "", String.class)));
         environment.jersey().register(new PublicAuthResource(new AuthTokenDao(jdbi), tokenService));
         environment.jersey().register(new HealthCheckResource(environment));
+
+        environment.servlets().addFilter("LoggingFilter", new LoggingFilter())
+                .addMappingForUrlPatterns(of(REQUEST), true, API_VERSION_PATH + "/*");
     }
 
     public DBI getJdbi() {
