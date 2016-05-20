@@ -43,11 +43,7 @@ public class TokenService {
      * - Extract Token, check Hmac and encrypt.
      */
     public Optional<String> extractEncryptedTokenFrom(String apiKey) {
-        String token = extractTokenFrom(apiKey);
-        if (token != null) {
-            return Optional.of(encrypt(token));
-        }
-        return Optional.absent();
+        return extractAndEncryptTokenFrom(apiKey);
     }
 
     private String encrypt(String token) {
@@ -60,18 +56,19 @@ public class TokenService {
         return token + encodedHmac;
     }
 
-    private String extractTokenFrom(String apiKey) {
-        String token = null;
+    private Optional<String> extractAndEncryptTokenFrom(String apiKey) {
         if (isValidLength(apiKey)) {
             int initHmacIndex = apiKey.length() - HMAC_SHA1_LENGTH;
             String hmacFromApiKey = apiKey.substring(initHmacIndex);
             String tokenFromApiKey = apiKey.substring(0, initHmacIndex);
             if (tokenMatchesHmac(tokenFromApiKey, hmacFromApiKey)) {
-                token = tokenFromApiKey;
-                LOGGER.error("Authorization token does not match the given Hmac");
+                return Optional.of(encrypt(tokenFromApiKey));
             }
+            LOGGER.error("Authorisation failure - token does not match the given Hmac");
         }
-        return token;
+
+        LOGGER.error("Authorisation failure - token extraction from key failed");
+        return Optional.absent();
     }
 
     private boolean tokenMatchesHmac(String token, String currentHmac) {
