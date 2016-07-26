@@ -5,3 +5,5 @@ release.alpha_release-2.date=2016-07-20:12:49:39
 alpha_release-2.approver=silvia.mandala@digital.cabinet-office.gov.uk
 
 alpha_release-2.approve-date=2016-07-25:15:39:01
+
+staging-0.tag=alpha_staging-0-2
