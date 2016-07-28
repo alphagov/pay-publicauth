@@ -13,3 +13,5 @@ staging-0.alpha_staging-0-2.date=2016-07-26:10:11:59
 staging-0.alpha_staging-0-2.status=success
 
 release.tag=alpha_release-3
+
+release.alpha_release-3.date=2016-07-28:18:21:01
