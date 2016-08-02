@@ -31,3 +31,5 @@ alpha_release-5.approve-date=2016-08-02:11:35:17
 staging-0.tag=alpha_staging-0-5
 
 staging-0.alpha_staging-0-5.date=2016-08-02:10:48:33
+
+staging-0.alpha_staging-0-5.status=failed
