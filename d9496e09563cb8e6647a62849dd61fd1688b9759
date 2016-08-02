@@ -39,3 +39,5 @@ production-0.tag=alpha_production-0-5
 production-0.alpha_production-0-5.date=2016-08-02:10:48:59
 
 production-0.alpha_production-0-5.status=failed
+
+production-0.tag=alpha_production-0-5
