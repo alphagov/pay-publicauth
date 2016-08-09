@@ -67,3 +67,5 @@ staging-0.alpha_staging-0-5.status=success
 release.tag=alpha_release-6
 
 release.alpha_release-6.date=2016-08-05:08:17:57
+
+release.tag=alpha_release-7
