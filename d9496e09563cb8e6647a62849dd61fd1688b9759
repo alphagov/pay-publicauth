@@ -71,3 +71,5 @@ release.alpha_release-6.date=2016-08-05:08:17:57
 release.tag=alpha_release-7
 
 release.alpha_release-7.date=2016-08-09:16:48:21
+
+staging-0.tag=alpha_staging-0-7
