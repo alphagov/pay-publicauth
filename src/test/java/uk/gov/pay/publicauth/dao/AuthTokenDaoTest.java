@@ -3,6 +3,7 @@ package uk.gov.pay.publicauth.dao;
 import com.google.common.collect.Lists;
 import org.hamcrest.Matcher;
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.joda.time.ReadableInstant;
 import org.junit.Before;
 import org.junit.Rule;
@@ -10,9 +11,11 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import uk.gov.pay.publicauth.utils.DropwizardAppWithPostgresRule;
 
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TimeZone;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
@@ -84,27 +87,17 @@ public class AuthTokenDaoTest {
     }
 
     @Test
-    public void shouldInsertANewToken() throws Exception {
-        String expectedAccountId = "an-account";
-        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, expectedAccountId, TOKEN_DESCRIPTION);
-
-        Optional<String> storedAccountId = authTokenDao.findAccount(TOKEN_HASH);
-        assertThat(storedAccountId, is(Optional.of(expectedAccountId)));
-
-        DateTime issueTimestamp = app.getDatabaseHelper().issueTimestampForAccount(expectedAccountId);
-        DateTime now = app.getDatabaseHelper().getCurrentTime();
-
-        assertThat(issueTimestamp, isCloseTo(now));
-    }
-
-    @Test
     public void shouldInsertNewToken() {
         authTokenDao.storeToken("token-hash", "token-link", "account-id", "description", "user");
         Map<String, Object> tokenByHash = app.getDatabaseHelper().getTokenByHash("token-hash");
+        DateTime now = app.getDatabaseHelper().getCurrentTime();
+        
         assertThat(tokenByHash.get("token_hash"), is("token-hash"));
         assertThat(tokenByHash.get("account_id"), is("account-id"));
         assertThat(tokenByHash.get("description"), is("description"));
         assertThat(tokenByHash.get("created_by"), is("user"));
+        DateTime tokenIssueTime = app.getDatabaseHelper().issueTimestampForAccount("account-id");
+        assertThat(tokenIssueTime, isCloseTo(now));
     }
 
     @Test
