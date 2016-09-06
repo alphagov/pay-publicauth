@@ -32,12 +32,6 @@ public class DatabaseTestHelper {
         }
     }
 
-//    public void insertAccountWithLastUpdated(String tokenHash, String randomTokenLink, String accountId, String description, Boolean revoked, String createdBy) {
-//        jdbi.withHandle(handle ->
-//                handle.insert("INSERT INTO tokens(token_hash, token_link, account_id, description, revoked, created_by, last_updated) VALUES (?,?,?,?,(now() at time zone 'utc'),?,(now() at time zone 'utc'))",
-//                        tokenHash, randomTokenLink, accountId, description, createdBy));
-//    }
-
     public DateTime issueTimestampForAccount(String accountId) {
         return getDateTimeColumn("issued", accountId);
     }

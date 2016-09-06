@@ -5,6 +5,7 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import io.dropwizard.auth.Auth;
 import io.dropwizard.jersey.PATCH;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.gov.pay.publicauth.dao.AuthTokenDao;
@@ -53,9 +54,6 @@ public class PublicAuthResource {
         this.tokenService = tokenService;
     }
 
-    /**
-     * TODO: Remove after migrating all backward incompatible changes
-     */
     @Path(API_AUTH_PATH)
     @Produces(APPLICATION_JSON)
     @GET
@@ -66,40 +64,7 @@ public class PublicAuthResource {
                 .build();
     }
 
-    @Path(API_AUTH_PATH)
-    @Produces(APPLICATION_JSON)
-    @PATCH
-    public Response authenticate(@Auth String token) {
-        return authDao.findUnRevokedAccount(token)
-                .map(accountId -> ok(ImmutableMap.of("account_id", accountId)))
-                .orElseGet(() -> UNAUTHORISED)
-                .build();
-    }
-
-    /**
-     * TODO: remove after backward compatibility
-     */
     @Path(FRONTEND_AUTH_PATH)
-    @Produces(APPLICATION_JSON)
-    @Consumes(APPLICATION_JSON)
-    @POST
-    public Response createTokenForAccountOld(JsonNode payload) {
-        return validateCreatePayloadOld(payload)
-                .map(errorMessage -> badRequestResponse(LOGGER, errorMessage))
-                .orElseGet(() -> {
-                    Tokens token = tokenService.issueTokens();
-                    authDao.storeToken(token.getHashedToken(), randomUUID().toString(),
-                            payload.get(ACCOUNT_ID_FIELD).asText(),
-                            payload.get(DESCRIPTION_FIELD).asText());
-                    return ok(ImmutableMap.of("token", token.getApiKey())).build();
-                });
-    }
-
-
-    /**
-     * TODO: Fix the PATH after backward compatibility
-     */
-    @Path(FRONTEND_AUTH_PATH_NEW)
     @Produces(APPLICATION_JSON)
     @Consumes(APPLICATION_JSON)
     @POST
@@ -111,7 +76,9 @@ public class PublicAuthResource {
                     authDao.storeToken(token.getHashedToken(), randomUUID().toString(),
                             payload.get(ACCOUNT_ID_FIELD).asText(),
                             payload.get(DESCRIPTION_FIELD).asText(),
-                            payload.get(CREATED_BY_FIELD).asText());
+                            // FIXME removed following line and uncomment next after backward comp is not needed
+                            payload.get(CREATED_BY_FIELD) != null ? payload.get(CREATED_BY_FIELD).asText() : "Not Stored");
+                    // payload.get(CREATED_BY_FIELD).asText());
                     return ok(ImmutableMap.of("token", token.getApiKey())).build();
                 });
     }
@@ -173,24 +140,11 @@ public class PublicAuthResource {
         return badRequestResponse(LOGGER, "Missing fields: [" + Joiner.on(", ").join(missingFieldsInRequestPayload) + "]");
     }
 
-    /**
-     * TODO: remove after backward compatibility
-     */
-    private Optional<String> validateCreatePayloadOld(JsonNode payload) {
-        List<String> missingFieldsInRequestPayload = findMissingFieldsInRequestPayload(payload,
-                ACCOUNT_ID_FIELD,
-                DESCRIPTION_FIELD);
-        if (!missingFieldsInRequestPayload.isEmpty()) {
-            return Optional.of("Missing fields: [" + Joiner.on(", ").join(missingFieldsInRequestPayload) + "]");
-        }
-        return Optional.empty();
-    }
-
     private Optional<String> validateCreatePayload(JsonNode payload) {
         List<String> missingFieldsInRequestPayload = findMissingFieldsInRequestPayload(payload,
                 ACCOUNT_ID_FIELD,
-                DESCRIPTION_FIELD,
-                CREATED_BY_FIELD);
+                DESCRIPTION_FIELD);
+//                CREATED_BY_FIELD); // FIXME removed this comment after backward comp is not needed
         if (!missingFieldsInRequestPayload.isEmpty()) {
             return Optional.of("Missing fields: [" + Joiner.on(", ").join(missingFieldsInRequestPayload) + "]");
         }

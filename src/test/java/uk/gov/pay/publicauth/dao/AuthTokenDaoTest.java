@@ -3,6 +3,7 @@ package uk.gov.pay.publicauth.dao;
 import com.google.common.collect.Lists;
 import org.hamcrest.Matcher;
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.joda.time.ReadableInstant;
 import org.junit.Before;
 import org.junit.Rule;
@@ -22,6 +23,7 @@ import static org.junit.Assert.assertNull;
 public class AuthTokenDaoTest {
 
     public static final String TEST_USER_NAME = "test-user-name";
+    public static final String TEST_USER_NAME_2 = "test-user-name-2";
     private  DateTime now = DateTime.now();
 
     @Rule
@@ -68,9 +70,10 @@ public class AuthTokenDaoTest {
     @Test
     public void accountWithSeveralTokens() throws Exception {
         app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, true, TEST_USER_NAME);
-        app.getDatabaseHelper().insertAccount(TOKEN_HASH_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, TEST_USER_NAME);
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, TEST_USER_NAME_2);
 
         List<Map<String, Object>> tokens = authTokenDao.findTokens(ACCOUNT_ID);
+        DateTime now = app.getDatabaseHelper().getCurrentTime().toDateTime(DateTimeZone.UTC);
 
         //Retrieved in issued order from newest to oldest
         Map<String, Object> firstToken = tokens.get(0);
@@ -78,11 +81,18 @@ public class AuthTokenDaoTest {
         assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION_2));
         assertThat(firstToken.containsKey("revoked"), is(true));
         assertThat(firstToken.get("revoked"), nullValue());
+        assertThat(firstToken.get("created_by"), is(TEST_USER_NAME_2));
+        assertThat(firstToken.get("created_by"), is(TEST_USER_NAME_2));
+        assertThat(firstToken.get("issued_date"), is(now.toString("dd MMM YYYY - kk:mm")));
 
         Map<String, Object> secondToken = tokens.get(1);
         assertThat(secondToken.get("token_link"), is(TOKEN_LINK));
         assertThat(secondToken.get("description"), is(TOKEN_DESCRIPTION));
-        assertThat(secondToken.get("revoked"), is(now.toString("dd MMM YYYY")));
+        assertThat(secondToken.get("revoked"), is(now.toString("dd MMM YYYY - kk:mm")));
+        assertThat(secondToken.get("created_by"), is(TEST_USER_NAME));
+        assertThat(secondToken.get("issued_date"), is(now.toString("dd MMM YYYY - kk:mm")));
+        assertThat(secondToken.get("last_used"), is(now.toString("dd MMM YYYY - kk:mm")));
+
     }
 
     @Test

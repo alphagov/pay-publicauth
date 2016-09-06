@@ -40,7 +40,13 @@ public class AuthTokenDao {
 
     public List<Map<String, Object>> findTokens(String accountId) {
         return jdbi.withHandle(handle ->
-                handle.createQuery("SELECT token_link, description, to_char(revoked,'DD Mon YYYY') as revoked FROM tokens WHERE account_id = :account_id ORDER BY issued DESC")
+                handle.createQuery("SELECT token_link, description, " +
+                        "to_char(revoked,'DD Mon YYYY - HH24:MI') as revoked, " +
+                        "to_char(issued,'DD Mon YYYY - HH24:MI') as issued_date, " +
+                        "created_by, " +
+                        "to_char(last_used,'DD Mon YYYY - HH24:MI') as last_used " +
+                        "FROM tokens WHERE account_id = :account_id " +
+                        "ORDER BY issued DESC")
                         .bind("account_id", accountId)
                         .list());
     }
@@ -56,14 +62,7 @@ public class AuthTokenDao {
      * TODO: remove after backward incompatible changes are removed
      */
     public void storeToken(String tokenHash, String randomTokenLink, String accountId, String description) {
-        Integer rowsUpdated = jdbi.withHandle(handle ->
-                handle.insert("INSERT INTO tokens(token_hash, token_link, description, account_id, created_by) VALUES (?,?,?,?,?)",
-                        tokenHash, randomTokenLink, description, accountId, "Not Stored")
-        );
-        if (rowsUpdated != 1) {
-            LOGGER.error("Unable to store new token for account '{}'. '{}' rows were updated", accountId, rowsUpdated);
-            throw new RuntimeException(String.format("Unable to store new token for account %s}", accountId));
-        }
+        storeToken(tokenHash, randomTokenLink, accountId, description, "Not Stored");
     }
 
     public void storeToken(String tokenHash, String randomTokenLink, String accountId, String description, String createdBy) {
