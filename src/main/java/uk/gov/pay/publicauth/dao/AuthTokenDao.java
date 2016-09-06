@@ -52,6 +52,20 @@ public class AuthTokenDao {
         return rowsUpdated > 0;
     }
 
+    /**
+     * TODO: remove after backward incompatible changes are removed
+     */
+    public void storeToken(String tokenHash, String randomTokenLink, String accountId, String description) {
+        Integer rowsUpdated = jdbi.withHandle(handle ->
+                handle.insert("INSERT INTO tokens(token_hash, token_link, description, account_id, created_by) VALUES (?,?,?,?,?)",
+                        tokenHash, randomTokenLink, description, accountId, "Not Stored")
+        );
+        if (rowsUpdated != 1) {
+            LOGGER.error("Unable to store new token for account '{}'. '{}' rows were updated", accountId, rowsUpdated);
+            throw new RuntimeException(String.format("Unable to store new token for account %s}", accountId));
+        }
+    }
+
     public void storeToken(String tokenHash, String randomTokenLink, String accountId, String description, String createdBy) {
         Integer rowsUpdated = jdbi.withHandle(handle ->
                 handle.insert("INSERT INTO tokens(token_hash, token_link, description, account_id, created_by) VALUES (?,?,?,?,?)",

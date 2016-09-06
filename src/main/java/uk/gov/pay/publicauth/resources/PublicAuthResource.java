@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import io.dropwizard.auth.Auth;
+import io.dropwizard.jersey.PATCH;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.gov.pay.publicauth.dao.AuthTokenDao;
@@ -38,6 +39,7 @@ public class PublicAuthResource {
     private static final ResponseBuilder UNAUTHORISED = status(Status.UNAUTHORIZED);
     private static final String API_AUTH_PATH = API_VERSION_PATH + "/api/auth";
     private static final String FRONTEND_AUTH_PATH = API_VERSION_PATH + "/frontend/auth";
+    private static final String FRONTEND_AUTH_PATH_NEW = API_VERSION_PATH + "/frontend/authorize"; //TODO: remove after backward compatibility
     public static final String ACCOUNT_ID_FIELD = "account_id";
     public static final String DESCRIPTION_FIELD = "description";
     public static final String CREATED_BY_FIELD = "created_by";
@@ -51,9 +53,22 @@ public class PublicAuthResource {
         this.tokenService = tokenService;
     }
 
+    /**
+     * TODO: Remove after migrating all backward incompatible changes
+     */
     @Path(API_AUTH_PATH)
     @Produces(APPLICATION_JSON)
     @GET
+    public Response authenticateOld(@Auth String token) {
+        return authDao.findUnRevokedAccount(token)
+                .map(accountId -> ok(ImmutableMap.of("account_id", accountId)))
+                .orElseGet(() -> UNAUTHORISED)
+                .build();
+    }
+
+    @Path(API_AUTH_PATH)
+    @Produces(APPLICATION_JSON)
+    @PATCH
     public Response authenticate(@Auth String token) {
         return authDao.findUnRevokedAccount(token)
                 .map(accountId -> ok(ImmutableMap.of("account_id", accountId)))
@@ -61,7 +76,30 @@ public class PublicAuthResource {
                 .build();
     }
 
+    /**
+     * TODO: remove after backward compatibility
+     */
     @Path(FRONTEND_AUTH_PATH)
+    @Produces(APPLICATION_JSON)
+    @Consumes(APPLICATION_JSON)
+    @POST
+    public Response createTokenForAccountOld(JsonNode payload) {
+        return validateCreatePayloadOld(payload)
+                .map(errorMessage -> badRequestResponse(LOGGER, errorMessage))
+                .orElseGet(() -> {
+                    Tokens token = tokenService.issueTokens();
+                    authDao.storeToken(token.getHashedToken(), randomUUID().toString(),
+                            payload.get(ACCOUNT_ID_FIELD).asText(),
+                            payload.get(DESCRIPTION_FIELD).asText());
+                    return ok(ImmutableMap.of("token", token.getApiKey())).build();
+                });
+    }
+
+
+    /**
+     * TODO: Fix the PATH after backward compatibility
+     */
+    @Path(FRONTEND_AUTH_PATH_NEW)
     @Produces(APPLICATION_JSON)
     @Consumes(APPLICATION_JSON)
     @POST
@@ -135,8 +173,24 @@ public class PublicAuthResource {
         return badRequestResponse(LOGGER, "Missing fields: [" + Joiner.on(", ").join(missingFieldsInRequestPayload) + "]");
     }
 
+    /**
+     * TODO: remove after backward compatibility
+     */
+    private Optional<String> validateCreatePayloadOld(JsonNode payload) {
+        List<String> missingFieldsInRequestPayload = findMissingFieldsInRequestPayload(payload,
+                ACCOUNT_ID_FIELD,
+                DESCRIPTION_FIELD);
+        if (!missingFieldsInRequestPayload.isEmpty()) {
+            return Optional.of("Missing fields: [" + Joiner.on(", ").join(missingFieldsInRequestPayload) + "]");
+        }
+        return Optional.empty();
+    }
+
     private Optional<String> validateCreatePayload(JsonNode payload) {
-        List<String> missingFieldsInRequestPayload = findMissingFieldsInRequestPayload(payload, ACCOUNT_ID_FIELD, DESCRIPTION_FIELD, CREATED_BY_FIELD);
+        List<String> missingFieldsInRequestPayload = findMissingFieldsInRequestPayload(payload,
+                ACCOUNT_ID_FIELD,
+                DESCRIPTION_FIELD,
+                CREATED_BY_FIELD);
         if (!missingFieldsInRequestPayload.isEmpty()) {
             return Optional.of("Missing fields: [" + Joiner.on(", ").join(missingFieldsInRequestPayload) + "]");
         }
