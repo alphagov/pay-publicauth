@@ -53,11 +53,8 @@ public class PublicAuthResourceITest {
 
     @Test
     public void respondWith200_whenAuthWithValidToken() throws Exception {
-
         app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION);
-
         String apiKey = BEARER_TOKEN + encodedHmacValueOf(BEARER_TOKEN);
-
         tokenResponse(apiKey)
                 .statusCode(200)
                 .body("account_id", is(ACCOUNT_ID));

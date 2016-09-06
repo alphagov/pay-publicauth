@@ -54,10 +54,18 @@
 
     <changeSet id="add new columns, created_by and last_used" author="">
         <addColumn tableName="tokens">
-            <column name="created_by" type="varchar(255)" defaultValue="Not Stored">
-                <constraints nullable="false" unique="false"/>
+            <column name="created_by" type="varchar(255)">
+                <constraints nullable="true" unique="false"/>
             </column>
         </addColumn>
+
+        <!-- migrate existing tokens to have a default value of 'Not Stored' before adding a Not Null constraint-->
+        <sql>
+            UPDATE tokens SET created_by = 'Not Stored';
+        </sql>
+
+        <addNotNullConstraint columnName="created_by" tableName="tokens"/>
+
         <addColumn tableName="tokens">
             <column name="last_used" type="timestamp without timezone">
                 <constraints nullable="true"/>

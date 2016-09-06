@@ -3,7 +3,6 @@ package uk.gov.pay.publicauth.dao;
 import com.google.common.collect.Lists;
 import org.hamcrest.Matcher;
 import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 import org.joda.time.ReadableInstant;
 import org.junit.Before;
 import org.junit.Rule;
@@ -11,15 +10,14 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import uk.gov.pay.publicauth.utils.DropwizardAppWithPostgresRule;
 
-import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.TimeZone;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertNull;
 
 public class AuthTokenDaoTest {
 
@@ -91,11 +89,12 @@ public class AuthTokenDaoTest {
         authTokenDao.storeToken("token-hash", "token-link", "account-id", "description", "user");
         Map<String, Object> tokenByHash = app.getDatabaseHelper().getTokenByHash("token-hash");
         DateTime now = app.getDatabaseHelper().getCurrentTime();
-        
+
         assertThat(tokenByHash.get("token_hash"), is("token-hash"));
         assertThat(tokenByHash.get("account_id"), is("account-id"));
         assertThat(tokenByHash.get("description"), is("description"));
         assertThat(tokenByHash.get("created_by"), is("user"));
+        assertNull(tokenByHash.get("last_used"));
         DateTime tokenIssueTime = app.getDatabaseHelper().issueTimestampForAccount("account-id");
         assertThat(tokenIssueTime, isCloseTo(now));
     }
@@ -103,7 +102,6 @@ public class AuthTokenDaoTest {
     @Test
     public void updateAnExistingToken() throws Exception {
         app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION);
-
         boolean updateResult = authTokenDao.updateTokenDescription(TOKEN_LINK, TOKEN_DESCRIPTION_2);
 
         assertThat(updateResult, is(true));
