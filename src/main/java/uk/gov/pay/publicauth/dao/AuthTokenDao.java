@@ -20,12 +20,22 @@ public class AuthTokenDao {
     }
 
 
-    public Optional<String> findAccount(String tokenHash) {
-        return Optional.ofNullable(jdbi.withHandle(handle ->
+    public Optional<String> findUnRevokedAccount(String tokenHash) {
+        Optional<String> storedTokenHash = Optional.ofNullable(jdbi.withHandle(handle ->
                 handle.createQuery("SELECT account_id FROM tokens WHERE token_hash = :token_hash AND revoked IS NULL")
                         .bind("token_hash", tokenHash)
                         .map(StringMapper.FIRST)
                         .first()));
+        if (storedTokenHash.isPresent()) {
+            updateLastUsedTime(tokenHash);
+        }
+        return storedTokenHash;
+    }
+
+    private void updateLastUsedTime(String tokenHash) {
+        jdbi.withHandle(handle ->
+                handle.update("UPDATE tokens SET last_used=(now() at time zone 'utc') WHERE token_hash=?", tokenHash)
+        );
     }
 
     public List<Map<String, Object>> findTokens(String accountId) {

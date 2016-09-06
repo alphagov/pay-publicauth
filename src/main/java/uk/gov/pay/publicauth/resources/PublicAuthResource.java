@@ -55,7 +55,7 @@ public class PublicAuthResource {
     @Produces(APPLICATION_JSON)
     @GET
     public Response authenticate(@Auth String token) {
-        return authDao.findAccount(token)
+        return authDao.findUnRevokedAccount(token)
                 .map(accountId -> ok(ImmutableMap.of("account_id", accountId)))
                 .orElseGet(() -> UNAUTHORISED)
                 .build();

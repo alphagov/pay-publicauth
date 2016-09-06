@@ -6,7 +6,6 @@ import org.joda.time.DateTime;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.util.StringMapper;
 
-import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 
@@ -17,17 +16,27 @@ public class DatabaseTestHelper {
         this.jdbi = jdbi;
     }
 
-    public void insertAccount(String tokenHash, String randomTokenLink, String accountId, String description) {
-        insertAccount(tokenHash, randomTokenLink, accountId, description, false);
+    public void insertAccount(String tokenHash, String randomTokenLink, String accountId, String description, String createdBy) {
+        insertAccount(tokenHash, randomTokenLink, accountId, description, false, createdBy);
     }
 
-    public void insertAccount(String tokenHash, String randomTokenLink, String accountId, String description, Boolean revoked) {
+    public void insertAccount(String tokenHash, String randomTokenLink, String accountId, String description, Boolean revoked, String createdBy) {
         if (revoked) {
-            jdbi.withHandle(handle -> handle.insert("INSERT INTO tokens(token_hash, token_link, account_id, description, revoked) VALUES (?,?,?,?,(now() at time zone 'utc'))", tokenHash, randomTokenLink, accountId, description));
+            jdbi.withHandle(handle ->
+                    handle.insert("INSERT INTO tokens(token_hash, token_link, account_id, description, revoked, created_by, last_used) VALUES (?,?,?,?,(now() at time zone 'utc'),?,(now() at time zone 'utc'))",
+                            tokenHash, randomTokenLink, accountId, description, createdBy));
         } else {
-            jdbi.withHandle(handle -> handle.insert("INSERT INTO tokens(token_hash, token_link, account_id, description) VALUES (?,?,?,?)", tokenHash, randomTokenLink, accountId, description));
+            jdbi.withHandle(handle ->
+                    handle.insert("INSERT INTO tokens(token_hash, token_link, account_id, description, created_by) VALUES (?,?,?,?,?)",
+                            tokenHash, randomTokenLink, accountId, description, createdBy));
         }
     }
+
+//    public void insertAccountWithLastUpdated(String tokenHash, String randomTokenLink, String accountId, String description, Boolean revoked, String createdBy) {
+//        jdbi.withHandle(handle ->
+//                handle.insert("INSERT INTO tokens(token_hash, token_link, account_id, description, revoked, created_by, last_updated) VALUES (?,?,?,?,(now() at time zone 'utc'),?,(now() at time zone 'utc'))",
+//                        tokenHash, randomTokenLink, accountId, description, createdBy));
+//    }
 
     public DateTime issueTimestampForAccount(String accountId) {
         return getDateTimeColumn("issued", accountId);
@@ -56,7 +65,7 @@ public class DatabaseTestHelper {
         return ret;
     }
 
-    private DateTime getDateTimeColumn(String column, String accountId) {
+    public DateTime getDateTimeColumn(String column, String accountId) {
         return jdbi.withHandle(handle ->
                 handle.createQuery("SELECT " + column + " FROM tokens WHERE account_id=:accountId")
                         .bind("accountId", accountId)
@@ -67,8 +76,8 @@ public class DatabaseTestHelper {
     public DateTime getCurrentTime() {
         return jdbi.withHandle(handle ->
                 handle.createQuery("SELECT (now() at time zone 'utc')")
-                .map(new JodaDateTimeMapper(Optional.of(TimeZone.getTimeZone("UTC"))))
-                .first());
+                        .map(new JodaDateTimeMapper(Optional.of(TimeZone.getTimeZone("UTC"))))
+                        .first());
     }
 
 }

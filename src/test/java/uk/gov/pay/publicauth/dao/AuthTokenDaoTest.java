@@ -21,6 +21,7 @@ import static org.junit.Assert.assertNull;
 
 public class AuthTokenDaoTest {
 
+    public static final String TEST_USER_NAME = "test-user-name";
     private  DateTime now = DateTime.now();
 
     @Rule
@@ -46,15 +47,15 @@ public class AuthTokenDaoTest {
 
     @Test
     public void findAnAccountIdByToken() throws Exception {
-        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION);
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, TEST_USER_NAME);
 
-        Optional<String> accountId = authTokenDao.findAccount(TOKEN_HASH);
+        Optional<String> accountId = authTokenDao.findUnRevokedAccount(TOKEN_HASH);
         assertThat(accountId, is(Optional.of(ACCOUNT_ID)));
     }
 
     @Test
     public void missingTokenHasNoAccount() throws Exception {
-        Optional<String> accountId = authTokenDao.findAccount(TOKEN_HASH);
+        Optional<String> accountId = authTokenDao.findUnRevokedAccount(TOKEN_HASH);
         assertThat(accountId, is(Optional.empty()));
     }
 
@@ -66,8 +67,8 @@ public class AuthTokenDaoTest {
 
     @Test
     public void accountWithSeveralTokens() throws Exception {
-        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, true);
-        app.getDatabaseHelper().insertAccount(TOKEN_HASH_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2);
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, true, TEST_USER_NAME);
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, TEST_USER_NAME);
 
         List<Map<String, Object>> tokens = authTokenDao.findTokens(ACCOUNT_ID);
 
@@ -101,7 +102,7 @@ public class AuthTokenDaoTest {
 
     @Test
     public void updateAnExistingToken() throws Exception {
-        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION);
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, TEST_USER_NAME);
         boolean updateResult = authTokenDao.updateTokenDescription(TOKEN_LINK, TOKEN_DESCRIPTION_2);
 
         assertThat(updateResult, is(true));
@@ -120,7 +121,7 @@ public class AuthTokenDaoTest {
 
     @Test
     public void notUpdateARevokedToken() throws Exception {
-        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, true);
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, true, TEST_USER_NAME);
 
         boolean updateResult = authTokenDao.updateTokenDescription(TOKEN_LINK, TOKEN_DESCRIPTION_2);
 
@@ -131,7 +132,7 @@ public class AuthTokenDaoTest {
 
     @Test
     public void shouldRevokeASingleToken() throws Exception {
-        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION);
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, TEST_USER_NAME);
 
         Optional<String> revokedDate = authTokenDao.revokeSingleToken(ACCOUNT_ID, TOKEN_LINK);
 
@@ -143,8 +144,8 @@ public class AuthTokenDaoTest {
 
     @Test
     public void shouldNotRevokeATokenForAnotherAccount() throws Exception {
-        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION);
-        app.getDatabaseHelper().insertAccount(TOKEN_HASH_2, TOKEN_LINK_2, ACCOUNT_ID_2, TOKEN_DESCRIPTION_2);
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, TEST_USER_NAME);
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH_2, TOKEN_LINK_2, ACCOUNT_ID_2, TOKEN_DESCRIPTION_2, TEST_USER_NAME);
 
         Optional<String> revokedDate  = authTokenDao.revokeSingleToken(ACCOUNT_ID, TOKEN_LINK_2);
 
@@ -156,7 +157,7 @@ public class AuthTokenDaoTest {
 
     @Test
     public void shouldNotRevokeATokenAlreadyRevoked() throws Exception {
-        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, true);
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, true, TEST_USER_NAME);
 
         Optional<String> revokedDate = authTokenDao.revokeSingleToken(ACCOUNT_ID, TOKEN_LINK);
 
@@ -168,7 +169,7 @@ public class AuthTokenDaoTest {
 
     @Test(expected = RuntimeException.class)
     public void shouldErrorIfTriesToSaveTheSameTokenTwice() throws Exception {
-        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION);
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, TEST_USER_NAME);
 
         authTokenDao.storeToken(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, "test@email.com");
     }
