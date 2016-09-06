@@ -98,13 +98,23 @@ public class AuthTokenDaoTest {
     }
 
     @Test
+    public void shouldInsertNewToken() {
+        authTokenDao.storeToken("token-hash", "token-link", "account-id", "description", "user");
+        Map<String, Object> tokenByHash = app.getDatabaseHelper().getTokenByHash("token-hash");
+        assertThat(tokenByHash.get("token_hash"), is("token-hash"));
+        assertThat(tokenByHash.get("account_id"), is("account-id"));
+        assertThat(tokenByHash.get("description"), is("description"));
+        assertThat(tokenByHash.get("created_by"), is("user"));
+    }
+
+    @Test
     public void updateAnExistingToken() throws Exception {
         app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION);
 
         boolean updateResult = authTokenDao.updateTokenDescription(TOKEN_LINK, TOKEN_DESCRIPTION_2);
 
         assertThat(updateResult, is(true));
-        Optional<String> descriptionInDb = app.getDatabaseHelper().lookupColumnFor("description", "token_link", TOKEN_LINK);
+        Optional<String> descriptionInDb = app.getDatabaseHelper().lookupColumnForTokenTable("description", "token_link", TOKEN_LINK);
         assertThat(descriptionInDb.get(), equalTo(TOKEN_DESCRIPTION_2));
     }
 
@@ -113,7 +123,7 @@ public class AuthTokenDaoTest {
         boolean updateResult = authTokenDao.updateTokenDescription(TOKEN_LINK, TOKEN_DESCRIPTION_2);
 
         assertThat(updateResult, is(false));
-        Optional<String> descriptionInDb = app.getDatabaseHelper().lookupColumnFor("description", "token_link", TOKEN_LINK);
+        Optional<String> descriptionInDb = app.getDatabaseHelper().lookupColumnForTokenTable("description", "token_link", TOKEN_LINK);
         assertThat(descriptionInDb.isPresent(), is(false));
     }
 
@@ -124,7 +134,7 @@ public class AuthTokenDaoTest {
         boolean updateResult = authTokenDao.updateTokenDescription(TOKEN_LINK, TOKEN_DESCRIPTION_2);
 
         assertThat(updateResult, is(false));
-        Optional<String> descriptionInDb = app.getDatabaseHelper().lookupColumnFor("description", "token_link", TOKEN_LINK);
+        Optional<String> descriptionInDb = app.getDatabaseHelper().lookupColumnForTokenTable("description", "token_link", TOKEN_LINK);
         assertThat(descriptionInDb.get(), equalTo(TOKEN_DESCRIPTION));
     }
 
@@ -136,7 +146,7 @@ public class AuthTokenDaoTest {
 
         assertThat(revokedDate.get(), is(now.toString("dd MMM YYYY")));
 
-        Optional<String> revokedInDb = app.getDatabaseHelper().lookupColumnFor("revoked", "token_link", TOKEN_LINK);
+        Optional<String> revokedInDb = app.getDatabaseHelper().lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK);
         assertThat(revokedInDb.isPresent(), is(true));
     }
 
@@ -149,7 +159,7 @@ public class AuthTokenDaoTest {
 
         assertThat(revokedDate.isPresent(), is(false));
 
-        Optional<String> revokedInDb = app.getDatabaseHelper().lookupColumnFor("revoked", "token_link", TOKEN_LINK);
+        Optional<String> revokedInDb = app.getDatabaseHelper().lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK);
         assertThat(revokedInDb.isPresent(), is(false));
     }
 
@@ -161,7 +171,7 @@ public class AuthTokenDaoTest {
 
         assertThat(revokedDate.isPresent(), is(false));
 
-        Optional<String> revokedInDb = app.getDatabaseHelper().lookupColumnFor("revoked", "token_link", TOKEN_LINK);
+        Optional<String> revokedInDb = app.getDatabaseHelper().lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK);
         assertThat(revokedInDb.isPresent(), is(true));
     }
 
@@ -169,7 +179,7 @@ public class AuthTokenDaoTest {
     public void shouldErrorIfTriesToSaveTheSameTokenTwice() throws Exception {
         app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION);
 
-        authTokenDao.storeToken(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION);
+        authTokenDao.storeToken(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, "test@email.com");
     }
 
     private Matcher<ReadableInstant> isCloseTo(DateTime now) {

@@ -52,4 +52,17 @@
         </createIndex>
     </changeSet>
 
+    <changeSet id="add new columns, created_by and last_used" author="">
+        <addColumn tableName="tokens">
+            <column name="created_by" type="varchar(255)" defaultValue="Not Stored">
+                <constraints nullable="false" unique="false"/>
+            </column>
+        </addColumn>
+        <addColumn tableName="tokens">
+            <column name="last_used" type="timestamp without timezone">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
 </databaseChangeLog>

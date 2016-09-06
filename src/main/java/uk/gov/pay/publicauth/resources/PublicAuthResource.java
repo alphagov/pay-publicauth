@@ -15,10 +15,12 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.util.Arrays.asList;
 import static java.util.UUID.randomUUID;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.Response.*;
@@ -36,6 +38,9 @@ public class PublicAuthResource {
     private static final ResponseBuilder UNAUTHORISED = status(Status.UNAUTHORIZED);
     private static final String API_AUTH_PATH = API_VERSION_PATH + "/api/auth";
     private static final String FRONTEND_AUTH_PATH = API_VERSION_PATH + "/frontend/auth";
+    public static final String ACCOUNT_ID_FIELD = "account_id";
+    public static final String DESCRIPTION_FIELD = "description";
+    public static final String CREATED_BY_FIELD = "created_by";
 
     private final AuthTokenDao authDao;
     private final TokenService tokenService;
@@ -61,11 +66,16 @@ public class PublicAuthResource {
     @Consumes(APPLICATION_JSON)
     @POST
     public Response createTokenForAccount(JsonNode payload) {
-        return withValidAccountIdAndDescription(payload, (accountId, description) -> {
-            Tokens token = tokenService.issueTokens();
-            authDao.storeToken(token.getHashedToken(), randomUUID().toString(), accountId, description);
-            return ok(ImmutableMap.of("token", token.getApiKey())).build();
-        });
+        return validateCreatePayload(payload)
+                .map(errorMessage -> badRequestResponse(LOGGER, errorMessage))
+                .orElseGet(() -> {
+                    Tokens token = tokenService.issueTokens();
+                    authDao.storeToken(token.getHashedToken(), randomUUID().toString(),
+                            payload.get(ACCOUNT_ID_FIELD).asText(),
+                            payload.get(DESCRIPTION_FIELD).asText(),
+                            payload.get(CREATED_BY_FIELD).asText());
+                    return ok(ImmutableMap.of("token", token.getApiKey())).build();
+                });
     }
 
     @Path(FRONTEND_AUTH_PATH + "/{accountId}")
@@ -125,20 +135,18 @@ public class PublicAuthResource {
         return badRequestResponse(LOGGER, "Missing fields: [" + Joiner.on(", ").join(missingFieldsInRequestPayload) + "]");
     }
 
-    private Response withValidAccountIdAndDescription(JsonNode requestPayload, BiFunction<String, String, Response> handler) {
-        if (requestPayload == null) {
-            return badRequestResponse(LOGGER, "Missing fields: [account_id, description]");
+    private Optional<String> validateCreatePayload(JsonNode payload) {
+        List<String> missingFieldsInRequestPayload = findMissingFieldsInRequestPayload(payload, ACCOUNT_ID_FIELD, DESCRIPTION_FIELD, CREATED_BY_FIELD);
+        if (!missingFieldsInRequestPayload.isEmpty()) {
+            return Optional.of("Missing fields: [" + Joiner.on(", ").join(missingFieldsInRequestPayload) + "]");
         }
-
-        List<String> missingFieldsInRequestPayload = findMissingFieldsInRequestPayload(requestPayload, "account_id", "description");
-
-        if (missingFieldsInRequestPayload.isEmpty()) {
-            return handler.apply(requestPayload.get("account_id").asText(), requestPayload.get("description").asText());
-        }
-        return badRequestResponse(LOGGER, "Missing fields: [" + Joiner.on(", ").join(missingFieldsInRequestPayload) + "]");
+        return Optional.empty();
     }
 
     private List<String> findMissingFieldsInRequestPayload(JsonNode requestPayload, String... expectedFieldsInRequestPayload) {
+        if (requestPayload == null) {
+            return asList(expectedFieldsInRequestPayload);
+        }
         return Stream.of(expectedFieldsInRequestPayload)
                 .filter(expectedKey -> requestPayload.get(expectedKey) == null)
                 .collect(Collectors.toList());

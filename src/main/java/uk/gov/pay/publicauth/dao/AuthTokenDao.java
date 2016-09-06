@@ -28,7 +28,7 @@ public class AuthTokenDao {
                         .first()));
     }
 
-    public List<Map<String,Object>> findTokens(String accountId) {
+    public List<Map<String, Object>> findTokens(String accountId) {
         return jdbi.withHandle(handle ->
                 handle.createQuery("SELECT token_link, description, to_char(revoked,'DD Mon YYYY') as revoked FROM tokens WHERE account_id = :account_id ORDER BY issued DESC")
                         .bind("account_id", accountId)
@@ -37,14 +37,15 @@ public class AuthTokenDao {
 
     public boolean updateTokenDescription(String tokenLink, String newDescription) {
         int rowsUpdated = jdbi.withHandle(handle ->
-            handle.update("UPDATE tokens SET description=? WHERE token_link=? AND revoked IS NULL", newDescription, tokenLink)
+                handle.update("UPDATE tokens SET description=? WHERE token_link=? AND revoked IS NULL", newDescription, tokenLink)
         );
         return rowsUpdated > 0;
     }
 
-    public void storeToken(String tokenHash, String randomTokenLink, String accountId, String description) {
+    public void storeToken(String tokenHash, String randomTokenLink, String accountId, String description, String createdBy) {
         Integer rowsUpdated = jdbi.withHandle(handle ->
-                        handle.insert("INSERT INTO tokens(token_hash, token_link, description, account_id) VALUES (?,?,?,?)", tokenHash, randomTokenLink, description, accountId)
+                handle.insert("INSERT INTO tokens(token_hash, token_link, description, account_id, created_by) VALUES (?,?,?,?,?)",
+                        tokenHash, randomTokenLink, description, accountId, createdBy)
         );
         if (rowsUpdated != 1) {
             LOGGER.error("Unable to store new token for account '{}'. '{}' rows were updated", accountId, rowsUpdated);

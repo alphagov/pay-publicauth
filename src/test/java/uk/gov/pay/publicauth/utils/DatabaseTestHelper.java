@@ -6,6 +6,8 @@ import org.joda.time.DateTime;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.util.StringMapper;
 
+import java.util.List;
+import java.util.Map;
 import java.util.TimeZone;
 
 public class DatabaseTestHelper {
@@ -35,13 +37,23 @@ public class DatabaseTestHelper {
         return getDateTimeColumn("revoked", accountId);
     }
 
-    public java.util.Optional<String> lookupColumnFor(String column, String idKey, String idValue) {
+    public java.util.Optional<String> lookupColumnForTokenTable(String column, String idKey, String idValue) {
         return java.util.Optional.ofNullable(jdbi.withHandle(handle ->
                 handle.createQuery("SELECT " + column + " FROM tokens WHERE " + idKey + "=:placeholder")
                         .bind("placeholder", idValue)
                         .map(StringMapper.FIRST)
                         .first()));
 
+    }
+
+    public Map<String, Object> getTokenByHash(String tokenHash) {
+        Map<String, Object> ret = jdbi.withHandle(h ->
+                h.createQuery("SELECT token_id, token_hash, account_id, issued, revoked, token_link, description, created_by " +
+                        "FROM tokens t " +
+                        "WHERE token_hash = :token_hash")
+                        .bind("token_hash", tokenHash)
+                        .first());
+        return ret;
     }
 
     private DateTime getDateTimeColumn(String column, String accountId) {
