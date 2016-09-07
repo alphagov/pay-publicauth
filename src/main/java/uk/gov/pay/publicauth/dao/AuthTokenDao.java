@@ -20,31 +20,55 @@ public class AuthTokenDao {
     }
 
 
-    public Optional<String> findAccount(String tokenHash) {
-        return Optional.ofNullable(jdbi.withHandle(handle ->
+    public Optional<String> findUnRevokedAccount(String tokenHash) {
+        Optional<String> storedTokenHash = Optional.ofNullable(jdbi.withHandle(handle ->
                 handle.createQuery("SELECT account_id FROM tokens WHERE token_hash = :token_hash AND revoked IS NULL")
                         .bind("token_hash", tokenHash)
                         .map(StringMapper.FIRST)
                         .first()));
+        if (storedTokenHash.isPresent()) {
+            updateLastUsedTime(tokenHash);
+        }
+        return storedTokenHash;
     }
 
-    public List<Map<String,Object>> findTokens(String accountId) {
+    private void updateLastUsedTime(String tokenHash) {
+        jdbi.withHandle(handle ->
+                handle.update("UPDATE tokens SET last_used=(now() at time zone 'utc') WHERE token_hash=?", tokenHash)
+        );
+    }
+
+    public List<Map<String, Object>> findTokens(String accountId) {
         return jdbi.withHandle(handle ->
-                handle.createQuery("SELECT token_link, description, to_char(revoked,'DD Mon YYYY') as revoked FROM tokens WHERE account_id = :account_id ORDER BY issued DESC")
+                handle.createQuery("SELECT token_link, description, " +
+                        "to_char(revoked,'DD Mon YYYY - HH24:MI') as revoked, " +
+                        "to_char(issued,'DD Mon YYYY - HH24:MI') as issued_date, " +
+                        "created_by, " +
+                        "to_char(last_used,'DD Mon YYYY - HH24:MI') as last_used " +
+                        "FROM tokens WHERE account_id = :account_id " +
+                        "ORDER BY issued DESC")
                         .bind("account_id", accountId)
                         .list());
     }
 
     public boolean updateTokenDescription(String tokenLink, String newDescription) {
         int rowsUpdated = jdbi.withHandle(handle ->
-            handle.update("UPDATE tokens SET description=? WHERE token_link=? AND revoked IS NULL", newDescription, tokenLink)
+                handle.update("UPDATE tokens SET description=? WHERE token_link=? AND revoked IS NULL", newDescription, tokenLink)
         );
         return rowsUpdated > 0;
     }
 
+    /**
+     * TODO: remove after backward incompatible changes are removed
+     */
     public void storeToken(String tokenHash, String randomTokenLink, String accountId, String description) {
+        storeToken(tokenHash, randomTokenLink, accountId, description, "Not Stored");
+    }
+
+    public void storeToken(String tokenHash, String randomTokenLink, String accountId, String description, String createdBy) {
         Integer rowsUpdated = jdbi.withHandle(handle ->
-                        handle.insert("INSERT INTO tokens(token_hash, token_link, description, account_id) VALUES (?,?,?,?)", tokenHash, randomTokenLink, description, accountId)
+                handle.insert("INSERT INTO tokens(token_hash, token_link, description, account_id, created_by) VALUES (?,?,?,?,?)",
+                        tokenHash, randomTokenLink, description, accountId, createdBy)
         );
         if (rowsUpdated != 1) {
             LOGGER.error("Unable to store new token for account '{}'. '{}' rows were updated", accountId, rowsUpdated);
