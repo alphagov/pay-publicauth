@@ -19,8 +19,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertNull;
-import static uk.gov.pay.publicauth.resources.PublicAuthResource.TokenState.ACTIVE;
-import static uk.gov.pay.publicauth.resources.PublicAuthResource.TokenState.ALL;
+import static uk.gov.pay.publicauth.model.TokenState.*;
 
 public class AuthTokenDaoTest {
 
