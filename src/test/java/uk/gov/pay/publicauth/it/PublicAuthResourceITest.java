@@ -56,7 +56,7 @@ public class PublicAuthResourceITest {
                     "created_by", USER_EMAIL));
 
     @Test
-    public void respondWith200_whRenAuthWithValidToken() throws Exception {
+    public void respondWith200_whenAuthWithValidToken() throws Exception {
         app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
         String apiKey = BEARER_TOKEN + encodedHmacValueOf(BEARER_TOKEN);
         tokenResponse(apiKey)
@@ -180,11 +180,11 @@ public class PublicAuthResourceITest {
     }
 
     @Test
-    public void respondWith200_butDoNotIncludeRevokedTokens() throws Exception {
+    public void respondWith200_andRetrieveAllTokens() throws Exception {
         app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, true, CREATED_USER_NAME);
         app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, CREATED_USER_NAME2);
 
-        List<Map<String, String>> retrievedTokens = getTokensFor(ACCOUNT_ID)
+        List<Map<String, String>> retrievedTokens = getTokensFor(ACCOUNT_ID, "all")
                 .statusCode(200)
                 .body("tokens", hasSize(2))
                 .extract().path("tokens");
@@ -208,6 +208,72 @@ public class PublicAuthResourceITest {
         assertThat(secondToken.get("created_by"), is(CREATED_USER_NAME));
         assertThat(secondToken.get("last_used"), is(now.toString("dd MMM YYYY - kk:mm")));
         assertThat(secondToken.get("issued_date"), is(now.toString("dd MMM YYYY - kk:mm")));
+    }
+
+    @Test
+    public void respondWith200_andRetrieveAllActiveTokens() throws Exception {
+        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, true, CREATED_USER_NAME);
+        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, CREATED_USER_NAME2);
+
+        List<Map<String, String>> retrievedTokens = getTokensFor(ACCOUNT_ID, "active")
+                .statusCode(200)
+                .body("tokens", hasSize(1))
+                .extract().path("tokens");
+
+        DateTime now = app.getDatabaseHelper().getCurrentTime().toDateTime(DateTimeZone.UTC);
+
+        //Retrieved in issued order from newest to oldest
+        Map<String, String> firstToken = retrievedTokens.get(0);
+        assertThat(firstToken.get("token_link"), is(TOKEN_LINK_2));
+        assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION_2));
+        assertThat(firstToken.containsKey("revoked"), is(false));
+        assertThat(firstToken.get("created_by"), is(CREATED_USER_NAME2));
+        assertThat(firstToken.get("last_used"), is(nullValue()));
+        assertThat(firstToken.get("issued_date"), is(now.toString("dd MMM YYYY - kk:mm")));
+    }
+
+    @Test
+    public void respondWith200_andRetrieveActiveTokensIfNoQueryParamIsSpecified() throws Exception {
+        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, true, CREATED_USER_NAME);
+        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, CREATED_USER_NAME2);
+
+        List<Map<String, String>> retrievedTokens = getTokensForWithNoQueryParam(ACCOUNT_ID)
+                .statusCode(200)
+                .body("tokens", hasSize(1))
+                .extract().path("tokens");
+
+        DateTime now = app.getDatabaseHelper().getCurrentTime().toDateTime(DateTimeZone.UTC);
+
+        //Retrieved in issued order from newest to oldest
+        Map<String, String> firstToken = retrievedTokens.get(0);
+        assertThat(firstToken.get("token_link"), is(TOKEN_LINK_2));
+        assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION_2));
+        assertThat(firstToken.containsKey("revoked"), is(false));
+        assertThat(firstToken.get("created_by"), is(CREATED_USER_NAME2));
+        assertThat(firstToken.get("last_used"), is(nullValue()));
+        assertThat(firstToken.get("issued_date"), is(now.toString("dd MMM YYYY - kk:mm")));
+    }
+
+    @Test
+    public void respondWith200_andRetrieveActiveTokensIfUnknownQueryParamIsSpecified() throws Exception {
+        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, true, CREATED_USER_NAME);
+        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, CREATED_USER_NAME2);
+
+        List<Map<String, String>> retrievedTokens = getTokensFor(ACCOUNT_ID, "something")
+                .statusCode(200)
+                .body("tokens", hasSize(1))
+                .extract().path("tokens");
+
+        DateTime now = app.getDatabaseHelper().getCurrentTime().toDateTime(DateTimeZone.UTC);
+
+        //Retrieved in issued order from newest to oldest
+        Map<String, String> firstToken = retrievedTokens.get(0);
+        assertThat(firstToken.get("token_link"), is(TOKEN_LINK_2));
+        assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION_2));
+        assertThat(firstToken.containsKey("revoked"), is(false));
+        assertThat(firstToken.get("created_by"), is(CREATED_USER_NAME2));
+        assertThat(firstToken.get("last_used"), is(nullValue()));
+        assertThat(firstToken.get("issued_date"), is(now.toString("dd MMM YYYY - kk:mm")));
     }
 
     @Test
@@ -421,11 +487,23 @@ public class PublicAuthResourceITest {
                 .then();
     }
 
-    private ValidatableResponse getTokensFor(String accountId) {
+    private ValidatableResponse getTokensFor(String accountId, String tokenState) {
+        return given().port(app.getLocalPort())
+                .accept(JSON)
+                .param("state", tokenState)
+                .get(FRONTEND_AUTH_PATH + "/" + accountId)
+                .then();
+    }
+
+    private ValidatableResponse getTokensForWithNoQueryParam(String accountId) {
         return given().port(app.getLocalPort())
                 .accept(JSON)
                 .get(FRONTEND_AUTH_PATH + "/" + accountId)
                 .then();
+    }
+
+    private ValidatableResponse getTokensFor(String accountId) {
+        return getTokensFor(accountId, "all");
     }
 
     private ValidatableResponse updateTokenDescription(String body) {

@@ -18,9 +18,9 @@ import java.util.Optional;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static uk.gov.pay.publicauth.resources.PublicAuthResource.TokenState.ACTIVE;
+import static uk.gov.pay.publicauth.resources.PublicAuthResource.TokenState.ALL;
 
 public class AuthTokenDaoTest {
 
@@ -65,17 +65,19 @@ public class AuthTokenDaoTest {
 
     @Test
     public void missingAccountHasNoAssociatedTokens() throws Exception {
-        List<Map<String, Object>> tokens = authTokenDao.findTokens(ACCOUNT_ID);
+        List<Map<String, Object>> tokens = authTokenDao.findTokensWithState(ACCOUNT_ID, ALL);
         assertThat(tokens, is(Lists.newArrayList()));
     }
 
     @Test
-    public void accountWithSeveralTokens() throws Exception {
+    public void shouldFindAllTokens() throws Exception {
         app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, true, TEST_USER_NAME);
         app.getDatabaseHelper().insertAccount(TOKEN_HASH_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, TEST_USER_NAME_2);
 
-        List<Map<String, Object>> tokens = authTokenDao.findTokens(ACCOUNT_ID);
+        List<Map<String, Object>> tokens = authTokenDao.findTokensWithState(ACCOUNT_ID, ALL);
         DateTime nowFromDB = app.getDatabaseHelper().getCurrentTime().toDateTime(DateTimeZone.UTC);
+
+        assertThat(tokens.size(), is(2));
 
         //Retrieved in issued order from newest to oldest
         Map<String, Object> firstToken = tokens.get(0);
@@ -94,7 +96,26 @@ public class AuthTokenDaoTest {
         assertThat(secondToken.get("created_by"), is(TEST_USER_NAME));
         assertThat(secondToken.get("issued_date"), is(nowFromDB.toString("dd MMM YYYY - kk:mm")));
         assertThat(secondToken.get("last_used"), is(nowFromDB.toString("dd MMM YYYY - kk:mm")));
+    }
+    
+    @Test
+    public void shouldFindOnlyValidTokens() throws Exception {
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, true, TEST_USER_NAME);
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, TEST_USER_NAME_2);
 
+        List<Map<String, Object>> tokens = authTokenDao.findTokensWithState(ACCOUNT_ID, ACTIVE);
+        DateTime now = app.getDatabaseHelper().getCurrentTime().toDateTime(DateTimeZone.UTC);
+
+        assertThat(tokens.size(), is(1));
+        //Retrieved in issued order from newest to oldest
+        Map<String, Object> firstToken = tokens.get(0);
+        assertThat(firstToken.get("token_link"), is(TOKEN_LINK_2));
+        assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION_2));
+        assertThat(firstToken.containsKey("revoked"), is(true));
+        assertThat(firstToken.get("revoked"), nullValue());
+        assertThat(firstToken.get("created_by"), is(TEST_USER_NAME_2));
+        assertThat(firstToken.get("created_by"), is(TEST_USER_NAME_2));
+        assertThat(firstToken.get("issued_date"), is(now.toString("dd MMM YYYY - kk:mm")));
     }
 
     @Test
@@ -129,10 +150,10 @@ public class AuthTokenDaoTest {
         Map<String, Object> token = tokenMayBe.get();
         DateTime nowFromDB = app.getDatabaseHelper().getCurrentTime().toDateTime(DateTimeZone.UTC);
 
-        assertEquals(TOKEN_LINK, token.get("token_link"));
-        assertEquals(TOKEN_DESCRIPTION, token.get("description"));
-        assertEquals(TEST_USER_NAME, token.get("created_by"));
-        assertNull(token.get("revoked"));
+        assertThat(TOKEN_LINK, is(token.get("token_link")));
+        assertThat(TOKEN_DESCRIPTION, is(token.get("description")));
+        assertThat(TEST_USER_NAME, is(token.get("created_by")));
+        assertThat(token.get("revoked"), is(nullValue()));
         assertThat(token.get("issued_date"), is(nowFromDB.toString("dd MMM YYYY - kk:mm")));
         assertThat(token.get("last_used"), is(nowFromDB.toString("dd MMM YYYY - kk:mm")));
     }

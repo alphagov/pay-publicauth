@@ -83,11 +83,23 @@ public class PublicAuthResource {
                 });
     }
 
+    public enum TokenState {
+        ALL, ACTIVE;
+
+        public static TokenState valueFor(String state) {
+            try {
+                return TokenState.valueOf(state.toUpperCase());
+            } catch (Exception e) {
+                return ACTIVE;
+            }
+        }
+    }
     @Path(FRONTEND_AUTH_PATH + "/{accountId}")
     @Produces(APPLICATION_JSON)
     @GET
-    public Response getIssuedTokensForAccount(@PathParam("accountId") String accountId) {
-        List<Map<String, Object>> tokensWithoutNullRevoked = authDao.findTokens(accountId)
+    public Response getIssuedTokensForAccount(@PathParam("accountId") String accountId, @QueryParam("state") String state) {
+        TokenState tokenState = TokenState.valueFor(state);
+        List<Map<String, Object>> tokensWithoutNullRevoked = authDao.findTokensWithState(accountId, tokenState)
                 .stream()
                 .map(tokenMap -> {
                     if (tokenMap.get("revoked") == null) tokenMap.remove("revoked");

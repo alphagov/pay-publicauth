@@ -4,6 +4,7 @@ import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.util.StringMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import uk.gov.pay.publicauth.resources.PublicAuthResource;
 
 import java.util.List;
 import java.util.Map;
@@ -38,7 +39,9 @@ public class AuthTokenDao {
         );
     }
 
-    public List<Map<String, Object>> findTokens(String accountId) {
+    public List<Map<String, Object>> findTokensWithState(String accountId, PublicAuthResource.TokenState tokenState) {
+        String revoked = (tokenState.equals(PublicAuthResource.TokenState.ACTIVE)) ? "AND revoked IS NULL " : "";
+
         return jdbi.withHandle(handle ->
                 handle.createQuery("SELECT token_link, description, " +
                         "to_char(revoked,'DD Mon YYYY - HH24:MI') as revoked, " +
@@ -46,6 +49,7 @@ public class AuthTokenDao {
                         "created_by, " +
                         "to_char(last_used,'DD Mon YYYY - HH24:MI') as last_used " +
                         "FROM tokens WHERE account_id = :account_id " +
+                        revoked +
                         "ORDER BY issued DESC")
                         .bind("account_id", accountId)
                         .list());
