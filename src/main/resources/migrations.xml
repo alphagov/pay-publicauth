@@ -59,9 +59,9 @@
             </column>
         </addColumn>
 
-        <!-- migrate existing tokens to have a default value of 'Not Stored' before adding a Not Null constraint-->
+        <!-- migrate existing tokens to have a default value of 'Not stored' before adding a Not Null constraint-->
         <sql>
-            UPDATE tokens SET created_by = 'Not Stored';
+            UPDATE tokens SET created_by = 'Not stored';
         </sql>
 
         <addNotNullConstraint columnName="created_by" tableName="tokens"/>
