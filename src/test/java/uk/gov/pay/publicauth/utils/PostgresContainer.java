@@ -46,11 +46,7 @@ public class PostgresContainer {
         this.docker = docker;
         this.host = host;
 
-        List<Image> govukpayPostgresImages = docker.listImages(allImages())
-                .stream()
-                .filter(image -> image.repoTags().contains(GOVUK_POSTGRES_IMAGE))
-                .collect(Collectors.toList());
-        if (govukpayPostgresImages.isEmpty() ) throw new RuntimeException("Please manually pull '"+ GOVUK_POSTGRES_IMAGE + "'");
+        docker.listImages(DockerClient.ListImagesParam.create("name", GOVUK_POSTGRES_IMAGE));
 
         final HostConfig hostConfig = HostConfig.builder().publishAllPorts(true).build();
         ContainerConfig containerConfig = ContainerConfig.builder()
