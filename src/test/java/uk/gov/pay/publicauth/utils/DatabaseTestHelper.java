@@ -27,7 +27,7 @@ public class DatabaseTestHelper {
                             tokenHash, randomTokenLink, accountId, description, createdBy));
         } else {
             jdbi.withHandle(handle ->
-                    handle.insert("INSERT INTO tokens(token_hash, token_link, account_id, description, created_by) VALUES (?,?,?,?,?)",
+                    handle.insert("INSERT INTO tokens(token_hash, token_link, account_id, description, created_by, last_used) VALUES (?,?,?,?,?,(now() at time zone 'utc'))",
                             tokenHash, randomTokenLink, accountId, description, createdBy));
         }
     }

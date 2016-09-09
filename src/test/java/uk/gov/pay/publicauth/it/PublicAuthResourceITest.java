@@ -176,7 +176,7 @@ public class PublicAuthResourceITest {
         assertThat(secondToken.containsKey("revoked"), is(false));
         assertThat(secondToken.get("created_by"), is(CREATED_USER_NAME));
         assertThat(secondToken.get("issued_date"), is(now.toString("dd MMM YYYY - kk:mm")));
-        assertThat(secondToken.get("last_used"), is(nullValue()));
+        assertThat(secondToken.get("last_used"), is(now.toString("dd MMM YYYY - kk:mm")));
     }
 
     @Test
@@ -197,7 +197,7 @@ public class PublicAuthResourceITest {
         assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION_2));
         assertThat(firstToken.containsKey("revoked"), is(false));
         assertThat(firstToken.get("created_by"), is(CREATED_USER_NAME2));
-        assertThat(firstToken.get("last_used"), is(nullValue()));
+        assertThat(firstToken.get("last_used"), is(now.toString("dd MMM YYYY - kk:mm")));
         assertThat(firstToken.get("issued_date"), is(now.toString("dd MMM YYYY - kk:mm")));
 
         Map<String, String> secondToken = retrievedTokens.get(1);
@@ -269,11 +269,15 @@ public class PublicAuthResourceITest {
     @Test
     public void respondWith200_ifUpdatingDescriptionOfExistingToken() throws Exception {
         app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
+        DateTime nowFromDB = app.getDatabaseHelper().getCurrentTime().toDateTime(DateTimeZone.UTC);
 
         updateTokenDescription("{\"token_link\" : \"" + TOKEN_LINK + "\", \"description\" : \"" + TOKEN_DESCRIPTION_2 + "\"}")
                 .statusCode(200)
                 .body("token_link", is(TOKEN_LINK))
-                .body("description", is(TOKEN_DESCRIPTION_2));
+                .body("description", is(TOKEN_DESCRIPTION_2))
+                .body("issued_date", is(nowFromDB.toString("dd MMM YYYY - kk:mm")))
+                .body("last_used", is(nowFromDB.toString("dd MMM YYYY - kk:mm")))
+                .body("created_by", is(CREATED_USER_NAME));
 
         Optional<String> descriptionInDb = app.getDatabaseHelper().lookupColumnForTokenTable("description", "token_link", TOKEN_LINK);
         assertThat(descriptionInDb.get(), equalTo(TOKEN_DESCRIPTION_2));
