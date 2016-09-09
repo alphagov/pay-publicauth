@@ -37,7 +37,7 @@ public class PostgresContainer {
     public static final String DB_PASSWORD = "mysecretpassword";
     public static final String DB_USERNAME = "postgres";
     public static final int DB_TIMEOUT_SEC = 15;
-    public static final String GOVUK_POSTGRES_IMAGE = "govukpay/postgres:1.0";
+    public static final String GOVUK_POSTGRES_IMAGE = "govukpay/postgres:9.4.4";
     public static final String INTERNAL_PORT = "5432";
 
     public PostgresContainer(DockerClient docker, String host) throws DockerException, InterruptedException, IOException, ClassNotFoundException {
@@ -46,11 +46,7 @@ public class PostgresContainer {
         this.docker = docker;
         this.host = host;
 
-        List<Image> govukpayPostgresImages = docker.listImages(allImages())
-                .stream()
-                .filter(image -> image.repoTags().contains(GOVUK_POSTGRES_IMAGE))
-                .collect(Collectors.toList());
-        if (govukpayPostgresImages.isEmpty() ) throw new RuntimeException("Please manually pull '"+ GOVUK_POSTGRES_IMAGE + "'");
+        docker.listImages(DockerClient.ListImagesParam.create("name", GOVUK_POSTGRES_IMAGE));
 
         final HostConfig hostConfig = HostConfig.builder().publishAllPorts(true).build();
         ContainerConfig containerConfig = ContainerConfig.builder()
