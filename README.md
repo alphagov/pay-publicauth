@@ -206,8 +206,8 @@ Retrieves generated tokens for this account.
 #### Query Parameters
 | Field              | Possible Values     | Description           |
 | ------------------ | -----------| --------------------- |
-| `state`            | `ALL`      | Retrieve all (revoked and active) tokens |
 | `state`            | `ACTIVE`   | Retrieve active tokens only |
+| `state`            | `REVOKED`  | Retrieve revoked tokens only |
 
 If query parameter `state` is missing, the request will retrieve **active** tokens by default.
 
@@ -227,10 +227,10 @@ If query parameter `state` is missing, the request will retrieve **active** toke
     Accept: application/json
     ```
     
-- Retrieve all tokens
+- Retrieve revoked tokens
 
     ```
-    GET /v1/frontend/auth/15?state=all
+    GET /v1/frontend/auth/15?state=revoked
     Accept: application/json
     ```
     
