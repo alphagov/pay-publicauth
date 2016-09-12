@@ -18,6 +18,8 @@ import java.util.Optional;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
 public class AuthTokenDaoTest {
@@ -73,7 +75,7 @@ public class AuthTokenDaoTest {
         app.getDatabaseHelper().insertAccount(TOKEN_HASH_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, TEST_USER_NAME_2);
 
         List<Map<String, Object>> tokens = authTokenDao.findTokens(ACCOUNT_ID);
-        DateTime now = app.getDatabaseHelper().getCurrentTime().toDateTime(DateTimeZone.UTC);
+        DateTime nowFromDB = app.getDatabaseHelper().getCurrentTime().toDateTime(DateTimeZone.UTC);
 
         //Retrieved in issued order from newest to oldest
         Map<String, Object> firstToken = tokens.get(0);
@@ -83,15 +85,15 @@ public class AuthTokenDaoTest {
         assertThat(firstToken.get("revoked"), nullValue());
         assertThat(firstToken.get("created_by"), is(TEST_USER_NAME_2));
         assertThat(firstToken.get("created_by"), is(TEST_USER_NAME_2));
-        assertThat(firstToken.get("issued_date"), is(now.toString("dd MMM YYYY - kk:mm")));
+        assertThat(firstToken.get("issued_date"), is(nowFromDB.toString("dd MMM YYYY - kk:mm")));
 
         Map<String, Object> secondToken = tokens.get(1);
         assertThat(secondToken.get("token_link"), is(TOKEN_LINK));
         assertThat(secondToken.get("description"), is(TOKEN_DESCRIPTION));
-        assertThat(secondToken.get("revoked"), is(now.toString("dd MMM YYYY - kk:mm")));
+        assertThat(secondToken.get("revoked"), is(nowFromDB.toString("dd MMM YYYY - kk:mm")));
         assertThat(secondToken.get("created_by"), is(TEST_USER_NAME));
-        assertThat(secondToken.get("issued_date"), is(now.toString("dd MMM YYYY - kk:mm")));
-        assertThat(secondToken.get("last_used"), is(now.toString("dd MMM YYYY - kk:mm")));
+        assertThat(secondToken.get("issued_date"), is(nowFromDB.toString("dd MMM YYYY - kk:mm")));
+        assertThat(secondToken.get("last_used"), is(nowFromDB.toString("dd MMM YYYY - kk:mm")));
 
     }
 
@@ -118,6 +120,21 @@ public class AuthTokenDaoTest {
         assertThat(updateResult, is(true));
         Optional<String> descriptionInDb = app.getDatabaseHelper().lookupColumnForTokenTable("description", "token_link", TOKEN_LINK);
         assertThat(descriptionInDb.get(), equalTo(TOKEN_DESCRIPTION_2));
+    }
+
+    @Test
+    public void shouldFindTokenByTokenLink() throws Exception {
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, TEST_USER_NAME);
+        Optional<Map<String, Object>> tokenMayBe = authTokenDao.findTokenByTokenLink(TOKEN_LINK);
+        Map<String, Object> token = tokenMayBe.get();
+        DateTime nowFromDB = app.getDatabaseHelper().getCurrentTime().toDateTime(DateTimeZone.UTC);
+
+        assertEquals(TOKEN_LINK, token.get("token_link"));
+        assertEquals(TOKEN_DESCRIPTION, token.get("description"));
+        assertEquals(TEST_USER_NAME, token.get("created_by"));
+        assertNull(token.get("revoked"));
+        assertThat(token.get("issued_date"), is(nowFromDB.toString("dd MMM YYYY - kk:mm")));
+        assertThat(token.get("last_used"), is(nowFromDB.toString("dd MMM YYYY - kk:mm")));
     }
 
     @Test

@@ -26,8 +26,8 @@ import static java.util.Arrays.asList;
 import static java.util.UUID.randomUUID;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.Response.*;
-import static uk.gov.pay.publicauth.util.ResponseUtil.badRequestResponse;
-import static uk.gov.pay.publicauth.util.ResponseUtil.notFoundResponse;
+import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
+import static uk.gov.pay.publicauth.util.ResponseUtil.*;
 
 @Singleton
 @Path("/")
@@ -57,7 +57,7 @@ public class PublicAuthResource {
     @Path(API_AUTH_PATH)
     @Produces(APPLICATION_JSON)
     @GET
-    public Response authenticateOld(@Auth String token) {
+    public Response authenticate(@Auth String token) {
         return authDao.findUnRevokedAccount(token)
                 .map(accountId -> ok(ImmutableMap.of("account_id", accountId)))
                 .orElseGet(() -> UNAUTHORISED)
@@ -103,10 +103,13 @@ public class PublicAuthResource {
     @Produces(APPLICATION_JSON)
     @PUT
     public Response updateTokenDescription(JsonNode payload) {
-        return withTokenLinkAndDescription(payload, (token_link, description) -> {
-            boolean updated = authDao.updateTokenDescription(token_link, description);
+        return withTokenLinkAndDescription(payload, (tokenLink, description) -> {
+            boolean updated = authDao.updateTokenDescription(tokenLink, description);
             if (updated) {
-                return ok(ImmutableMap.of("token_link", token_link, "description", description)).build();
+                Optional<Map<String, Object>> tokenData = authDao.findTokenByTokenLink(tokenLink);
+                return tokenData
+                        .map(token -> ok(token).build())
+                        .orElseGet(() -> serverErrorResponse(LOGGER, "An exception occurred while finding the updated token with link: " + tokenLink));
             }
             return notFoundResponse(LOGGER, "Could not update token description");
         });

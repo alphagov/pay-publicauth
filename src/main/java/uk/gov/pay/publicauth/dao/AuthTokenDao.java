@@ -85,4 +85,15 @@ public class AuthTokenDao {
                         .first()));
     }
 
+    public Optional<Map<String, Object>> findTokenByTokenLink(String tokenLink) {
+        return Optional.ofNullable(jdbi.withHandle(handle ->
+                handle.createQuery("SELECT token_link, description, " +
+                        "to_char(revoked,'DD Mon YYYY - HH24:MI') as revoked, " +
+                        "to_char(issued,'DD Mon YYYY - HH24:MI') as issued_date, " +
+                        "created_by, " +
+                        "to_char(last_used,'DD Mon YYYY - HH24:MI') as last_used " +
+                        "FROM tokens WHERE token_link = :token_link")
+                        .bind("token_link", tokenLink)
+                        .first()));
+    }
 }
