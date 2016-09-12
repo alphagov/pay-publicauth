@@ -201,15 +201,39 @@ Content-Type: application/json
 
 ### GET /v1/frontend/auth/{account_id}
 
-Retrieves all generated and not revoked tokens for this account.
+Retrieves generated tokens for this account.
+
+#### Query Parameters
+| Field              | Possible Values     | Description           |
+| ------------------ | -----------| --------------------- |
+| `state`            | `ALL`      | Retrieve all (revoked and active) tokens |
+| `state`            | `ACTIVE`   | Retrieve active tokens only |
+
+If query parameter `state` is missing, the request will retrieve **active** tokens by default.
 
 #### Request example
 
-```
-GET /v1/frontend/auth/15
-Accept: application/json
-```
+- Retrieve active tokens
 
+    ```
+    GET /v1/frontend/auth/15
+    Accept: application/json
+    ```
+    
+    or
+    
+    ```
+    GET /v1/frontend/auth/15?state=active
+    Accept: application/json
+    ```
+    
+- Retrieve all tokens
+
+    ```
+    GET /v1/frontend/auth/15?state=all
+    Accept: application/json
+    ```
+    
 #### Response example
 
 ```

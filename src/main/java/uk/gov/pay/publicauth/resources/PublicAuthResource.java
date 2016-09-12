@@ -4,11 +4,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import io.dropwizard.auth.Auth;
-import io.dropwizard.jersey.PATCH;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.gov.pay.publicauth.dao.AuthTokenDao;
+import uk.gov.pay.publicauth.model.TokenState;
 import uk.gov.pay.publicauth.model.Tokens;
 import uk.gov.pay.publicauth.service.TokenService;
 
@@ -26,7 +25,7 @@ import static java.util.Arrays.asList;
 import static java.util.UUID.randomUUID;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.Response.*;
-import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
+import static uk.gov.pay.publicauth.model.TokenState.ACTIVE;
 import static uk.gov.pay.publicauth.util.ResponseUtil.*;
 
 @Singleton
@@ -86,8 +85,9 @@ public class PublicAuthResource {
     @Path(FRONTEND_AUTH_PATH + "/{accountId}")
     @Produces(APPLICATION_JSON)
     @GET
-    public Response getIssuedTokensForAccount(@PathParam("accountId") String accountId) {
-        List<Map<String, Object>> tokensWithoutNullRevoked = authDao.findTokens(accountId)
+    public Response getIssuedTokensForAccount(@PathParam("accountId") String accountId, @QueryParam("state") TokenState state) {
+        state = Optional.ofNullable(state).orElse(ACTIVE);
+        List<Map<String, Object>> tokensWithoutNullRevoked = authDao.findTokensWithState(accountId, state)
                 .stream()
                 .map(tokenMap -> {
                     if (tokenMap.get("revoked") == null) tokenMap.remove("revoked");

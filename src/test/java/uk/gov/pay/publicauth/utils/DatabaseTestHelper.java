@@ -3,6 +3,7 @@ package uk.gov.pay.publicauth.utils;
 import com.google.common.base.Optional;
 import io.dropwizard.jdbi.args.JodaDateTimeMapper;
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.util.StringMapper;
 
@@ -17,19 +18,17 @@ public class DatabaseTestHelper {
     }
 
     public void insertAccount(String tokenHash, String randomTokenLink, String accountId, String description, String createdBy) {
-        insertAccount(tokenHash, randomTokenLink, accountId, description, false, createdBy);
+        insertAccount(tokenHash, randomTokenLink, accountId, description, null, createdBy, DateTime.now());
     }
 
-    public void insertAccount(String tokenHash, String randomTokenLink, String accountId, String description, Boolean revoked, String createdBy) {
-        if (revoked) {
+    public void insertAccount(String tokenHash, String randomTokenLink, String accountId, String description, DateTime revoked, String createdBy) {
+        insertAccount(tokenHash, randomTokenLink, accountId, description, revoked, createdBy, DateTime.now());
+    }
+
+    public void insertAccount(String tokenHash, String randomTokenLink, String accountId, String description, DateTime revoked, String createdBy, DateTime lastUsed) {
             jdbi.withHandle(handle ->
-                    handle.insert("INSERT INTO tokens(token_hash, token_link, account_id, description, revoked, created_by, last_used) VALUES (?,?,?,?,(now() at time zone 'utc'),?,(now() at time zone 'utc'))",
-                            tokenHash, randomTokenLink, accountId, description, createdBy));
-        } else {
-            jdbi.withHandle(handle ->
-                    handle.insert("INSERT INTO tokens(token_hash, token_link, account_id, description, created_by, last_used) VALUES (?,?,?,?,?,(now() at time zone 'utc'))",
-                            tokenHash, randomTokenLink, accountId, description, createdBy));
-        }
+                    handle.insert("INSERT INTO tokens(token_hash, token_link, account_id, description, revoked, created_by, last_used) VALUES (?,?,?,?,(? at time zone 'utc'),?,(? at time zone 'utc'))",
+                            tokenHash, randomTokenLink, accountId, description, revoked, createdBy, lastUsed));
     }
 
     public DateTime issueTimestampForAccount(String accountId) {
