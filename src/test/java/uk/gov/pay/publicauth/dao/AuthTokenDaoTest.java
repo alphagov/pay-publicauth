@@ -11,6 +11,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import uk.gov.pay.publicauth.utils.DropwizardAppWithPostgresRule;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -70,11 +71,12 @@ public class AuthTokenDaoTest {
 
     @Test
     public void shouldFindAllTokens() throws Exception {
-        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, true, TEST_USER_NAME);
+        DateTime revoked = DateTime.now();
+        DateTime nowFromDB = app.getDatabaseHelper().getCurrentTime().toDateTime(DateTimeZone.UTC);
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, TEST_USER_NAME);
         app.getDatabaseHelper().insertAccount(TOKEN_HASH_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, TEST_USER_NAME_2);
 
         List<Map<String, Object>> tokens = authTokenDao.findTokensWithState(ACCOUNT_ID, ALL);
-        DateTime nowFromDB = app.getDatabaseHelper().getCurrentTime().toDateTime(DateTimeZone.UTC);
 
         assertThat(tokens.size(), is(2));
 
@@ -91,7 +93,7 @@ public class AuthTokenDaoTest {
         Map<String, Object> secondToken = tokens.get(1);
         assertThat(secondToken.get("token_link"), is(TOKEN_LINK));
         assertThat(secondToken.get("description"), is(TOKEN_DESCRIPTION));
-        assertThat(secondToken.get("revoked"), is(nowFromDB.toString("dd MMM YYYY - kk:mm")));
+        assertThat(secondToken.get("revoked"), is(revoked.toString("dd MMM YYYY - kk:mm")));
         assertThat(secondToken.get("created_by"), is(TEST_USER_NAME));
         assertThat(secondToken.get("issued_date"), is(nowFromDB.toString("dd MMM YYYY - kk:mm")));
         assertThat(secondToken.get("last_used"), is(nowFromDB.toString("dd MMM YYYY - kk:mm")));
@@ -99,11 +101,13 @@ public class AuthTokenDaoTest {
     
     @Test
     public void shouldFindOnlyValidTokens() throws Exception {
-        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, true, TEST_USER_NAME);
-        app.getDatabaseHelper().insertAccount(TOKEN_HASH_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, TEST_USER_NAME_2);
+        DateTime now = app.getDatabaseHelper().getCurrentTime().toDateTime(DateTimeZone.UTC);
+        DateTime lastUsed = now.plusHours(1);
+        DateTime revoked = now.plusHours(2);
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, TEST_USER_NAME, lastUsed);
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, TEST_USER_NAME_2, lastUsed);
 
         List<Map<String, Object>> tokens = authTokenDao.findTokensWithState(ACCOUNT_ID, ACTIVE);
-        DateTime now = app.getDatabaseHelper().getCurrentTime().toDateTime(DateTimeZone.UTC);
 
         assertThat(tokens.size(), is(1));
         //Retrieved in issued order from newest to oldest
@@ -168,7 +172,7 @@ public class AuthTokenDaoTest {
 
     @Test
     public void notUpdateARevokedToken() throws Exception {
-        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, true, TEST_USER_NAME);
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, DateTime.now(), TEST_USER_NAME);
 
         boolean updateResult = authTokenDao.updateTokenDescription(TOKEN_LINK, TOKEN_DESCRIPTION_2);
 
@@ -204,7 +208,7 @@ public class AuthTokenDaoTest {
 
     @Test
     public void shouldNotRevokeATokenAlreadyRevoked() throws Exception {
-        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, true, TEST_USER_NAME);
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, DateTime.now(), TEST_USER_NAME);
 
         Optional<String> revokedDate = authTokenDao.revokeSingleToken(ACCOUNT_ID, TOKEN_LINK);
 
