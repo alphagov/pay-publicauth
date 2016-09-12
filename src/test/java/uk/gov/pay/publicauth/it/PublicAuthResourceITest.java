@@ -151,10 +151,9 @@ public class PublicAuthResourceITest {
     public void respondWith200_ifTokensHaveBeenIssuedForTheAccount() throws Exception {
         DateTime inserted = app.getDatabaseHelper().getCurrentTime().toDateTime(DateTimeZone.UTC);
         DateTime lastUsed = inserted.plusHours(1);
-        DateTime revoked = inserted.plusHours(2);
 
         app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, null, CREATED_USER_NAME, lastUsed);
-        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, revoked, CREATED_USER_NAME2, lastUsed);
+        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed);
 
         List<Map<String, String>> retrievedTokens = getTokensFor(ACCOUNT_ID)
                 .statusCode(200)
@@ -164,10 +163,10 @@ public class PublicAuthResourceITest {
 
         //Retrieved in issued order from newest to oldest
         Map<String, String> firstToken = retrievedTokens.get(0);
-        assertThat(firstToken.size(), is(6));
+        assertThat(firstToken.size(), is(5));
         assertThat(firstToken.get("token_link"), is(TOKEN_LINK_2));
         assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION_2));
-        assertThat(firstToken.get("revoked"), is(revoked.toString("dd MMM YYYY - kk:mm")));
+        assertThat(firstToken.containsKey("revoked"), is(false));
         assertThat(firstToken.get("created_by"), is(CREATED_USER_NAME2));
         assertThat(firstToken.get("issued_date"), is(inserted.toString("dd MMM YYYY - kk:mm")));
         assertThat(firstToken.get("last_used"), is(lastUsed.toString("dd MMM YYYY - kk:mm")));
@@ -183,7 +182,7 @@ public class PublicAuthResourceITest {
     }
 
     @Test
-    public void respondWith200_andRetrieveAllTokens() throws Exception {
+    public void respondWith200_andRetrieveRevokedTokens() throws Exception {
         DateTime inserted = app.getDatabaseHelper().getCurrentTime().toDateTime(DateTimeZone.UTC);
         DateTime lastUsed = inserted.plusHours(1);
         DateTime revoked = inserted.plusHours(2);
@@ -191,32 +190,24 @@ public class PublicAuthResourceITest {
         app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, CREATED_USER_NAME, lastUsed);
         app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed);
 
-        List<Map<String, String>> retrievedTokens = getTokensFor(ACCOUNT_ID, "all")
+        List<Map<String, String>> retrievedTokens = getTokensFor(ACCOUNT_ID, "revoked")
                 .statusCode(200)
-                .body("tokens", hasSize(2))
+                .body("tokens", hasSize(1))
                 .extract().path("tokens");
 
 
         //Retrieved in issued order from newest to oldest
         Map<String, String> firstToken = retrievedTokens.get(0);
-        assertThat(firstToken.get("token_link"), is(TOKEN_LINK_2));
-        assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION_2));
-        assertThat(firstToken.containsKey("revoked"), is(false));
-        assertThat(firstToken.get("created_by"), is(CREATED_USER_NAME2));
+        assertThat(firstToken.get("token_link"), is(TOKEN_LINK));
+        assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION));
+        assertThat(firstToken.get("revoked"), is(revoked.toString("dd MMM YYYY - kk:mm")));
+        assertThat(firstToken.get("created_by"), is(CREATED_USER_NAME));
         assertThat(firstToken.get("last_used"), is(lastUsed.toString("dd MMM YYYY - kk:mm")));
         assertThat(firstToken.get("issued_date"), is(inserted.toString("dd MMM YYYY - kk:mm")));
-
-        Map<String, String> secondToken = retrievedTokens.get(1);
-        assertThat(secondToken.get("token_link"), is(TOKEN_LINK));
-        assertThat(secondToken.get("description"), is(TOKEN_DESCRIPTION));
-        assertThat(secondToken.get("revoked"), is(revoked.toString("dd MMM YYYY - kk:mm")));
-        assertThat(secondToken.get("created_by"), is(CREATED_USER_NAME));
-        assertThat(secondToken.get("last_used"), is(lastUsed.toString("dd MMM YYYY - kk:mm")));
-        assertThat(secondToken.get("issued_date"), is(inserted.toString("dd MMM YYYY - kk:mm")));
     }
 
     @Test
-    public void respondWith200_andRetrieveAllActiveTokens() throws Exception {
+    public void respondWith200_andRetrieveActiveTokens() throws Exception {
         DateTime inserted = app.getDatabaseHelper().getCurrentTime().toDateTime(DateTimeZone.UTC);
         DateTime lastUsed = inserted.plusHours(1);
         DateTime revoked = inserted.plusHours(2);
@@ -510,7 +501,7 @@ public class PublicAuthResourceITest {
     }
 
     private ValidatableResponse getTokensFor(String accountId) {
-        return getTokensFor(accountId, "all");
+        return getTokensFor(accountId, "active");
     }
 
     private ValidatableResponse updateTokenDescription(String body) {

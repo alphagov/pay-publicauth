@@ -87,14 +87,7 @@ public class PublicAuthResource {
     @GET
     public Response getIssuedTokensForAccount(@PathParam("accountId") String accountId, @QueryParam("state") TokenState state) {
         state = Optional.ofNullable(state).orElse(ACTIVE);
-        List<Map<String, Object>> tokensWithoutNullRevoked = authDao.findTokensWithState(accountId, state)
-                .stream()
-                .map(tokenMap -> {
-                    if (tokenMap.get("revoked") == null) tokenMap.remove("revoked");
-                    return tokenMap;
-                })
-                .collect(Collectors.toList());
-
+        List<Map<String, Object>> tokensWithoutNullRevoked = authDao.findTokensWithState(accountId, state);
         return ok(ImmutableMap.of("tokens", tokensWithoutNullRevoked)).build();
     }
 

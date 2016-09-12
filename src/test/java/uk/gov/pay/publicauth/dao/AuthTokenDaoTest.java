@@ -65,60 +65,50 @@ public class AuthTokenDaoTest {
 
     @Test
     public void missingAccountHasNoAssociatedTokens() throws Exception {
-        List<Map<String, Object>> tokens = authTokenDao.findTokensWithState(ACCOUNT_ID, ALL);
+        List<Map<String, Object>> tokens = authTokenDao.findTokensWithState(ACCOUNT_ID, ACTIVE);
         assertThat(tokens, is(Lists.newArrayList()));
     }
 
     @Test
-    public void shouldFindAllTokens() throws Exception {
-        DateTime revoked = DateTime.now();
-        DateTime nowFromDB = app.getDatabaseHelper().getCurrentTime().toDateTime(DateTimeZone.UTC);
-        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, TEST_USER_NAME);
-        app.getDatabaseHelper().insertAccount(TOKEN_HASH_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, TEST_USER_NAME_2);
-
-        List<Map<String, Object>> tokens = authTokenDao.findTokensWithState(ACCOUNT_ID, ALL);
-
-        assertThat(tokens.size(), is(2));
-
-        //Retrieved in issued order from newest to oldest
-        Map<String, Object> firstToken = tokens.get(0);
-        assertThat(firstToken.get("token_link"), is(TOKEN_LINK_2));
-        assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION_2));
-        assertThat(firstToken.containsKey("revoked"), is(true));
-        assertThat(firstToken.get("revoked"), nullValue());
-        assertThat(firstToken.get("created_by"), is(TEST_USER_NAME_2));
-        assertThat(firstToken.get("created_by"), is(TEST_USER_NAME_2));
-        assertThat(firstToken.get("issued_date"), is(nowFromDB.toString("dd MMM YYYY - kk:mm")));
-
-        Map<String, Object> secondToken = tokens.get(1);
-        assertThat(secondToken.get("token_link"), is(TOKEN_LINK));
-        assertThat(secondToken.get("description"), is(TOKEN_DESCRIPTION));
-        assertThat(secondToken.get("revoked"), is(revoked.toString("dd MMM YYYY - kk:mm")));
-        assertThat(secondToken.get("created_by"), is(TEST_USER_NAME));
-        assertThat(secondToken.get("issued_date"), is(nowFromDB.toString("dd MMM YYYY - kk:mm")));
-        assertThat(secondToken.get("last_used"), is(nowFromDB.toString("dd MMM YYYY - kk:mm")));
-    }
-    
-    @Test
-    public void shouldFindOnlyValidTokens() throws Exception {
-        DateTime now = app.getDatabaseHelper().getCurrentTime().toDateTime(DateTimeZone.UTC);
-        DateTime lastUsed = now.plusHours(1);
-        DateTime revoked = now.plusHours(2);
+    public void shouldFindActiveTokens() throws Exception {
+        DateTime inserted = app.getDatabaseHelper().getCurrentTime().toDateTime(DateTimeZone.UTC);
+        DateTime lastUsed = inserted.plusMinutes(30);
+        DateTime revoked = inserted.plusMinutes(45);
         app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, TEST_USER_NAME, lastUsed);
         app.getDatabaseHelper().insertAccount(TOKEN_HASH_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, TEST_USER_NAME_2, lastUsed);
 
         List<Map<String, Object>> tokens = authTokenDao.findTokensWithState(ACCOUNT_ID, ACTIVE);
 
         assertThat(tokens.size(), is(1));
-        //Retrieved in issued order from newest to oldest
+
         Map<String, Object> firstToken = tokens.get(0);
         assertThat(firstToken.get("token_link"), is(TOKEN_LINK_2));
         assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION_2));
+        assertThat(firstToken.containsKey("revoked"), is(false));
+        assertThat(firstToken.get("created_by"), is(TEST_USER_NAME_2));
+        assertThat(firstToken.get("last_used"), is(lastUsed.toString("dd MMM YYYY - kk:mm")));
+        assertThat(firstToken.get("issued_date"), is(inserted.toString("dd MMM YYYY - kk:mm")));
+    }
+    
+    @Test
+    public void shouldFindRevokedTokens() throws Exception {
+        DateTime inserted = app.getDatabaseHelper().getCurrentTime().toDateTime(DateTimeZone.UTC);
+        DateTime lastUsed = inserted.plusMinutes(30);
+        DateTime revoked = inserted.plusMinutes(45);
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, TEST_USER_NAME, lastUsed);
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, TEST_USER_NAME_2, lastUsed);
+
+        List<Map<String, Object>> tokens = authTokenDao.findTokensWithState(ACCOUNT_ID, REVOKED);
+
+        assertThat(tokens.size(), is(1));
+        Map<String, Object> firstToken = tokens.get(0);
+        assertThat(firstToken.get("token_link"), is(TOKEN_LINK));
+        assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION));
         assertThat(firstToken.containsKey("revoked"), is(true));
-        assertThat(firstToken.get("revoked"), nullValue());
-        assertThat(firstToken.get("created_by"), is(TEST_USER_NAME_2));
-        assertThat(firstToken.get("created_by"), is(TEST_USER_NAME_2));
-        assertThat(firstToken.get("issued_date"), is(now.toString("dd MMM YYYY - kk:mm")));
+        assertThat(firstToken.get("revoked"), is(revoked.toString("dd MMM YYYY - kk:mm")));
+        assertThat(firstToken.get("created_by"), is(TEST_USER_NAME));
+        assertThat(firstToken.get("last_used"), is(lastUsed.toString("dd MMM YYYY - kk:mm")));
+        assertThat(firstToken.get("issued_date"), is(inserted.toString("dd MMM YYYY - kk:mm")));
     }
 
     @Test

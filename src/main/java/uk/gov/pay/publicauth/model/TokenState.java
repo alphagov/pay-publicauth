@@ -1,7 +1,7 @@
 package uk.gov.pay.publicauth.model;
 
 public enum TokenState {
-    ALL, ACTIVE;
+    REVOKED, ACTIVE;
 
     public static TokenState fromString(final String state) {
         try {
