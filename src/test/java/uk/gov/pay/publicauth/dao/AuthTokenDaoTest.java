@@ -11,7 +11,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import uk.gov.pay.publicauth.utils.DropwizardAppWithPostgresRule;
 
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -20,7 +19,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertNull;
-import static uk.gov.pay.publicauth.model.TokenState.*;
+import static uk.gov.pay.publicauth.model.TokenStateFilterParam.*;
 
 public class AuthTokenDaoTest {
 

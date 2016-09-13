@@ -4,7 +4,7 @@ import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.util.StringMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import uk.gov.pay.publicauth.model.TokenState;
+import uk.gov.pay.publicauth.model.TokenStateFilterParam;
 
 import java.util.List;
 import java.util.Map;
@@ -39,9 +39,9 @@ public class AuthTokenDao {
         );
     }
 
-    public List<Map<String, Object>> findTokensWithState(String accountId, TokenState tokenState) {
-        String revoked = (tokenState.equals(TokenState.REVOKED)) ? "AND revoked IS NOT NULL " : "AND revoked IS NULL ";
-        String revokedDate = (tokenState.equals(TokenState.REVOKED)) ? "to_char(revoked,'DD Mon YYYY - HH24:MI') as revoked, " : "";
+    public List<Map<String, Object>> findTokensWithState(String accountId, TokenStateFilterParam tokenStateFilterParam) {
+        String revoked = (tokenStateFilterParam.equals(TokenStateFilterParam.REVOKED)) ? "AND revoked IS NOT NULL " : "AND revoked IS NULL ";
+        String revokedDate = (tokenStateFilterParam.equals(TokenStateFilterParam.REVOKED)) ? "to_char(revoked,'DD Mon YYYY - HH24:MI') as revoked, " : "";
 
         return jdbi.withHandle(handle ->
                 handle.createQuery("SELECT token_link, description, " +
