@@ -39,7 +39,6 @@ public class PublicAuthResource {
     private static final ResponseBuilder UNAUTHORISED = status(Status.UNAUTHORIZED);
     private static final String API_AUTH_PATH = API_VERSION_PATH + "/api/auth";
     private static final String FRONTEND_AUTH_PATH = API_VERSION_PATH + "/frontend/auth";
-    private static final String FRONTEND_AUTH_PATH_NEW = API_VERSION_PATH + "/frontend/authorize"; //TODO: remove after backward compatibility
     public static final String ACCOUNT_ID_FIELD = "account_id";
     public static final String DESCRIPTION_FIELD = "description";
     public static final String CREATED_BY_FIELD = "created_by";
@@ -75,9 +74,7 @@ public class PublicAuthResource {
                     authDao.storeToken(token.getHashedToken(), randomUUID().toString(),
                             payload.get(ACCOUNT_ID_FIELD).asText(),
                             payload.get(DESCRIPTION_FIELD).asText(),
-                            // FIXME removed following line and uncomment next after backward comp is not needed
-                            payload.get(CREATED_BY_FIELD) != null ? payload.get(CREATED_BY_FIELD).asText() : "Not Stored");
-                    // payload.get(CREATED_BY_FIELD).asText());
+                            payload.get(CREATED_BY_FIELD).asText());
                     return ok(ImmutableMap.of("token", token.getApiKey())).build();
                 });
     }
@@ -137,10 +134,7 @@ public class PublicAuthResource {
     }
 
     private Optional<String> validateCreatePayload(JsonNode payload) {
-        List<String> missingFieldsInRequestPayload = findMissingFieldsInRequestPayload(payload,
-                ACCOUNT_ID_FIELD,
-                DESCRIPTION_FIELD);
-//                CREATED_BY_FIELD); // FIXME removed this comment after backward comp is not needed
+        List<String> missingFieldsInRequestPayload = findMissingFieldsInRequestPayload(payload, ACCOUNT_ID_FIELD, DESCRIPTION_FIELD, CREATED_BY_FIELD);
         if (!missingFieldsInRequestPayload.isEmpty()) {
             return Optional.of("Missing fields: [" + Joiner.on(", ").join(missingFieldsInRequestPayload) + "]");
         }

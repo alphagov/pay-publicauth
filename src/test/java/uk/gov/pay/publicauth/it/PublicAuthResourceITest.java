@@ -25,6 +25,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.core.Is.is;
 import static uk.gov.pay.publicauth.resources.PublicAuthResource.ACCOUNT_ID_FIELD;
+import static uk.gov.pay.publicauth.resources.PublicAuthResource.CREATED_BY_FIELD;
 import static uk.gov.pay.publicauth.resources.PublicAuthResource.DESCRIPTION_FIELD;
 
 public class PublicAuthResourceITest {
@@ -104,17 +105,15 @@ public class PublicAuthResourceITest {
         Optional<String> newTokenAccountId = app.getDatabaseHelper().lookupColumnForTokenTable(ACCOUNT_ID_FIELD, TOKEN_HASH_COLUMN, hashedToken);
         assertThat(newTokenAccountId.get(), equalTo(ACCOUNT_ID));
 
-        //TODO: include after backward compatible fixes
-//        Optional<String> newCreatedByEmail = app.getDatabaseHelper().lookupColumnForTokenTable(CREATED_BY_FIELD, TOKEN_HASH_COLUMN, hashedToken);
-//        assertThat(newCreatedByEmail.get(), equalTo(USER_EMAIL));
+        Optional<String> newCreatedByEmail = app.getDatabaseHelper().lookupColumnForTokenTable(CREATED_BY_FIELD, TOKEN_HASH_COLUMN, hashedToken);
+        assertThat(newCreatedByEmail.get(), equalTo(USER_EMAIL));
     }
 
     @Test
     public void respondWith400_ifAccountAndDescriptionAreMissing() throws Exception {
         createTokenFor("{}")
                 .statusCode(400)
-//                .body("message", is("Missing fields: [account_id, description, created_by]")); //TODO: include after backward compatibility
-                .body("message", is("Missing fields: [account_id, description]"));
+                .body("message", is("Missing fields: [account_id, description, created_by]"));
     }
 
     @Test
@@ -135,9 +134,7 @@ public class PublicAuthResourceITest {
     public void respondWith400_ifBodyIsMissing() throws Exception {
         createTokenFor("")
                 .statusCode(400)
-                //TODO: include after backward compatible fixes
-//                .body("message", is("Missing fields: [account_id, description, created_by]"));
-                .body("message", is("Missing fields: [account_id, description]"));
+                .body("message", is("Missing fields: [account_id, description, created_by]"));
     }
 
     @Test
