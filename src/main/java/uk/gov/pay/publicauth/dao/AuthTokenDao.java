@@ -63,13 +63,6 @@ public class AuthTokenDao {
         return rowsUpdated > 0;
     }
 
-    /**
-     * TODO: remove after backward incompatible changes are removed
-     */
-    public void storeToken(String tokenHash, String randomTokenLink, String accountId, String description) {
-        storeToken(tokenHash, randomTokenLink, accountId, description, "Not Stored");
-    }
-
     public void storeToken(String tokenHash, String randomTokenLink, String accountId, String description, String createdBy) {
         Integer rowsUpdated = jdbi.withHandle(handle ->
                 handle.insert("INSERT INTO tokens(token_hash, token_link, description, account_id, created_by) VALUES (?,?,?,?,?)",
