@@ -24,7 +24,9 @@ import static javax.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.core.Is.is;
+import static org.joda.time.DateTimeZone.*;
 import static uk.gov.pay.publicauth.resources.PublicAuthResource.ACCOUNT_ID_FIELD;
+import static uk.gov.pay.publicauth.resources.PublicAuthResource.CREATED_BY_FIELD;
 import static uk.gov.pay.publicauth.resources.PublicAuthResource.DESCRIPTION_FIELD;
 
 public class PublicAuthResourceITest {
@@ -104,17 +106,15 @@ public class PublicAuthResourceITest {
         Optional<String> newTokenAccountId = app.getDatabaseHelper().lookupColumnForTokenTable(ACCOUNT_ID_FIELD, TOKEN_HASH_COLUMN, hashedToken);
         assertThat(newTokenAccountId.get(), equalTo(ACCOUNT_ID));
 
-        //TODO: include after backward compatible fixes
-//        Optional<String> newCreatedByEmail = app.getDatabaseHelper().lookupColumnForTokenTable(CREATED_BY_FIELD, TOKEN_HASH_COLUMN, hashedToken);
-//        assertThat(newCreatedByEmail.get(), equalTo(USER_EMAIL));
+        Optional<String> newCreatedByEmail = app.getDatabaseHelper().lookupColumnForTokenTable(CREATED_BY_FIELD, TOKEN_HASH_COLUMN, hashedToken);
+        assertThat(newCreatedByEmail.get(), equalTo(USER_EMAIL));
     }
 
     @Test
     public void respondWith400_ifAccountAndDescriptionAreMissing() throws Exception {
         createTokenFor("{}")
                 .statusCode(400)
-//                .body("message", is("Missing fields: [account_id, description, created_by]")); //TODO: include after backward compatibility
-                .body("message", is("Missing fields: [account_id, description]"));
+                .body("message", is("Missing fields: [account_id, description, created_by]"));
     }
 
     @Test
@@ -135,9 +135,7 @@ public class PublicAuthResourceITest {
     public void respondWith400_ifBodyIsMissing() throws Exception {
         createTokenFor("")
                 .statusCode(400)
-                //TODO: include after backward compatible fixes
-//                .body("message", is("Missing fields: [account_id, description, created_by]"));
-                .body("message", is("Missing fields: [account_id, description]"));
+                .body("message", is("Missing fields: [account_id, description, created_by]"));
     }
 
     @Test
@@ -149,8 +147,13 @@ public class PublicAuthResourceITest {
 
     @Test
     public void respondWith200_ifTokensHaveBeenIssuedForTheAccount() throws Exception {
-        DateTime inserted = app.getDatabaseHelper().getCurrentTime().toDateTime(DateTimeZone.UTC);
+        DateTime inserted = app.getDatabaseHelper().getCurrentTime().toDateTime(UTC);
         DateTime lastUsed = inserted.plusHours(1);
+        DateTime revoked = new DateTime(UTC)
+                .plusDays(1)
+                .withHourOfDay(00)
+                .withMinuteOfHour(20)
+                .withSecondOfMinute(0);
 
         app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, null, CREATED_USER_NAME, lastUsed);
         app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed);
@@ -168,8 +171,8 @@ public class PublicAuthResourceITest {
         assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION_2));
         assertThat(firstToken.containsKey("revoked"), is(false));
         assertThat(firstToken.get("created_by"), is(CREATED_USER_NAME2));
-        assertThat(firstToken.get("issued_date"), is(inserted.toString("dd MMM YYYY - kk:mm")));
-        assertThat(firstToken.get("last_used"), is(lastUsed.toString("dd MMM YYYY - kk:mm")));
+        assertThat(firstToken.get("issued_date"), is(inserted.toString("dd MMM YYYY - HH:mm")));
+        assertThat(firstToken.get("last_used"), is(lastUsed.toString("dd MMM YYYY - HH:mm")));
 
         Map<String, String> secondToken = retrievedTokens.get(1);
         assertThat(secondToken.size(), is(5));
@@ -177,8 +180,8 @@ public class PublicAuthResourceITest {
         assertThat(secondToken.get("description"), is(TOKEN_DESCRIPTION));
         assertThat(secondToken.containsKey("revoked"), is(false));
         assertThat(secondToken.get("created_by"), is(CREATED_USER_NAME));
-        assertThat(secondToken.get("issued_date"), is(inserted.toString("dd MMM YYYY - kk:mm")));
-        assertThat(secondToken.get("last_used"), is(lastUsed.toString("dd MMM YYYY - kk:mm")));
+        assertThat(secondToken.get("issued_date"), is(inserted.toString("dd MMM YYYY - HH:mm")));
+        assertThat(secondToken.get("last_used"), is(lastUsed.toString("dd MMM YYYY - HH:mm")));
     }
 
     @Test
@@ -200,10 +203,10 @@ public class PublicAuthResourceITest {
         Map<String, String> firstToken = retrievedTokens.get(0);
         assertThat(firstToken.get("token_link"), is(TOKEN_LINK));
         assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION));
-        assertThat(firstToken.get("revoked"), is(revoked.toString("dd MMM YYYY - kk:mm")));
+        assertThat(firstToken.get("revoked"), is(revoked.toString("dd MMM YYYY - HH:mm")));
         assertThat(firstToken.get("created_by"), is(CREATED_USER_NAME));
-        assertThat(firstToken.get("last_used"), is(lastUsed.toString("dd MMM YYYY - kk:mm")));
-        assertThat(firstToken.get("issued_date"), is(inserted.toString("dd MMM YYYY - kk:mm")));
+        assertThat(firstToken.get("last_used"), is(lastUsed.toString("dd MMM YYYY - HH:mm")));
+        assertThat(firstToken.get("issued_date"), is(inserted.toString("dd MMM YYYY - HH:mm")));
     }
 
     @Test
@@ -225,13 +228,13 @@ public class PublicAuthResourceITest {
         assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION_2));
         assertThat(firstToken.containsKey("revoked"), is(false));
         assertThat(firstToken.get("created_by"), is(CREATED_USER_NAME2));
-        assertThat(firstToken.get("last_used"), is(lastUsed.toString("dd MMM YYYY - kk:mm")));
-        assertThat(firstToken.get("issued_date"), is(inserted.toString("dd MMM YYYY - kk:mm")));
+        assertThat(firstToken.get("last_used"), is(lastUsed.toString("dd MMM YYYY - HH:mm")));
+        assertThat(firstToken.get("issued_date"), is(inserted.toString("dd MMM YYYY - HH:mm")));
     }
 
     @Test
     public void respondWith200_andRetrieveActiveTokensIfNoQueryParamIsSpecified() throws Exception {
-        DateTime inserted = app.getDatabaseHelper().getCurrentTime().toDateTime(DateTimeZone.UTC);
+        DateTime inserted = app.getDatabaseHelper().getCurrentTime().toDateTime(UTC);
         DateTime lastUsed = inserted.plusHours(1);
         DateTime revoked = inserted.plusHours(2);
         app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, CREATED_USER_NAME, lastUsed);
@@ -248,13 +251,13 @@ public class PublicAuthResourceITest {
         assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION_2));
         assertThat(firstToken.containsKey("revoked"), is(false));
         assertThat(firstToken.get("created_by"), is(CREATED_USER_NAME2));
-        assertThat(firstToken.get("last_used"), is(lastUsed.toString("dd MMM YYYY - kk:mm")));
-        assertThat(firstToken.get("issued_date"), is(inserted.toString("dd MMM YYYY - kk:mm")));
+        assertThat(firstToken.get("last_used"), is(lastUsed.toString("dd MMM YYYY - HH:mm")));
+        assertThat(firstToken.get("issued_date"), is(inserted.toString("dd MMM YYYY - HH:mm")));
     }
 
     @Test
     public void respondWith200_andRetrieveActiveTokensIfUnknownQueryParamIsSpecified() throws Exception {
-        DateTime inserted = app.getDatabaseHelper().getCurrentTime().toDateTime(DateTimeZone.UTC);
+        DateTime inserted = app.getDatabaseHelper().getCurrentTime().toDateTime(UTC);
         DateTime lastUsed = inserted.plusHours(1);
         DateTime revoked = inserted.plusHours(2);
         app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, CREATED_USER_NAME, lastUsed);
@@ -270,8 +273,8 @@ public class PublicAuthResourceITest {
         assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION_2));
         assertThat(firstToken.containsKey("revoked"), is(false));
         assertThat(firstToken.get("created_by"), is(CREATED_USER_NAME2));
-        assertThat(firstToken.get("last_used"), is(lastUsed.toString("dd MMM YYYY - kk:mm")));
-        assertThat(firstToken.get("issued_date"), is(inserted.toString("dd MMM YYYY - kk:mm")));
+        assertThat(firstToken.get("last_used"), is(lastUsed.toString("dd MMM YYYY - HH:mm")));
+        assertThat(firstToken.get("issued_date"), is(inserted.toString("dd MMM YYYY - HH:mm")));
     }
 
     @Test
@@ -333,14 +336,14 @@ public class PublicAuthResourceITest {
     @Test
     public void respondWith200_ifUpdatingDescriptionOfExistingToken() throws Exception {
         app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
-        DateTime nowFromDB = app.getDatabaseHelper().getCurrentTime().toDateTime(DateTimeZone.UTC);
+        DateTime nowFromDB = app.getDatabaseHelper().getCurrentTime().toDateTime(UTC);
 
         updateTokenDescription("{\"token_link\" : \"" + TOKEN_LINK + "\", \"description\" : \"" + TOKEN_DESCRIPTION_2 + "\"}")
                 .statusCode(200)
                 .body("token_link", is(TOKEN_LINK))
                 .body("description", is(TOKEN_DESCRIPTION_2))
-                .body("issued_date", is(nowFromDB.toString("dd MMM YYYY - kk:mm")))
-                .body("last_used", is(nowFromDB.toString("dd MMM YYYY - kk:mm")))
+                .body("issued_date", is(nowFromDB.toString("dd MMM YYYY - HH:mm")))
+                .body("last_used", is(nowFromDB.toString("dd MMM YYYY - HH:mm")))
                 .body("created_by", is(CREATED_USER_NAME));
 
         Optional<String> descriptionInDb = app.getDatabaseHelper().lookupColumnForTokenTable("description", "token_link", TOKEN_LINK);

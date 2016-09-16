@@ -85,8 +85,8 @@ public class AuthTokenDaoTest {
         assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION_2));
         assertThat(firstToken.containsKey("revoked"), is(false));
         assertThat(firstToken.get("created_by"), is(TEST_USER_NAME_2));
-        assertThat(firstToken.get("last_used"), is(lastUsed.toString("dd MMM YYYY - kk:mm")));
-        assertThat(firstToken.get("issued_date"), is(inserted.toString("dd MMM YYYY - kk:mm")));
+        assertThat(firstToken.get("last_used"), is(lastUsed.toString("dd MMM YYYY - HH:mm")));
+        assertThat(firstToken.get("issued_date"), is(inserted.toString("dd MMM YYYY - HH:mm")));
     }
     
     @Test
@@ -104,10 +104,10 @@ public class AuthTokenDaoTest {
         assertThat(firstToken.get("token_link"), is(TOKEN_LINK));
         assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION));
         assertThat(firstToken.containsKey("revoked"), is(true));
-        assertThat(firstToken.get("revoked"), is(revoked.toString("dd MMM YYYY - kk:mm")));
+        assertThat(firstToken.get("revoked"), is(revoked.toString("dd MMM YYYY - HH:mm")));
         assertThat(firstToken.get("created_by"), is(TEST_USER_NAME));
-        assertThat(firstToken.get("last_used"), is(lastUsed.toString("dd MMM YYYY - kk:mm")));
-        assertThat(firstToken.get("issued_date"), is(inserted.toString("dd MMM YYYY - kk:mm")));
+        assertThat(firstToken.get("last_used"), is(lastUsed.toString("dd MMM YYYY - HH:mm")));
+        assertThat(firstToken.get("issued_date"), is(inserted.toString("dd MMM YYYY - HH:mm")));
     }
 
     @Test
@@ -146,8 +146,8 @@ public class AuthTokenDaoTest {
         assertThat(TOKEN_DESCRIPTION, is(token.get("description")));
         assertThat(TEST_USER_NAME, is(token.get("created_by")));
         assertThat(token.get("revoked"), is(nullValue()));
-        assertThat(token.get("issued_date"), is(nowFromDB.toString("dd MMM YYYY - kk:mm")));
-        assertThat(token.get("last_used"), is(nowFromDB.toString("dd MMM YYYY - kk:mm")));
+        assertThat(token.get("issued_date"), is(nowFromDB.toString("dd MMM YYYY - HH:mm")));
+        assertThat(token.get("last_used"), is(nowFromDB.toString("dd MMM YYYY - HH:mm")));
     }
 
     @Test
