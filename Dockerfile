@@ -1,6 +1,8 @@
 FROM openjdk:8-jre-alpine
 
 RUN apk update
+RUN apk upgrade
+
 RUN apk add bash
 
 ENV JAVA_HOME /usr/lib/jvm/java-8-*/
