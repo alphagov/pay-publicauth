@@ -20,11 +20,25 @@ public class PublicAuthConfiguration extends Configuration {
     @JsonProperty("tokensConfig")
     private TokensConfiguration TokensConfiguration;
 
+    @NotNull
+    private String graphiteHost;
+
+    @NotNull
+    private String graphitePort;
+
     public DataSourceFactory getDataSourceFactory() {
         return dataSourceFactory;
     }
 
     public TokensConfiguration getTokensConfiguration() {
         return TokensConfiguration;
+    }
+
+    public String getGraphiteHost() {
+        return graphiteHost;
+    }
+
+    public String getGraphitePort() {
+        return graphitePort;
     }
 }
