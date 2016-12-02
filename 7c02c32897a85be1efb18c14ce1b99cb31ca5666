@@ -7,3 +7,5 @@ alpha_release-21.approver=rory.smith@digital.cabinet-office.gov.uk
 alpha_release-21.approve-date=2016-12-02:10:18:27
 
 staging-1.tag=FAILED-21
+
+staging-1.FAILED-21.date=
