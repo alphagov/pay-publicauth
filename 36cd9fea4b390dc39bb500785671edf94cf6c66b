@@ -5,3 +5,5 @@ release.alpha_release-22.date=2017-02-02:15:08:43
 alpha_release-22.approver=F04F02A1
 
 alpha_release-22.approve-date=2017-02-03:11:02:12
+
+staging-1.tag=FAILED-22
