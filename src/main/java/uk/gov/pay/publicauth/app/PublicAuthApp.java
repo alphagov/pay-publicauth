@@ -4,8 +4,9 @@ import com.codahale.metrics.graphite.GraphiteReporter;
 import com.codahale.metrics.graphite.GraphiteSender;
 import com.codahale.metrics.graphite.GraphiteUDP;
 import io.dropwizard.Application;
-import io.dropwizard.auth.AuthFactory;
-import io.dropwizard.auth.oauth.OAuthFactory;
+import io.dropwizard.auth.AuthDynamicFeature;
+import io.dropwizard.auth.AuthValueFactoryProvider;
+import io.dropwizard.auth.oauth.OAuthCredentialAuthFilter;
 import io.dropwizard.configuration.EnvironmentVariableSubstitutor;
 import io.dropwizard.configuration.SubstitutingSourceProvider;
 import io.dropwizard.db.DataSourceFactory;
@@ -16,6 +17,7 @@ import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import org.skife.jdbi.v2.DBI;
 import uk.gov.pay.publicauth.app.config.PublicAuthConfiguration;
+import uk.gov.pay.publicauth.auth.Token;
 import uk.gov.pay.publicauth.auth.TokenAuthenticator;
 import uk.gov.pay.publicauth.dao.AuthTokenDao;
 import uk.gov.pay.publicauth.filters.LoggingFilter;
@@ -67,7 +69,13 @@ public class PublicAuthApp extends Application<PublicAuthConfiguration> {
 
         TokenService tokenService = new TokenService(conf.getTokensConfiguration());
 
-        environment.jersey().register(AuthFactory.binder(new OAuthFactory<>(new TokenAuthenticator(tokenService), "", String.class)));
+        environment.jersey().register(new AuthDynamicFeature(
+                new OAuthCredentialAuthFilter.Builder<Token>()
+                        .setAuthenticator(new TokenAuthenticator(tokenService))
+                        .setPrefix("Bearer")
+                        .buildAuthFilter()));
+        environment.jersey().register(new AuthValueFactoryProvider.Binder<>(Token.class));
+
         environment.jersey().register(new PublicAuthResource(new AuthTokenDao(jdbi), tokenService));
         environment.jersey().register(new HealthCheckResource(environment));
 

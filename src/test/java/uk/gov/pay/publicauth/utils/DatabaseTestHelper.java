@@ -1,13 +1,12 @@
 package uk.gov.pay.publicauth.utils;
 
-import com.google.common.base.Optional;
 import io.dropwizard.jdbi.args.JodaDateTimeMapper;
 import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.util.StringMapper;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.TimeZone;
 
 public class DatabaseTestHelper {

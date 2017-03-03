@@ -2,12 +2,11 @@ package uk.gov.pay.publicauth.utils;
 
 import com.google.common.base.Stopwatch;
 import com.spotify.docker.client.DockerClient;
-import com.spotify.docker.client.DockerException;
 import com.spotify.docker.client.LogStream;
+import com.spotify.docker.client.exceptions.DockerException;
 import com.spotify.docker.client.messages.ContainerConfig;
 import com.spotify.docker.client.messages.ContainerInfo;
 import com.spotify.docker.client.messages.HostConfig;
-import com.spotify.docker.client.messages.Image;
 import com.spotify.docker.client.messages.PortBinding;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,9 +17,7 @@ import java.sql.DriverManager;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
-import static com.spotify.docker.client.DockerClient.ListImagesParam.allImages;
 import static java.lang.Integer.parseInt;
 import static java.util.stream.Collectors.joining;
 
@@ -40,7 +37,7 @@ public class PostgresContainer {
     public static final String GOVUK_POSTGRES_IMAGE = "govukpay/postgres:9.4.4";
     public static final String INTERNAL_PORT = "5432";
 
-    public PostgresContainer(DockerClient docker, String host) throws DockerException, InterruptedException, IOException, ClassNotFoundException {
+    public PostgresContainer(DockerClient docker, String host) throws InterruptedException, IOException, ClassNotFoundException, DockerException {
         Class.forName("org.postgresql.Driver");
 
         this.docker = docker;
@@ -116,7 +113,7 @@ public class PostgresContainer {
         try {
             stopped = true;
             System.err.println("Killing postgres container with ID: " + containerId);
-            LogStream logs = docker.logs(containerId, DockerClient.LogsParameter.STDOUT, DockerClient.LogsParameter.STDERR);
+            LogStream logs = docker.logs(containerId, DockerClient.LogsParam.stdout(), DockerClient.LogsParam.stderr());
             System.err.println("Killed container logs:\n");
             logs.attach(System.err, System.err);
             docker.stopContainer(containerId, 5);

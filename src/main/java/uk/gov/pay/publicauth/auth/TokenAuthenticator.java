@@ -1,11 +1,12 @@
 package uk.gov.pay.publicauth.auth;
 
-import com.google.common.base.Optional;
 import io.dropwizard.auth.AuthenticationException;
 import io.dropwizard.auth.Authenticator;
 import uk.gov.pay.publicauth.service.TokenService;
 
-public class TokenAuthenticator implements Authenticator<String, String> {
+import java.util.Optional;
+
+public class TokenAuthenticator implements Authenticator<String, Token> {
 
     private TokenService tokenService;
 
@@ -14,7 +15,7 @@ public class TokenAuthenticator implements Authenticator<String, String> {
     }
 
     @Override
-    public Optional<String> authenticate(String bearerToken) throws AuthenticationException {
+    public Optional<Token> authenticate(String bearerToken) throws AuthenticationException {
         return tokenService.extractEncryptedTokenFrom(bearerToken);
     }
 }
