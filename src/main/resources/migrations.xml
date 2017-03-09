@@ -17,10 +17,10 @@
             <column name="account_id" type="varchar(255)">
                 <constraints nullable="false"/>
             </column>
-            <column name="issued" type="timestamp without time zone" defaultValueComputed="(now() at time zone 'utc')">
+            <column name="issued" type="timestamp without timezone" defaultValueComputed="(now() at time zone 'utc')">
                 <constraints nullable="false"/>
             </column>
-            <column name="revoked" type="timestamp without time zone">
+            <column name="revoked" type="timestamp without timezone">
                 <constraints nullable="true"/>
             </column>
         </createTable>
@@ -67,7 +67,7 @@
         <addNotNullConstraint columnName="created_by" tableName="tokens"/>
 
         <addColumn tableName="tokens">
-            <column name="last_used" type="timestamp without time zone">
+            <column name="last_used" type="timestamp without timezone">
                 <constraints nullable="true"/>
             </column>
         </addColumn>
