@@ -1,6 +1,5 @@
 package uk.gov.pay.publicauth.service;
 
-import com.google.common.base.Optional;
 import com.google.common.io.BaseEncoding;
 import org.apache.commons.codec.digest.HmacUtils;
 import org.junit.Before;
@@ -9,9 +8,11 @@ import org.junit.runner.RunWith;
 import org.mindrot.jbcrypt.BCrypt;
 import org.mockito.runners.MockitoJUnitRunner;
 import uk.gov.pay.publicauth.app.config.TokensConfiguration;
+import uk.gov.pay.publicauth.auth.Token;
 import uk.gov.pay.publicauth.model.Tokens;
 
 import java.util.List;
+import java.util.Optional;
 
 import static com.google.common.primitives.Chars.asList;
 import static org.apache.commons.collections4.CollectionUtils.containsAll;
@@ -110,7 +111,7 @@ public class TokenServiceTest {
     @Test
     public void extractEncryptedTokenFromApiKey_shouldNotBePresent_whenFormatIsNotValid() {
 
-        Optional<String> tokenOptional = tokenService.extractEncryptedTokenFrom("a");
+        Optional<Token> tokenOptional = tokenService.extractEncryptedTokenFrom("a");
         assertThat(tokenOptional.isPresent(), is(false));
     }
 
@@ -120,12 +121,12 @@ public class TokenServiceTest {
         String token = "thisismvplaintoken";
         String hmac = BaseEncoding.base32Hex().omitPadding().lowerCase().encode(HmacUtils.hmacSha1(EXPECTED_SECRET_KEY, token));
 
-        Optional<String> expectedValidTokenOptional = tokenService.extractEncryptedTokenFrom(token + hmac);
+        Optional<Token> expectedValidTokenOptional = tokenService.extractEncryptedTokenFrom(token + hmac);
         assertThat(expectedValidTokenOptional.isPresent(), is(true));
 
         String tokenInvalid = token + "1";
 
-        Optional<String> expectedInvalidTokenOptional = tokenService.extractEncryptedTokenFrom(tokenInvalid + hmac);
+        Optional<Token> expectedInvalidTokenOptional = tokenService.extractEncryptedTokenFrom(tokenInvalid + hmac);
         assertThat(expectedInvalidTokenOptional.isPresent(), is(false));
     }
 
@@ -135,7 +136,7 @@ public class TokenServiceTest {
         String tokenGreaterThan26Characters = "morethan26chartokenisnotval";
         String hmac = BaseEncoding.base32Hex().omitPadding().lowerCase().encode(HmacUtils.hmacSha1(EXPECTED_SECRET_KEY, tokenGreaterThan26Characters));
 
-        Optional<String> expectedValidTokenOptional = tokenService.extractEncryptedTokenFrom(tokenGreaterThan26Characters + hmac);
+        Optional<Token> expectedValidTokenOptional = tokenService.extractEncryptedTokenFrom(tokenGreaterThan26Characters + hmac);
         assertThat(expectedValidTokenOptional.isPresent(), is(false));
     }
 
@@ -148,7 +149,7 @@ public class TokenServiceTest {
         String tokenLowercaseButNoInBase32Hex = "x";
         String hmac = BaseEncoding.base32Hex().omitPadding().lowerCase().encode(HmacUtils.hmacSha1(EXPECTED_SECRET_KEY, tokenLowercaseButNoInBase32Hex));
 
-        Optional<String> expectedValidTokenOptional = tokenService.extractEncryptedTokenFrom(tokenLowercaseButNoInBase32Hex + hmac);
+        Optional<Token> expectedValidTokenOptional = tokenService.extractEncryptedTokenFrom(tokenLowercaseButNoInBase32Hex + hmac);
         assertThat(expectedValidTokenOptional.isPresent(), is(true));
     }
 
@@ -161,7 +162,7 @@ public class TokenServiceTest {
         String tokenUppercaseBase32Hex = "A";
         String hmac = BaseEncoding.base32Hex().omitPadding().lowerCase().encode(HmacUtils.hmacSha1(EXPECTED_SECRET_KEY, tokenUppercaseBase32Hex));
 
-        Optional<String> expectedValidTokenOptional = tokenService.extractEncryptedTokenFrom(tokenUppercaseBase32Hex + hmac);
+        Optional<Token> expectedValidTokenOptional = tokenService.extractEncryptedTokenFrom(tokenUppercaseBase32Hex + hmac);
         assertThat(expectedValidTokenOptional.isPresent(), is(true));
     }
 }

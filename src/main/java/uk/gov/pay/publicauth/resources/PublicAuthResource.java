@@ -6,6 +6,7 @@ import com.google.common.collect.ImmutableMap;
 import io.dropwizard.auth.Auth;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import uk.gov.pay.publicauth.auth.Token;
 import uk.gov.pay.publicauth.dao.AuthTokenDao;
 import uk.gov.pay.publicauth.model.TokenStateFilterParam;
 import uk.gov.pay.publicauth.model.Tokens;
@@ -55,8 +56,8 @@ public class PublicAuthResource {
     @Path(API_AUTH_PATH)
     @Produces(APPLICATION_JSON)
     @GET
-    public Response authenticate(@Auth String token) {
-        return authDao.findUnRevokedAccount(token)
+    public Response authenticate(@Auth Token token) {
+        return authDao.findUnRevokedAccount(token.getName())
                 .map(accountId -> ok(ImmutableMap.of("account_id", accountId)))
                 .orElseGet(() -> UNAUTHORISED)
                 .build();

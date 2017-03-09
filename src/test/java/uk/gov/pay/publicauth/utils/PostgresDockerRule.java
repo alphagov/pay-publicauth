@@ -1,9 +1,9 @@
 package uk.gov.pay.publicauth.utils;
 
 import com.spotify.docker.client.DefaultDockerClient;
-import com.spotify.docker.client.DockerCertificateException;
 import com.spotify.docker.client.DockerClient;
-import com.spotify.docker.client.DockerException;
+import com.spotify.docker.client.exceptions.DockerCertificateException;
+import com.spotify.docker.client.exceptions.DockerException;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -29,7 +29,7 @@ public class PostgresDockerRule implements TestRule {
                     orElseThrow(() -> new RuntimeException(DOCKER_HOST + " environment variable not set. It has to be set to the docker daemon location."));
             URI dockerHostURI = new URI(dockerHost);
             boolean isDockerDaemonLocal = "unix".equals(dockerHostURI.getScheme());
-            if(!isDockerDaemonLocal) {
+            if (!isDockerDaemonLocal) {
                 assertNotNull(DOCKER_CERT_PATH + " environment variable not set.", System.getenv(DOCKER_CERT_PATH));
             }
             host = isDockerDaemonLocal ? "localhost" : dockerHostURI.getHost();
@@ -57,7 +57,7 @@ public class PostgresDockerRule implements TestRule {
                 DockerClient docker = DefaultDockerClient.fromEnv().build();
                 container = new PostgresContainer(docker, host);
             }
-        } catch (DockerCertificateException | InterruptedException | DockerException | IOException | ClassNotFoundException e) {
+        } catch (InterruptedException | DockerCertificateException | DockerException | IOException | ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
     }

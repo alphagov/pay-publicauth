@@ -1,13 +1,15 @@
 package uk.gov.pay.publicauth.service;
 
-import com.google.common.base.Optional;
 import com.google.common.io.BaseEncoding;
 import org.apache.commons.codec.digest.HmacUtils;
 import org.mindrot.jbcrypt.BCrypt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.gov.pay.publicauth.app.config.TokensConfiguration;
+import uk.gov.pay.publicauth.auth.Token;
 import uk.gov.pay.publicauth.model.Tokens;
+
+import java.util.Optional;
 
 import static uk.gov.pay.publicauth.service.RandomIdGenerator.*;
 
@@ -42,7 +44,7 @@ public class TokenService {
      * - ApiKey = Token + Hmac(Token + SecretKey).
      * - Extract Token, check Hmac and encrypt.
      */
-    public Optional<String> extractEncryptedTokenFrom(String apiKey) {
+    public Optional<Token> extractEncryptedTokenFrom(String apiKey) {
         return extractAndEncryptTokenFrom(apiKey);
     }
 
@@ -56,19 +58,19 @@ public class TokenService {
         return token + encodedHmac;
     }
 
-    private Optional<String> extractAndEncryptTokenFrom(String apiKey) {
+    private Optional<Token> extractAndEncryptTokenFrom(String apiKey) {
         if (isValidLength(apiKey)) {
             int initHmacIndex = apiKey.length() - HMAC_SHA1_LENGTH;
             String hmacFromApiKey = apiKey.substring(initHmacIndex);
             String tokenFromApiKey = apiKey.substring(0, initHmacIndex);
             if (tokenMatchesHmac(tokenFromApiKey, hmacFromApiKey)) {
-                return Optional.of(encrypt(tokenFromApiKey));
+                return Optional.of(new Token(encrypt(tokenFromApiKey)));
             }
             LOGGER.error("Authorisation failure - token does not match the given Hmac");
         }
 
         LOGGER.error("Authorisation failure - token extraction from key failed");
-        return Optional.absent();
+        return Optional.empty();
     }
 
     private boolean tokenMatchesHmac(String token, String currentHmac) {
