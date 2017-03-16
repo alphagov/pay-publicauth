@@ -5,7 +5,7 @@ Payments Public API Authentication Service
 
 One of the responsabilities of this service is to issue Api keys so integrators can request operations throught the Public API. An API Key is composed by: Token + HMAC (Token, Signature).
 
-_Tokens_ are randomly generated values and these values are stored in the database (hashed) identifying a single accountId.
+_Tokens_ are randomly generated values and these values are stored in the database (hashed) identifying a single accountID.
 
 pay-publicauth creates an _API key_ by concatinating the token value as plain text with the HMAC signature of the same token using a secret key. The HMAC signature is used to confirm the token was issued by the pay-publicauth service.
 
@@ -13,8 +13,8 @@ pay-publicauth creates an _API key_ by concatinating the token value as plain te
 | NAME                  | DESCRIPTION                                                                    |
 | ----------------------| ------------------------------------------------------------------------------ |
 | DB_SSL_OPTION         | To turn TLS on this value must be set as _“ssl=true”_. Otherwise must be empty. |
-| TOKEN_DB_BCRYPT_SALT  | Salt used for the hashing algorithm (Bcrypt) to hash tokens before being stored in DB. |
-| TOKEN_API_HMAC_SECRET | HMAC secret to create the a signature for the API Key. |
+| TOKEN_DB_BCRYPT_SALT  | Salt used for the hashing algorithm (bcrypt) to hash tokens before being stored in DB. |
+| TOKEN_API_HMAC_SECRET | HMAC secret to create the signature for the API Key. |
 
 ## Integration tests
 
@@ -38,15 +38,15 @@ The [API Specification](docs/api_specification.md) provides more detail on the p
 
 | Path                          | Supported Methods | Description                        |
 | ----------------------------- | ----------------- | ---------------------------------- |
-|[```/v1/api/auth```](docs/api_specification.md#get-v1apiauth)              | GET    |  Look up the account id for a token.            |
+|[```/v1/api/auth```](docs/api_specification.md#get-v1apiauth)              | GET    |  Look up the account ID for a token.            |
 |[```/v1/frontend/auth```](docs/api_specification.md#post-v1frontendauth)             | POST   |  Generates a new dev token for a given account. |
 |[```/v1/frontend/auth```](docs/api_specification.md#put-v1frontendauth)             | PUT   |  Updates the description of an existing dev token. |
-|[```/v1/frontend/auth/{account_id}```](docs/api_specification.md#get-v1frontendauthaccount_id)             | GET   |  Retrieves all generated and not revoked tokens for this account. |
+|[```/v1/frontend/auth/{account_id}```](docs/api_specification.md#get-v1frontendauthaccount_id)             | GET   |  Retrieves all generated tokens for this account that are not revoked. |
 |[```/v1/frontend/auth/{account_id}```](docs/api_specification.md#delete-v1frontendauthaccount_id)             | DELETE   |  Revokes the supplied dev token for this account. |
 
 ## Licence
 
-[MIT License](LICENCE)
+[MIT License](LICENSE)
 
 ## Responsible Disclosure
 
