@@ -7,7 +7,7 @@ One of the responsabilities of this service is to issue Api keys so integrators 
 
 _Tokens_ are randomly generated values and these values are stored in the database (hashed) identifying a single accountId.
 
-pay-publicauth stores tokens (hashed) along with the accountId in the DB and creates the API key with this token value as plain text including an HMAC signature of the same token using a secret key (the HMAC signature is used to confirm the token was issued by the pay-publicauth service).
+pay-publicauth creates an _API key_ by concatinating the token value as plain text with the HMAC signature of the same token using a secret key. The HMAC signature is used to confirm the token was issued by the pay-publicauth service.
 
 ## Environment variables
 | NAME                  | DESCRIPTION                                                                    |
