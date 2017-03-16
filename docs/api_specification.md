@@ -236,7 +236,7 @@ Content-Type: application/json
 Content-Type: application/json
 
 {
-    "revoked": "10 Oct 2015"
+    "revoked": "10 Oct 1015 - 12:12"
 }
 ```
 
