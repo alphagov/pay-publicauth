@@ -3,7 +3,7 @@ Payments Public API Authentication Service
 
 ## API Keys
 
-One of the responsabilities of this service is to issue Api keys so integrators can request operations throught the Public API. An API Key is composed by: Token + HMAC (Token, Signature).
+One of the responsabilities of this service is to issue API keys so integrators can request operations through the Public API. An API Key is composed by: Token + HMAC (Token, Signature).
 
 _Tokens_ are randomly generated values and these values are stored in the database (hashed) identifying a single accountID.
 
