@@ -2,7 +2,7 @@
 
 ## GET /v1/api/auth
 
-This endpoint looks up the account id for a token.
+This endpoint looks up the account ID for a token.
 
 ### Request example
 
@@ -34,13 +34,13 @@ Or if the token does not exist or has been revoked:
 
 | Field                    | always present | Description                         |
 | ------------------------ |:--------------:| ----------------------------------- |
-| `account_id`             | X              | The account Id for the bearer token |
+| `account_id`             | X              | The account ID for the bearer token |
 
 -----------------------------------------------------------------------------------------------------------
 
 ## POST /v1/frontend/auth
 
-Generate and return a new token for the given gateway account id.
+Generate and return a new token for the given gateway account ID.
 
 ### Request example
 
