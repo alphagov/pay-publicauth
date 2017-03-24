@@ -5,3 +5,5 @@ release.alpha_release-26.date=2017-03-22:16:25:28
 alpha_release-26.approver=F04F02A1
 
 alpha_release-26.approve-date=2017-03-22:17:57:41
+
+staging-1.tag=alpha_staging-1-26
