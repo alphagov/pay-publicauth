@@ -19,6 +19,7 @@ pipeline {
   stages {
     stage('Maven Build') {
       steps {
+        sh 'docker pull govukpay/postgres:9.4.4'
         sh 'mvn clean package'
       }
     }
