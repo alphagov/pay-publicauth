@@ -21,6 +21,7 @@ import uk.gov.pay.publicauth.auth.Token;
 import uk.gov.pay.publicauth.auth.TokenAuthenticator;
 import uk.gov.pay.publicauth.dao.AuthTokenDao;
 import uk.gov.pay.publicauth.filters.LoggingFilter;
+import uk.gov.pay.publicauth.healthcheck.DatabaseHealthCheck;
 import uk.gov.pay.publicauth.resources.HealthCheckResource;
 import uk.gov.pay.publicauth.resources.PublicAuthResource;
 import uk.gov.pay.publicauth.service.TokenService;
@@ -78,6 +79,7 @@ public class PublicAuthApp extends Application<PublicAuthConfiguration> {
 
         environment.jersey().register(new PublicAuthResource(new AuthTokenDao(jdbi), tokenService));
         environment.jersey().register(new HealthCheckResource(environment));
+        environment.healthChecks().register("database", new DatabaseHealthCheck(conf,environment));
 
         environment.servlets().addFilter("LoggingFilter", new LoggingFilter())
                 .addMappingForUrlPatterns(of(REQUEST), true, API_VERSION_PATH + "/*");
