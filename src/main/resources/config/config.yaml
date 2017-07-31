@@ -7,7 +7,7 @@ server:
       port: ${ADMIN_PORT}
 
 logging:
-    level: INFO
+    level: ERROR
     appenders:
       - type: console
         threshold: ALL
@@ -22,7 +22,7 @@ database:
   url: jdbc:postgresql://${DB_HOST}:5432/publicauth?sslfactory=uk.gov.pay.publicauth.util.TrustingSSLSocketFactory&${DB_SSL_OPTION}
 
   # the maximum amount of time to wait on an empty pool before throwing an exception
-  maxWaitForConnection: 1s
+  maxWaitForConnection: 30s
 
   # the SQL query to run when validating a connection's liveness
   validationQuery: "/* pay-publicauth Health Check */ SELECT 1"
