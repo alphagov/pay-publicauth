@@ -12,7 +12,6 @@ import org.joda.time.ReadableInstant;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mindrot.jbcrypt.BCrypt;
-import uk.gov.pay.publicauth.model.TokenPaymentType;
 import uk.gov.pay.publicauth.utils.DropwizardAppWithPostgresRule;
 
 import java.util.List;
@@ -26,8 +25,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.core.Is.is;
 import static org.joda.time.DateTimeZone.*;
-import static uk.gov.pay.publicauth.model.TokenPaymentType.*;
-import static uk.gov.pay.publicauth.resources.PublicAuthResource.*;
+import static uk.gov.pay.publicauth.resources.PublicAuthResource.ACCOUNT_ID_FIELD;
+import static uk.gov.pay.publicauth.resources.PublicAuthResource.CREATED_BY_FIELD;
+import static uk.gov.pay.publicauth.resources.PublicAuthResource.DESCRIPTION_FIELD;
 
 public class PublicAuthResourceITest {
 
@@ -55,12 +55,6 @@ public class PublicAuthResourceITest {
     private String validTokenPayload = new Gson().toJson(
             ImmutableMap.of("account_id", ACCOUNT_ID,
                     "description", TOKEN_DESCRIPTION,
-                    "created_by", USER_EMAIL));
-
-    private String validTokenPayloadWithTokenType = new Gson().toJson(
-            ImmutableMap.of("account_id", ACCOUNT_ID,
-                    "description", TOKEN_DESCRIPTION,
-                    "token_type", TokenPaymentType.DIRECT_DEBIT.toString(),
                     "created_by", USER_EMAIL));
 
     @Test
@@ -114,24 +108,6 @@ public class PublicAuthResourceITest {
 
         Optional<String> newCreatedByEmail = app.getDatabaseHelper().lookupColumnForTokenTable(CREATED_BY_FIELD, TOKEN_HASH_COLUMN, hashedToken);
         assertThat(newCreatedByEmail.get(), equalTo(USER_EMAIL));
-
-        Optional<String> newTokenType = app.getDatabaseHelper().lookupColumnForTokenTable(TOKEN_TYPE_FIELD, TOKEN_HASH_COLUMN, hashedToken);
-        assertThat(newTokenType.get(), equalTo(TokenPaymentType.CARD.toString()));
-    }
-
-    @Test
-    public void respondWith200_whenCreateAToken_ifProvidedAccountIdDescriptionAndTokenType() throws Exception {
-        String newToken = createTokenFor(validTokenPayloadWithTokenType)
-                .statusCode(200)
-                .body("token", is(notNullValue()))
-                .extract().path("token");
-
-        int apiKeyHashSize = 32;
-        String tokenApiKey = newToken.substring(0, newToken.length() - apiKeyHashSize);
-        String hashedToken = BCrypt.hashpw(tokenApiKey, SALT);
-
-        Optional<String> newTokenType = app.getDatabaseHelper().lookupColumnForTokenTable(TOKEN_TYPE_FIELD, TOKEN_HASH_COLUMN, hashedToken);
-        assertThat(newTokenType.get(), equalTo(TokenPaymentType.DIRECT_DEBIT.toString()));
     }
 
     @Test
@@ -173,8 +149,13 @@ public class PublicAuthResourceITest {
     public void respondWith200_ifTokensHaveBeenIssuedForTheAccount() throws Exception {
         DateTime inserted = app.getDatabaseHelper().getCurrentTime().toDateTime(UTC);
         DateTime lastUsed = inserted.plusHours(1);
+        DateTime revoked = new DateTime(UTC)
+                .plusDays(1)
+                .withHourOfDay(00)
+                .withMinuteOfHour(20)
+                .withSecondOfMinute(0);
 
-        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, null, CREATED_USER_NAME, lastUsed, DIRECT_DEBIT);
+        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, null, CREATED_USER_NAME, lastUsed);
         app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed);
 
         List<Map<String, String>> retrievedTokens = getTokensFor(ACCOUNT_ID)
@@ -185,22 +166,20 @@ public class PublicAuthResourceITest {
 
         //Retrieved in issued order from newest to oldest
         Map<String, String> firstToken = retrievedTokens.get(0);
-        assertThat(firstToken.size(), is(6));
+        assertThat(firstToken.size(), is(5));
         assertThat(firstToken.get("token_link"), is(TOKEN_LINK_2));
         assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION_2));
         assertThat(firstToken.containsKey("revoked"), is(false));
         assertThat(firstToken.get("created_by"), is(CREATED_USER_NAME2));
-        assertThat(firstToken.get("token_type"), is(CARD.toString()));
         assertThat(firstToken.get("issued_date"), is(inserted.toString("dd MMM YYYY - HH:mm")));
         assertThat(firstToken.get("last_used"), is(lastUsed.toString("dd MMM YYYY - HH:mm")));
 
         Map<String, String> secondToken = retrievedTokens.get(1);
-        assertThat(secondToken.size(), is(6));
+        assertThat(secondToken.size(), is(5));
         assertThat(secondToken.get("token_link"), is(TOKEN_LINK));
         assertThat(secondToken.get("description"), is(TOKEN_DESCRIPTION));
         assertThat(secondToken.containsKey("revoked"), is(false));
         assertThat(secondToken.get("created_by"), is(CREATED_USER_NAME));
-        assertThat(secondToken.get("token_type"), is(DIRECT_DEBIT.toString()));
         assertThat(secondToken.get("issued_date"), is(inserted.toString("dd MMM YYYY - HH:mm")));
         assertThat(secondToken.get("last_used"), is(lastUsed.toString("dd MMM YYYY - HH:mm")));
     }
@@ -226,7 +205,6 @@ public class PublicAuthResourceITest {
         assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION));
         assertThat(firstToken.get("revoked"), is(revoked.toString("dd MMM YYYY - HH:mm")));
         assertThat(firstToken.get("created_by"), is(CREATED_USER_NAME));
-        assertThat(firstToken.get("token_type"), is(CARD.toString()));
         assertThat(firstToken.get("last_used"), is(lastUsed.toString("dd MMM YYYY - HH:mm")));
         assertThat(firstToken.get("issued_date"), is(inserted.toString("dd MMM YYYY - HH:mm")));
     }
@@ -250,7 +228,6 @@ public class PublicAuthResourceITest {
         assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION_2));
         assertThat(firstToken.containsKey("revoked"), is(false));
         assertThat(firstToken.get("created_by"), is(CREATED_USER_NAME2));
-        assertThat(firstToken.get("token_type"), is(CARD.toString()));
         assertThat(firstToken.get("last_used"), is(lastUsed.toString("dd MMM YYYY - HH:mm")));
         assertThat(firstToken.get("issued_date"), is(inserted.toString("dd MMM YYYY - HH:mm")));
     }
@@ -274,7 +251,6 @@ public class PublicAuthResourceITest {
         assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION_2));
         assertThat(firstToken.containsKey("revoked"), is(false));
         assertThat(firstToken.get("created_by"), is(CREATED_USER_NAME2));
-        assertThat(firstToken.get("token_type"), is(CARD.toString()));
         assertThat(firstToken.get("last_used"), is(lastUsed.toString("dd MMM YYYY - HH:mm")));
         assertThat(firstToken.get("issued_date"), is(inserted.toString("dd MMM YYYY - HH:mm")));
     }
@@ -297,7 +273,6 @@ public class PublicAuthResourceITest {
         assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION_2));
         assertThat(firstToken.containsKey("revoked"), is(false));
         assertThat(firstToken.get("created_by"), is(CREATED_USER_NAME2));
-        assertThat(firstToken.get("token_type"), is(CARD.toString()));
         assertThat(firstToken.get("last_used"), is(lastUsed.toString("dd MMM YYYY - HH:mm")));
         assertThat(firstToken.get("issued_date"), is(inserted.toString("dd MMM YYYY - HH:mm")));
     }
@@ -360,8 +335,8 @@ public class PublicAuthResourceITest {
 
     @Test
     public void respondWith200_ifUpdatingDescriptionOfExistingToken() throws Exception {
+        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
         DateTime nowFromDB = app.getDatabaseHelper().getCurrentTime().toDateTime(UTC);
-        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, null, CREATED_USER_NAME, nowFromDB);
 
         updateTokenDescription("{\"token_link\" : \"" + TOKEN_LINK + "\", \"description\" : \"" + TOKEN_DESCRIPTION_2 + "\"}")
                 .statusCode(200)
@@ -369,8 +344,7 @@ public class PublicAuthResourceITest {
                 .body("description", is(TOKEN_DESCRIPTION_2))
                 .body("issued_date", is(nowFromDB.toString("dd MMM YYYY - HH:mm")))
                 .body("last_used", is(nowFromDB.toString("dd MMM YYYY - HH:mm")))
-                .body("created_by", is(CREATED_USER_NAME))
-                .body("token_type", is(CARD.toString()));
+                .body("created_by", is(CREATED_USER_NAME));
 
         Optional<String> descriptionInDb = app.getDatabaseHelper().lookupColumnForTokenTable("description", "token_link", TOKEN_LINK);
         assertThat(descriptionInDb.get(), equalTo(TOKEN_DESCRIPTION_2));
