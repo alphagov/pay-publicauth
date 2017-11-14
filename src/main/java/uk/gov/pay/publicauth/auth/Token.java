@@ -10,7 +10,7 @@ public class Token implements Principal {
     private final TokenPaymentType tokenPaymentType;
 
     public Token(String name) {
-        this(name, TokenPaymentType.CREDIT_CARD);
+        this(name, TokenPaymentType.CARD);
 }
 
     public Token(String name, TokenPaymentType tokenPaymentType) {

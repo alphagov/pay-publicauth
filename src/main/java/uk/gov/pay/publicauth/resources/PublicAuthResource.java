@@ -79,7 +79,7 @@ public class PublicAuthResource {
                     TokenPaymentType tokenPaymentType =
                             Optional.ofNullable(payload.get(TOKEN_TYPE_FIELD))
                                     .map(a -> TokenPaymentType.valueOf(a.asText()))
-                                    .orElse(TokenPaymentType.CREDIT_CARD);
+                                    .orElse(TokenPaymentType.CARD);
                     authDao.storeToken(token.getHashedToken(),
                             randomUUID().toString(),
                             payload.get(ACCOUNT_ID_FIELD).asText(),

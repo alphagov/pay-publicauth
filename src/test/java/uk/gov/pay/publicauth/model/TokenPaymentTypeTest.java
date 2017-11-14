@@ -14,6 +14,6 @@ public class TokenPaymentTypeTest {
     }
     @Test
     public void shouldReturnActiveTokensIfTypeIsMissing() {
-        assertThat(TokenPaymentType.fromString(""), is(TokenPaymentType.CREDIT_CARD));
+        assertThat(TokenPaymentType.fromString(""), is(TokenPaymentType.CARD));
     }
 }

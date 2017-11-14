@@ -9,7 +9,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import uk.gov.pay.publicauth.model.TokenPaymentType;
 import uk.gov.pay.publicauth.utils.DropwizardAppWithPostgresRule;
 
 import java.util.List;
@@ -20,7 +19,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertNull;
-import static uk.gov.pay.publicauth.model.TokenPaymentType.CREDIT_CARD;
+import static uk.gov.pay.publicauth.model.TokenPaymentType.CARD;
 import static uk.gov.pay.publicauth.model.TokenPaymentType.DIRECT_DEBIT;
 import static uk.gov.pay.publicauth.model.TokenStateFilterParam.*;
 
@@ -110,21 +109,21 @@ public class AuthTokenDaoTest {
         assertThat(firstToken.containsKey("revoked"), is(true));
         assertThat(firstToken.get("revoked"), is(revoked.toString("dd MMM YYYY - HH:mm")));
         assertThat(firstToken.get("created_by"), is(TEST_USER_NAME));
-        assertThat(firstToken.get("token_type"), is(CREDIT_CARD.toString()));
+        assertThat(firstToken.get("token_type"), is(CARD.toString()));
         assertThat(firstToken.get("last_used"), is(lastUsed.toString("dd MMM YYYY - HH:mm")));
         assertThat(firstToken.get("issued_date"), is(inserted.toString("dd MMM YYYY - HH:mm")));
     }
 
     @Test
     public void shouldInsertNewToken() {
-        authTokenDao.storeToken("token-hash", "token-link", "account-id", "description", "user", CREDIT_CARD);
+        authTokenDao.storeToken("token-hash", "token-link", "account-id", "description", "user", CARD);
         Map<String, Object> tokenByHash = app.getDatabaseHelper().getTokenByHash("token-hash");
         DateTime now = app.getDatabaseHelper().getCurrentTime();
 
         assertThat(tokenByHash.get("token_hash"), is("token-hash"));
         assertThat(tokenByHash.get("account_id"), is("account-id"));
         assertThat(tokenByHash.get("description"), is("description"));
-        assertThat(tokenByHash.get("token_type"), is(CREDIT_CARD.toString()));
+        assertThat(tokenByHash.get("token_type"), is(CARD.toString()));
         assertThat(tokenByHash.get("created_by"), is("user"));
         assertNull(tokenByHash.get("last_used"));
         DateTime tokenIssueTime = app.getDatabaseHelper().issueTimestampForAccount("account-id");
@@ -217,7 +216,7 @@ public class AuthTokenDaoTest {
     public void shouldErrorIfTriesToSaveTheSameTokenTwice() throws Exception {
         app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, TEST_USER_NAME);
 
-        authTokenDao.storeToken(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, "test@email.com", CREDIT_CARD);
+        authTokenDao.storeToken(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, "test@email.com", CARD);
     }
 
     private Matcher<ReadableInstant> isCloseTo(DateTime now) {

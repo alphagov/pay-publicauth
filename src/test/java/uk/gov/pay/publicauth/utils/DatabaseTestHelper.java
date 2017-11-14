@@ -18,15 +18,15 @@ public class DatabaseTestHelper {
     }
 
     public void insertAccount(String tokenHash, String randomTokenLink, String accountId, String description, String createdBy) {
-        insertAccount(tokenHash, randomTokenLink, accountId, description, null, createdBy, DateTime.now(), TokenPaymentType.CREDIT_CARD);
+        insertAccount(tokenHash, randomTokenLink, accountId, description, null, createdBy, DateTime.now(), TokenPaymentType.CARD);
     }
 
     public void insertAccount(String tokenHash, String randomTokenLink, String accountId, String description, DateTime revoked, String createdBy) {
-        insertAccount(tokenHash, randomTokenLink, accountId, description, revoked, createdBy, DateTime.now(), TokenPaymentType.CREDIT_CARD);
+        insertAccount(tokenHash, randomTokenLink, accountId, description, revoked, createdBy, DateTime.now(), TokenPaymentType.CARD);
     }
 
     public void insertAccount(String tokenHash, String randomTokenLink, String accountId, String description, DateTime revoked, String createdBy, DateTime lastUsed) {
-        insertAccount(tokenHash, randomTokenLink, accountId, description, revoked, createdBy, lastUsed, TokenPaymentType.CREDIT_CARD);
+        insertAccount(tokenHash, randomTokenLink, accountId, description, revoked, createdBy, lastUsed, TokenPaymentType.CARD);
     }
 
     public void insertAccount(String tokenHash, String randomTokenLink, String accountId, String description, DateTime revoked, String createdBy, DateTime lastUsed, TokenPaymentType tokenPaymentType) {

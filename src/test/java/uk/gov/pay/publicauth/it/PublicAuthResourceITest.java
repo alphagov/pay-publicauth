@@ -116,7 +116,7 @@ public class PublicAuthResourceITest {
         assertThat(newCreatedByEmail.get(), equalTo(USER_EMAIL));
 
         Optional<String> newTokenType = app.getDatabaseHelper().lookupColumnForTokenTable(TOKEN_TYPE_FIELD, TOKEN_HASH_COLUMN, hashedToken);
-        assertThat(newTokenType.get(), equalTo(TokenPaymentType.CREDIT_CARD.toString()));
+        assertThat(newTokenType.get(), equalTo(TokenPaymentType.CARD.toString()));
     }
 
     @Test
@@ -190,7 +190,7 @@ public class PublicAuthResourceITest {
         assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION_2));
         assertThat(firstToken.containsKey("revoked"), is(false));
         assertThat(firstToken.get("created_by"), is(CREATED_USER_NAME2));
-        assertThat(firstToken.get("token_type"), is(CREDIT_CARD.toString()));
+        assertThat(firstToken.get("token_type"), is(CARD.toString()));
         assertThat(firstToken.get("issued_date"), is(inserted.toString("dd MMM YYYY - HH:mm")));
         assertThat(firstToken.get("last_used"), is(lastUsed.toString("dd MMM YYYY - HH:mm")));
 
@@ -226,7 +226,7 @@ public class PublicAuthResourceITest {
         assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION));
         assertThat(firstToken.get("revoked"), is(revoked.toString("dd MMM YYYY - HH:mm")));
         assertThat(firstToken.get("created_by"), is(CREATED_USER_NAME));
-        assertThat(firstToken.get("token_type"), is(CREDIT_CARD.toString()));
+        assertThat(firstToken.get("token_type"), is(CARD.toString()));
         assertThat(firstToken.get("last_used"), is(lastUsed.toString("dd MMM YYYY - HH:mm")));
         assertThat(firstToken.get("issued_date"), is(inserted.toString("dd MMM YYYY - HH:mm")));
     }
@@ -250,7 +250,7 @@ public class PublicAuthResourceITest {
         assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION_2));
         assertThat(firstToken.containsKey("revoked"), is(false));
         assertThat(firstToken.get("created_by"), is(CREATED_USER_NAME2));
-        assertThat(firstToken.get("token_type"), is(CREDIT_CARD.toString()));
+        assertThat(firstToken.get("token_type"), is(CARD.toString()));
         assertThat(firstToken.get("last_used"), is(lastUsed.toString("dd MMM YYYY - HH:mm")));
         assertThat(firstToken.get("issued_date"), is(inserted.toString("dd MMM YYYY - HH:mm")));
     }
@@ -274,7 +274,7 @@ public class PublicAuthResourceITest {
         assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION_2));
         assertThat(firstToken.containsKey("revoked"), is(false));
         assertThat(firstToken.get("created_by"), is(CREATED_USER_NAME2));
-        assertThat(firstToken.get("token_type"), is(CREDIT_CARD.toString()));
+        assertThat(firstToken.get("token_type"), is(CARD.toString()));
         assertThat(firstToken.get("last_used"), is(lastUsed.toString("dd MMM YYYY - HH:mm")));
         assertThat(firstToken.get("issued_date"), is(inserted.toString("dd MMM YYYY - HH:mm")));
     }
@@ -297,7 +297,7 @@ public class PublicAuthResourceITest {
         assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION_2));
         assertThat(firstToken.containsKey("revoked"), is(false));
         assertThat(firstToken.get("created_by"), is(CREATED_USER_NAME2));
-        assertThat(firstToken.get("token_type"), is(CREDIT_CARD.toString()));
+        assertThat(firstToken.get("token_type"), is(CARD.toString()));
         assertThat(firstToken.get("last_used"), is(lastUsed.toString("dd MMM YYYY - HH:mm")));
         assertThat(firstToken.get("issued_date"), is(inserted.toString("dd MMM YYYY - HH:mm")));
     }
@@ -370,7 +370,7 @@ public class PublicAuthResourceITest {
                 .body("issued_date", is(nowFromDB.toString("dd MMM YYYY - HH:mm")))
                 .body("last_used", is(nowFromDB.toString("dd MMM YYYY - HH:mm")))
                 .body("created_by", is(CREATED_USER_NAME))
-                .body("token_type", is(CREDIT_CARD.toString()));
+                .body("token_type", is(CARD.toString()));
 
         Optional<String> descriptionInDb = app.getDatabaseHelper().lookupColumnForTokenTable("description", "token_link", TOKEN_LINK);
         assertThat(descriptionInDb.get(), equalTo(TOKEN_DESCRIPTION_2));
