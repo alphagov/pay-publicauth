@@ -142,10 +142,10 @@ public class AuthTokenDaoTest {
 
     @Test
     public void shouldFindTokenByTokenLink() throws Exception {
-        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, TEST_USER_NAME);
+        DateTime nowFromDB = app.getDatabaseHelper().getCurrentTime().toDateTime(DateTimeZone.UTC);
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, null, TEST_USER_NAME, nowFromDB);
         Optional<Map<String, Object>> tokenMayBe = authTokenDao.findTokenByTokenLink(TOKEN_LINK);
         Map<String, Object> token = tokenMayBe.get();
-        DateTime nowFromDB = app.getDatabaseHelper().getCurrentTime().toDateTime(DateTimeZone.UTC);
 
         assertThat(TOKEN_LINK, is(token.get("token_link")));
         assertThat(TOKEN_DESCRIPTION, is(token.get("description")));

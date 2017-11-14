@@ -360,8 +360,8 @@ public class PublicAuthResourceITest {
 
     @Test
     public void respondWith200_ifUpdatingDescriptionOfExistingToken() throws Exception {
-        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
         DateTime nowFromDB = app.getDatabaseHelper().getCurrentTime().toDateTime(UTC);
+        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, null, CREATED_USER_NAME, nowFromDB);
 
         updateTokenDescription("{\"token_link\" : \"" + TOKEN_LINK + "\", \"description\" : \"" + TOKEN_DESCRIPTION_2 + "\"}")
                 .statusCode(200)
