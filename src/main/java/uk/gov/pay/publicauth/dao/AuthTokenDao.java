@@ -4,6 +4,7 @@ import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.util.StringMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import uk.gov.pay.publicauth.model.TokenPaymentType;
 import uk.gov.pay.publicauth.model.TokenStateFilterParam;
 
 import java.util.List;
@@ -44,7 +45,7 @@ public class AuthTokenDao {
         String revokedDate = (tokenStateFilterParam.equals(TokenStateFilterParam.REVOKED)) ? "to_char(revoked,'DD Mon YYYY - HH24:MI') as revoked, " : "";
 
         return jdbi.withHandle(handle ->
-                handle.createQuery("SELECT token_link, description, " +
+                handle.createQuery("SELECT token_link, description, coalesce(token_type, 'CARD') as token_type, " +
                         "to_char(issued,'DD Mon YYYY - HH24:MI') as issued_date, " +
                         revokedDate +
                         "created_by, " +
@@ -63,10 +64,10 @@ public class AuthTokenDao {
         return rowsUpdated > 0;
     }
 
-    public void storeToken(String tokenHash, String randomTokenLink, String accountId, String description, String createdBy) {
+    public void storeToken(String tokenHash, String randomTokenLink, String accountId, String description, String createdBy, TokenPaymentType tokenPaymentType) {
         Integer rowsUpdated = jdbi.withHandle(handle ->
-                handle.insert("INSERT INTO tokens(token_hash, token_link, description, account_id, created_by) VALUES (?,?,?,?,?)",
-                        tokenHash, randomTokenLink, description, accountId, createdBy)
+                handle.insert("INSERT INTO tokens(token_hash, token_link, description, account_id, created_by, token_type) VALUES (?,?,?,?,?,?)",
+                        tokenHash, randomTokenLink, description, accountId, createdBy, tokenPaymentType)
         );
         if (rowsUpdated != 1) {
             LOGGER.error("Unable to store new token for account '{}'. '{}' rows were updated", accountId, rowsUpdated);
@@ -85,7 +86,7 @@ public class AuthTokenDao {
 
     public Optional<Map<String, Object>> findTokenByTokenLink(String tokenLink) {
         return Optional.ofNullable(jdbi.withHandle(handle ->
-                handle.createQuery("SELECT token_link, description, " +
+                handle.createQuery("SELECT token_link, description, coalesce(token_type, 'CARD') as token_type, " +
                         "to_char(revoked,'DD Mon YYYY - HH24:MI') as revoked, " +
                         "to_char(issued,'DD Mon YYYY - HH24:MI') as issued_date, " +
                         "created_by, " +
