@@ -72,5 +72,14 @@
             </column>
         </addColumn>
     </changeSet>
+    
+    <changeSet id="add token_type column to tokens table" author="">
+        <addColumn tableName="tokens">
+            <column name="token_type" type="varchar(36)">
+                <constraints nullable="true" unique="false"/>
+            </column>
+        </addColumn>
 
+        <addDefaultValue tableName="tokens" columnName="token_type" defaultValue="CARD"/>
+    </changeSet>
 </databaseChangeLog>
