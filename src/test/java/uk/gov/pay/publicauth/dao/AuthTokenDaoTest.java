@@ -19,6 +19,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertNull;
+import static uk.gov.pay.publicauth.model.TokenPaymentType.CARD;
+import static uk.gov.pay.publicauth.model.TokenPaymentType.DIRECT_DEBIT;
 import static uk.gov.pay.publicauth.model.TokenStateFilterParam.*;
 
 public class AuthTokenDaoTest {
@@ -74,7 +76,7 @@ public class AuthTokenDaoTest {
         DateTime lastUsed = inserted.plusMinutes(30);
         DateTime revoked = inserted.plusMinutes(45);
         app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, TEST_USER_NAME, lastUsed);
-        app.getDatabaseHelper().insertAccount(TOKEN_HASH_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, TEST_USER_NAME_2, lastUsed);
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, TEST_USER_NAME_2, lastUsed, DIRECT_DEBIT);
 
         List<Map<String, Object>> tokens = authTokenDao.findTokensWithState(ACCOUNT_ID, ACTIVE);
 
@@ -85,10 +87,31 @@ public class AuthTokenDaoTest {
         assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION_2));
         assertThat(firstToken.containsKey("revoked"), is(false));
         assertThat(firstToken.get("created_by"), is(TEST_USER_NAME_2));
+        assertThat(firstToken.get("token_type"), is(DIRECT_DEBIT.toString()));
         assertThat(firstToken.get("last_used"), is(lastUsed.toString("dd MMM YYYY - HH:mm")));
         assertThat(firstToken.get("issued_date"), is(inserted.toString("dd MMM YYYY - HH:mm")));
     }
-    
+
+    @Test
+    public void shouldReturnCardTokensIfTokenTypeIsNull() throws Exception {
+        DateTime inserted = app.getDatabaseHelper().getCurrentTime().toDateTime(DateTimeZone.UTC);
+        DateTime lastUsed = inserted.plusMinutes(30);
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, TEST_USER_NAME_2, lastUsed, null);
+
+        List<Map<String, Object>> tokens = authTokenDao.findTokensWithState(ACCOUNT_ID, ACTIVE);
+
+        assertThat(tokens.size(), is(1));
+
+        Map<String, Object> firstToken = tokens.get(0);
+        assertThat(firstToken.get("token_link"), is(TOKEN_LINK_2));
+        assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION_2));
+        assertThat(firstToken.containsKey("revoked"), is(false));
+        assertThat(firstToken.get("created_by"), is(TEST_USER_NAME_2));
+        assertThat(firstToken.get("token_type"), is(CARD.toString()));
+        assertThat(firstToken.get("last_used"), is(lastUsed.toString("dd MMM YYYY - HH:mm")));
+        assertThat(firstToken.get("issued_date"), is(inserted.toString("dd MMM YYYY - HH:mm")));
+    }
+
     @Test
     public void shouldFindRevokedTokens() throws Exception {
         DateTime inserted = app.getDatabaseHelper().getCurrentTime().toDateTime(DateTimeZone.UTC);
@@ -112,7 +135,7 @@ public class AuthTokenDaoTest {
 
     @Test
     public void shouldInsertNewToken() {
-        authTokenDao.storeToken("token-hash", "token-link", "account-id", "description", "user");
+        authTokenDao.storeToken("token-hash", "token-link", "account-id", "description", "user", CARD);
         Map<String, Object> tokenByHash = app.getDatabaseHelper().getTokenByHash("token-hash");
         DateTime now = app.getDatabaseHelper().getCurrentTime();
 
@@ -121,6 +144,7 @@ public class AuthTokenDaoTest {
         assertThat(tokenByHash.get("description"), is("description"));
         assertThat(tokenByHash.get("created_by"), is("user"));
         assertNull(tokenByHash.get("last_used"));
+        assertThat(tokenByHash.get("token_type"), is(CARD.toString()));
         DateTime tokenIssueTime = app.getDatabaseHelper().issueTimestampForAccount("account-id");
         assertThat(tokenIssueTime, isCloseTo(now));
     }
@@ -137,14 +161,30 @@ public class AuthTokenDaoTest {
 
     @Test
     public void shouldFindTokenByTokenLink() throws Exception {
-        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, TEST_USER_NAME);
+        DateTime nowFromDB = app.getDatabaseHelper().getCurrentTime().toDateTime(DateTimeZone.UTC);
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, null, TEST_USER_NAME, nowFromDB, DIRECT_DEBIT);
         Optional<Map<String, Object>> tokenMayBe = authTokenDao.findTokenByTokenLink(TOKEN_LINK);
         Map<String, Object> token = tokenMayBe.get();
-        DateTime nowFromDB = app.getDatabaseHelper().getCurrentTime().toDateTime(DateTimeZone.UTC);
 
         assertThat(TOKEN_LINK, is(token.get("token_link")));
         assertThat(TOKEN_DESCRIPTION, is(token.get("description")));
         assertThat(TEST_USER_NAME, is(token.get("created_by")));
+        assertThat(token.get("token_type"), is(DIRECT_DEBIT.toString()));
+        assertThat(token.get("revoked"), is(nullValue()));
+        assertThat(token.get("issued_date"), is(nowFromDB.toString("dd MMM YYYY - HH:mm")));
+        assertThat(token.get("last_used"), is(nowFromDB.toString("dd MMM YYYY - HH:mm")));
+    }
+
+    @Test
+    public void shouldFindByTokenLinkAndReturnCardTokensIfTokenTypeIsNull() throws Exception {
+        DateTime nowFromDB = app.getDatabaseHelper().getCurrentTime().toDateTime(DateTimeZone.UTC);
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, null, TEST_USER_NAME, nowFromDB, null);
+        Optional<Map<String, Object>> tokenMayBe = authTokenDao.findTokenByTokenLink(TOKEN_LINK);
+        Map<String, Object> token = tokenMayBe.get();
+        assertThat(TOKEN_LINK, is(token.get("token_link")));
+        assertThat(TOKEN_DESCRIPTION, is(token.get("description")));
+        assertThat(TEST_USER_NAME, is(token.get("created_by")));
+        assertThat(token.get("token_type"), is(CARD.toString()));
         assertThat(token.get("revoked"), is(nullValue()));
         assertThat(token.get("issued_date"), is(nowFromDB.toString("dd MMM YYYY - HH:mm")));
         assertThat(token.get("last_used"), is(nowFromDB.toString("dd MMM YYYY - HH:mm")));
@@ -211,7 +251,7 @@ public class AuthTokenDaoTest {
     public void shouldErrorIfTriesToSaveTheSameTokenTwice() throws Exception {
         app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, TEST_USER_NAME);
 
-        authTokenDao.storeToken(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, "test@email.com");
+        authTokenDao.storeToken(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, "test@email.com", CARD);
     }
 
     private Matcher<ReadableInstant> isCloseTo(DateTime now) {

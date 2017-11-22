@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.gov.pay.publicauth.auth.Token;
 import uk.gov.pay.publicauth.dao.AuthTokenDao;
+import uk.gov.pay.publicauth.model.TokenPaymentType;
 import uk.gov.pay.publicauth.model.TokenStateFilterParam;
 import uk.gov.pay.publicauth.model.Tokens;
 import uk.gov.pay.publicauth.service.TokenService;
@@ -26,6 +27,7 @@ import static java.util.Arrays.asList;
 import static java.util.UUID.randomUUID;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.Response.*;
+import static uk.gov.pay.publicauth.model.TokenPaymentType.*;
 import static uk.gov.pay.publicauth.model.TokenStateFilterParam.ACTIVE;
 import static uk.gov.pay.publicauth.util.ResponseUtil.*;
 
@@ -43,6 +45,7 @@ public class PublicAuthResource {
     public static final String ACCOUNT_ID_FIELD = "account_id";
     public static final String DESCRIPTION_FIELD = "description";
     public static final String CREATED_BY_FIELD = "created_by";
+    public static final String TOKEN_TYPE_FIELD = "token_type";
 
     private final AuthTokenDao authDao;
     private final TokenService tokenService;
@@ -58,7 +61,9 @@ public class PublicAuthResource {
     @GET
     public Response authenticate(@Auth Token token) {
         return authDao.findUnRevokedAccount(token.getName())
-                .map(accountId -> ok(ImmutableMap.of("account_id", accountId)))
+                .map(accountId -> ok(ImmutableMap.of(
+                        "account_id", accountId,
+                        "token_type", token.getTokenPaymentType().toString())))
                 .orElse(UNAUTHORISED)
                 .build();
     }
@@ -72,10 +77,16 @@ public class PublicAuthResource {
                 .map(errorMessage -> badRequestResponse(LOGGER, errorMessage))
                 .orElseGet(() -> {
                     Tokens token = tokenService.issueTokens();
-                    authDao.storeToken(token.getHashedToken(), randomUUID().toString(),
+                    TokenPaymentType tokenPaymentType =
+                            Optional.ofNullable(payload.get(TOKEN_TYPE_FIELD))
+                                    .map(a -> valueOf(a.asText()))
+                                    .orElse(CARD);
+                    authDao.storeToken(token.getHashedToken(),
+                            randomUUID().toString(),
                             payload.get(ACCOUNT_ID_FIELD).asText(),
                             payload.get(DESCRIPTION_FIELD).asText(),
-                            payload.get(CREATED_BY_FIELD).asText());
+                            payload.get(CREATED_BY_FIELD).asText(),
+                            tokenPaymentType);
                     return ok(ImmutableMap.of("token", token.getApiKey())).build();
                 });
     }

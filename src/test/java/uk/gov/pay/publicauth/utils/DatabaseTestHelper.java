@@ -4,10 +4,13 @@ import io.dropwizard.jdbi.args.JodaDateTimeMapper;
 import org.joda.time.DateTime;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.util.StringMapper;
+import uk.gov.pay.publicauth.model.TokenPaymentType;
 
 import java.util.Map;
 import java.util.Optional;
 import java.util.TimeZone;
+
+import static uk.gov.pay.publicauth.model.TokenPaymentType.*;
 
 public class DatabaseTestHelper {
     private DBI jdbi;
@@ -25,9 +28,13 @@ public class DatabaseTestHelper {
     }
 
     public void insertAccount(String tokenHash, String randomTokenLink, String accountId, String description, DateTime revoked, String createdBy, DateTime lastUsed) {
-            jdbi.withHandle(handle ->
-                    handle.insert("INSERT INTO tokens(token_hash, token_link, account_id, description, revoked, created_by, last_used) VALUES (?,?,?,?,(? at time zone 'utc'),?,(? at time zone 'utc'))",
-                            tokenHash, randomTokenLink, accountId, description, revoked, createdBy, lastUsed));
+        insertAccount(tokenHash, randomTokenLink, accountId, description, revoked, createdBy, lastUsed, CARD);
+    }
+
+    public void insertAccount(String tokenHash, String randomTokenLink, String accountId, String description, DateTime revoked, String createdBy, DateTime lastUsed, TokenPaymentType tokenPaymentType) {
+        jdbi.withHandle(handle ->
+        handle.insert("INSERT INTO tokens(token_hash, token_link, account_id, description, token_type, revoked, created_by, last_used) VALUES (?,?,?,?,?,(? at time zone 'utc'),?,(? at time zone 'utc'))",
+                tokenHash, randomTokenLink, accountId, description, tokenPaymentType, revoked, createdBy, lastUsed));
     }
 
     public DateTime issueTimestampForAccount(String accountId) {
@@ -49,7 +56,7 @@ public class DatabaseTestHelper {
 
     public Map<String, Object> getTokenByHash(String tokenHash) {
         Map<String, Object> ret = jdbi.withHandle(h ->
-                h.createQuery("SELECT token_id, token_hash, account_id, issued, revoked, token_link, description, created_by " +
+                h.createQuery("SELECT token_id, token_type, token_hash, account_id, issued, revoked, token_link, description, created_by " +
                         "FROM tokens t " +
                         "WHERE token_hash = :token_hash")
                         .bind("token_hash", tokenHash)
