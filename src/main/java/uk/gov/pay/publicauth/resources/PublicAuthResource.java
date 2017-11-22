@@ -59,7 +59,7 @@ public class PublicAuthResource {
     public Response authenticate(@Auth Token token) {
         return authDao.findUnRevokedAccount(token.getName())
                 .map(accountId -> ok(ImmutableMap.of("account_id", accountId)))
-                .orElseGet(() -> UNAUTHORISED)
+                .orElse(UNAUTHORISED)
                 .build();
     }
 
