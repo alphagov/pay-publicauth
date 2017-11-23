@@ -61,9 +61,9 @@ public class PublicAuthResource {
     @GET
     public Response authenticate(@Auth Token token) {
         return authDao.findUnRevokedAccount(token.getName())
-                .map(accountId -> ok(ImmutableMap.of(
-                        "account_id", accountId,
-                        "token_type", token.getTokenPaymentType().toString())))
+                .map(tokenInfo -> ok(ImmutableMap.of(
+                        "account_id", tokenInfo.get("account_id"),
+                        "token_type", tokenInfo.get("token_type").toString())))
                 .orElse(UNAUTHORISED)
                 .build();
     }
@@ -79,7 +79,7 @@ public class PublicAuthResource {
                     Tokens token = tokenService.issueTokens();
                     TokenPaymentType tokenPaymentType =
                             Optional.ofNullable(payload.get(TOKEN_TYPE_FIELD))
-                                    .map(a -> valueOf(a.asText()))
+                                    .map(tokenType -> valueOf(tokenType.asText()))
                                     .orElse(CARD);
                     authDao.storeToken(token.getHashedToken(),
                             randomUUID().toString(),

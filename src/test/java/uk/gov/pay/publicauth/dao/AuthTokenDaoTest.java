@@ -51,17 +51,34 @@ public class AuthTokenDaoTest {
     }
 
     @Test
-    public void findAnAccountIdByToken() throws Exception {
-        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, TEST_USER_NAME);
+    public void findAnAccountIdAndTokenTypeByToken_ifTokenTypeIsDirectDebit() throws Exception {
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, null, TEST_USER_NAME, null, DIRECT_DEBIT);
+        Optional<Map<String, Object>> tokenInfo = authTokenDao.findUnRevokedAccount(TOKEN_HASH);
+        assertThat(tokenInfo.get().get("account_id"), is(ACCOUNT_ID));
+        assertThat(tokenInfo.get().get("token_type"), is(DIRECT_DEBIT.toString()));
+    }
 
-        Optional<String> accountId = authTokenDao.findUnRevokedAccount(TOKEN_HASH);
-        assertThat(accountId, is(Optional.of(ACCOUNT_ID)));
+
+    @Test
+    public void findAnAccountIdAndTokenTypeByToken_ifTokenTypeIsCard() throws Exception {
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, null, TEST_USER_NAME, null, CARD);
+        Optional<Map<String, Object>> tokenInfo = authTokenDao.findUnRevokedAccount(TOKEN_HASH);
+        assertThat(tokenInfo.get().get("account_id"), is(ACCOUNT_ID));
+        assertThat(tokenInfo.get().get("token_type"), is(CARD.toString()));
     }
 
     @Test
-    public void missingTokenHasNoAccount() throws Exception {
-        Optional<String> accountId = authTokenDao.findUnRevokedAccount(TOKEN_HASH);
-        assertThat(accountId, is(Optional.empty()));
+    public void findAnAccountIdAndTokenTypeByToken_ifTokenTypeIsNull() throws Exception {
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, null, TEST_USER_NAME, null, null);
+        Optional<Map<String, Object>> tokenInfo = authTokenDao.findUnRevokedAccount(TOKEN_HASH);
+        assertThat(tokenInfo.get().get("account_id"), is(ACCOUNT_ID));
+        assertThat(tokenInfo.get().get("token_type"), is(CARD.toString()));
+    }
+
+    @Test
+    public void missingTokenHasNoInfo() throws Exception {
+        Optional<Map<String, Object>> tokenInfo = authTokenDao.findUnRevokedAccount(TOKEN_HASH);
+        assertThat(tokenInfo, is(Optional.empty()));
     }
 
     @Test
