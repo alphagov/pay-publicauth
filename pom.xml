@@ -7,6 +7,7 @@
 
     <properties>
         <dropwizard.version>1.0.6</dropwizard.version>
+        <docker-client.version>8.9.2</docker-client.version>
     </properties>
     <dependencies>
         <dependency>
@@ -126,7 +127,7 @@
         <dependency>
             <groupId>com.spotify</groupId>
             <artifactId>docker-client</artifactId>
-            <version>8.1.0</version>
+            <version>${docker-client.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
