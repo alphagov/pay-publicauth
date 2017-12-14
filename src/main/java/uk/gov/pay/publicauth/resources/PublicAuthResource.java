@@ -35,10 +35,8 @@ import java.util.stream.Stream;
 import static java.util.Arrays.asList;
 import static java.util.UUID.randomUUID;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static javax.ws.rs.core.Response.ResponseBuilder;
-import static javax.ws.rs.core.Response.Status;
+import static javax.ws.rs.core.Response.Status.UNAUTHORIZED;
 import static javax.ws.rs.core.Response.ok;
-import static javax.ws.rs.core.Response.status;
 import static uk.gov.pay.publicauth.model.TokenPaymentType.CARD;
 import static uk.gov.pay.publicauth.model.TokenPaymentType.valueOf;
 import static uk.gov.pay.publicauth.model.TokenStateFilterParam.ACTIVE;
@@ -47,15 +45,14 @@ import static uk.gov.pay.publicauth.model.TokenStateFilterParam.ACTIVE;
 @Path("/")
 public class PublicAuthResource {
 
-    public static final String API_VERSION_PATH = "/v1";
-    public static final String ACCOUNT_ID_FIELD = "account_id";
-    public static final String DESCRIPTION_FIELD = "description";
-    public static final String CREATED_BY_FIELD = "created_by";
-    public static final String TOKEN_TYPE_FIELD = "token_type";
     private static final Logger LOGGER = LoggerFactory.getLogger(PublicAuthResource.class);
-    private static final ResponseBuilder UNAUTHORISED = status(Status.UNAUTHORIZED);
-    private static final String API_AUTH_PATH = API_VERSION_PATH + "/api/auth";
-    private static final String FRONTEND_AUTH_PATH = API_VERSION_PATH + "/frontend/auth";
+
+    private static final String ACCOUNT_ID_FIELD = "account_id";
+    private static final String TOKEN_TYPE_FIELD = "token_type";
+    private static final String TOKEN_LINK_FIELD = "token_link";
+    private static final String DESCRIPTION_FIELD = "description";
+    private static final String CREATED_BY_FIELD = "created_by";
+
     private final AuthTokenDao authDao;
     private final TokenService tokenService;
 
@@ -65,19 +62,19 @@ public class PublicAuthResource {
         this.tokenService = tokenService;
     }
 
-    @Path(API_AUTH_PATH)
+    @Path("/v1/api/auth")
     @Produces(APPLICATION_JSON)
     @GET
     public Response authenticate(@Auth Token token) {
         return authDao.findUnRevokedAccount(token.getName())
                 .map(tokenInfo -> ok(ImmutableMap.of(
-                        "account_id", tokenInfo.get("account_id"),
-                        "token_type", tokenInfo.get("token_type").toString())))
-                .orElse(UNAUTHORISED)
+                        ACCOUNT_ID_FIELD, tokenInfo.get(ACCOUNT_ID_FIELD),
+                        TOKEN_TYPE_FIELD, tokenInfo.get(TOKEN_TYPE_FIELD).toString())))
+                .orElse(Response.status(UNAUTHORIZED))
                 .build();
     }
 
-    @Path(FRONTEND_AUTH_PATH)
+    @Path("/v1/frontend/auth")
     @Produces(APPLICATION_JSON)
     @Consumes(APPLICATION_JSON)
     @POST
@@ -101,7 +98,7 @@ public class PublicAuthResource {
         return ok(ImmutableMap.of("token", token.getApiKey())).build();
     }
 
-    @Path(FRONTEND_AUTH_PATH + "/{accountId}")
+    @Path("/v1/frontend/auth/{accountId}")
     @Produces(APPLICATION_JSON)
     @GET
     public Response getIssuedTokensForAccount(@PathParam("accountId") String accountId, @QueryParam("state") TokenStateFilterParam state) {
@@ -110,16 +107,16 @@ public class PublicAuthResource {
         return ok(ImmutableMap.of("tokens", tokensWithoutNullRevoked)).build();
     }
 
-    @Path(FRONTEND_AUTH_PATH)
+    @Path("/v1/frontend/auth")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @PUT
     public Response updateTokenDescription(JsonNode payload) throws ValidationException, TokenNotFoundException {
 
-        validatePayloadHasFields(payload, "token_link", "description");
+        validatePayloadHasFields(payload, TOKEN_LINK_FIELD, DESCRIPTION_FIELD);
 
-        String tokenLink = payload.get("token_link").asText();
-        String description = payload.get("description").asText();
+        String tokenLink = payload.get(TOKEN_LINK_FIELD).asText();
+        String description = payload.get(DESCRIPTION_FIELD).asText();
 
         if (authDao.updateTokenDescription(tokenLink, description)) {
             LOGGER.info("Updated description of token with token_link {}", tokenLink);
@@ -132,15 +129,15 @@ public class PublicAuthResource {
         throw new TokenNotFoundException("Could not update description of token with token_link " + tokenLink);
     }
 
-    @Path(FRONTEND_AUTH_PATH + "/{accountId}")
+    @Path("/v1/frontend/auth/{accountId}")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @DELETE
     public Response revokeSingleToken(@PathParam("accountId") String accountId, JsonNode payload) throws ValidationException, TokenNotFoundException {
 
-        validatePayloadHasFields(payload, "token_link");
+        validatePayloadHasFields(payload, TOKEN_LINK_FIELD);
 
-        String tokenLink = payload.get("token_link").asText();
+        String tokenLink = payload.get(TOKEN_LINK_FIELD).asText();
 
         return authDao.revokeSingleToken(accountId, tokenLink)
                 .map(revokedDate -> {

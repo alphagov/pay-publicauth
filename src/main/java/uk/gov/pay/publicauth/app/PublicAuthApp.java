@@ -33,7 +33,6 @@ import java.util.concurrent.TimeUnit;
 
 import static java.util.EnumSet.of;
 import static javax.servlet.DispatcherType.REQUEST;
-import static uk.gov.pay.publicauth.resources.PublicAuthResource.API_VERSION_PATH;
 
 public class PublicAuthApp extends Application<PublicAuthConfiguration> {
 
@@ -86,7 +85,7 @@ public class PublicAuthApp extends Application<PublicAuthConfiguration> {
         environment.healthChecks().register("database", new DatabaseHealthCheck(conf,environment));
 
         environment.servlets().addFilter("LoggingFilter", new LoggingFilter())
-                .addMappingForUrlPatterns(of(REQUEST), true, API_VERSION_PATH + "/*");
+                .addMappingForUrlPatterns(of(REQUEST), true, "/v1" + "/*");
     }
 
     private void initialiseMetrics(PublicAuthConfiguration configuration, Environment environment) {
