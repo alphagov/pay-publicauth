@@ -81,12 +81,14 @@ public class PublicAuthResource {
                             Optional.ofNullable(payload.get(TOKEN_TYPE_FIELD))
                                     .map(tokenType -> valueOf(tokenType.asText()))
                                     .orElse(CARD);
+                    String tokenLink = randomUUID().toString();
                     authDao.storeToken(token.getHashedToken(),
-                            randomUUID().toString(),
+                            tokenLink,
                             payload.get(ACCOUNT_ID_FIELD).asText(),
                             payload.get(DESCRIPTION_FIELD).asText(),
                             payload.get(CREATED_BY_FIELD).asText(),
                             tokenPaymentType);
+                    LOGGER.info("Created token with token_link {} ", tokenLink);
                     return ok(ImmutableMap.of("token", token.getApiKey())).build();
                 });
     }
@@ -110,10 +112,13 @@ public class PublicAuthResource {
             if (updated) {
                 Optional<Map<String, Object>> tokenData = authDao.findTokenByTokenLink(tokenLink);
                 return tokenData
-                        .map(token -> ok(token).build())
+                        .map(token ->  {
+                            LOGGER.info("Updated description of token with token_link {}", tokenLink);
+                            return ok(token).build();
+                        })
                         .orElseGet(() -> serverErrorResponse(LOGGER, "An exception occurred while finding the updated token with link: " + tokenLink));
             }
-            return notFoundResponse(LOGGER, "Could not update token description");
+            return notFoundResponse(LOGGER, "Could not update description of token with token_link " + tokenLink);
         });
     }
 
@@ -126,10 +131,13 @@ public class PublicAuthResource {
         if (payload == null || (jsonNode = payload.get("token_link")) == null) {
             return badRequestResponse(LOGGER, "Missing fields: [token_link]");
         }
-
-        return authDao.revokeSingleToken(accountId, jsonNode.asText())
-                .map(revokedDate -> ok(ImmutableMap.of("revoked", revokedDate)).build())
-                .orElseGet(() -> notFoundResponse(LOGGER, "Could not revoke token"));
+        String tokenLink = jsonNode.asText();
+        return authDao.revokeSingleToken(accountId, tokenLink)
+                .map(revokedDate -> {
+                    LOGGER.info("revoked with token_link {} on date {}", tokenLink, revokedDate);
+                    return ok(ImmutableMap.of("revoked", revokedDate)).build();
+                })
+                .orElseGet(() -> notFoundResponse(LOGGER, "Could not revoke token with token_link " + tokenLink));
     }
 
     private Response withTokenLinkAndDescription(JsonNode requestPayload, BiFunction<String, String, Response> handler) {
