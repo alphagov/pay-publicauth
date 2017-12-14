@@ -1,6 +1,8 @@
 package uk.gov.pay.publicauth.filters;
 
 import com.google.common.base.Stopwatch;
+import org.apache.commons.lang3.StringUtils;
+import org.jboss.logging.MDC;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,7 +16,7 @@ import static java.lang.String.format;
 
 public class LoggingFilter implements Filter {
 
-    public static final String HEADER_REQUEST_ID = "Request-Id";
+    public static final String HEADER_REQUEST_ID = "X-Request-Id";
     private static final Logger logger = LoggerFactory.getLogger(LoggingFilter.class);
 
     @Override
@@ -27,8 +29,9 @@ public class LoggingFilter implements Filter {
 
         String requestURL = ((HttpServletRequest) servletRequest).getRequestURI();
         String requestMethod = ((HttpServletRequest) servletRequest).getMethod();
-        Optional<String> requestIdMaybe = Optional.ofNullable(((HttpServletRequest) servletRequest).getHeader(HEADER_REQUEST_ID));
-        String requestId = requestIdMaybe.orElse("");
+        String requestId = StringUtils.defaultString(((HttpServletRequest) servletRequest).getHeader(HEADER_REQUEST_ID));
+
+        MDC.put(HEADER_REQUEST_ID, requestId);
 
         logger.info(format("[%s] - %s to %s began", requestId, requestMethod, requestURL));
         try {

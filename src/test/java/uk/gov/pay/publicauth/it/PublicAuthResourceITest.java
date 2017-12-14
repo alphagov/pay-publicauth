@@ -383,7 +383,7 @@ public class PublicAuthResourceITest {
     public void respondWith404_ifUpdatingDescriptionOfNonExistingToken() throws Exception {
         updateTokenDescription("{\"token_link\" : \"" + TOKEN_LINK + "\", \"description\" : \"" + TOKEN_DESCRIPTION_2 + "\"}")
                 .statusCode(404)
-                .body("message", is("Could not update token description"));
+                .body("message", is("Could not update description of token with token_link " + TOKEN_LINK));
 
         Optional<String> descriptionInDb = app.getDatabaseHelper().lookupColumnForTokenTable("description", "token_link", TOKEN_LINK);
         assertThat(descriptionInDb.isPresent(), is(false));
@@ -395,7 +395,7 @@ public class PublicAuthResourceITest {
 
         updateTokenDescription("{\"token_link\" : \"" + TOKEN_LINK + "\", \"description\" : \"" + TOKEN_DESCRIPTION_2 + "\"}")
                 .statusCode(404)
-                .body("message", is("Could not update token description"));
+                .body("message", is("Could not update description of token with token_link " + TOKEN_LINK));
 
         Optional<String> descriptionInDb = app.getDatabaseHelper().lookupColumnForTokenTable("description", "token_link", TOKEN_LINK);
         assertThat(descriptionInDb.get(), equalTo(TOKEN_DESCRIPTION));
@@ -444,7 +444,7 @@ public class PublicAuthResourceITest {
 
         revokeSingleToken(ACCOUNT_ID, "{\"token_link\" : \"" + TOKEN_LINK_2 + "\"}")
                 .statusCode(404)
-                .body("message", is("Could not revoke token"));
+                .body("message", is("Could not revoke token with token_link " + TOKEN_LINK_2));
 
         Optional<String> token1RevokedInDb = app.getDatabaseHelper().lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK);
         assertThat(token1RevokedInDb.isPresent(), is(false));
@@ -458,7 +458,7 @@ public class PublicAuthResourceITest {
 
         revokeSingleToken(ACCOUNT_ID, "{\"token_link\" : \"" + TOKEN_LINK + "\"}")
                 .statusCode(404)
-                .body("message", is("Could not revoke token"));
+                .body("message", is("Could not revoke token with token_link " + TOKEN_LINK ));
 
         Optional<String> token1RevokedInDb = app.getDatabaseHelper().lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK);
         assertThat(token1RevokedInDb.isPresent(), is(true));
@@ -468,7 +468,7 @@ public class PublicAuthResourceITest {
     public void respondWith404_whenTokenDoesNotExist() throws Exception {
         revokeSingleToken(ACCOUNT_ID, "{\"token_link\" : \"" + TOKEN_LINK + "\"}")
                 .statusCode(404)
-                .body("message", is("Could not revoke token"));
+                .body("message", is("Could not revoke token with token_link " + TOKEN_LINK));
 
         Optional<String> tokenLinkdInDb = app.getDatabaseHelper().lookupColumnForTokenTable("token_link", "token_link", TOKEN_LINK);
         assertThat(tokenLinkdInDb.isPresent(), is(false));
