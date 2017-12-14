@@ -42,8 +42,6 @@ import static javax.ws.rs.core.Response.status;
 import static uk.gov.pay.publicauth.model.TokenPaymentType.CARD;
 import static uk.gov.pay.publicauth.model.TokenPaymentType.valueOf;
 import static uk.gov.pay.publicauth.model.TokenStateFilterParam.ACTIVE;
-import static uk.gov.pay.publicauth.util.ResponseUtil.badRequestResponse;
-import static uk.gov.pay.publicauth.util.ResponseUtil.notFoundResponse;
 
 @Singleton
 @Path("/")
@@ -83,25 +81,24 @@ public class PublicAuthResource {
     @Produces(APPLICATION_JSON)
     @Consumes(APPLICATION_JSON)
     @POST
-    public Response createTokenForAccount(JsonNode payload) {
-        return validateCreatePayload(payload)
-                .map(errorMessage -> badRequestResponse(LOGGER, errorMessage))
-                .orElseGet(() -> {
-                    Tokens token = tokenService.issueTokens();
-                    TokenPaymentType tokenPaymentType =
-                            Optional.ofNullable(payload.get(TOKEN_TYPE_FIELD))
-                                    .map(tokenType -> valueOf(tokenType.asText()))
-                                    .orElse(CARD);
-                    String tokenLink = randomUUID().toString();
-                    authDao.storeToken(token.getHashedToken(),
-                            tokenLink,
-                            payload.get(ACCOUNT_ID_FIELD).asText(),
-                            payload.get(DESCRIPTION_FIELD).asText(),
-                            payload.get(CREATED_BY_FIELD).asText(),
-                            tokenPaymentType);
-                    LOGGER.info("Created token with token_link {} ", tokenLink);
-                    return ok(ImmutableMap.of("token", token.getApiKey())).build();
-                });
+    public Response createTokenForAccount(JsonNode payload) throws ValidationException {
+
+        validatePayloadHasFields(payload, ACCOUNT_ID_FIELD, DESCRIPTION_FIELD, CREATED_BY_FIELD);
+
+        Tokens token = tokenService.issueTokens();
+        TokenPaymentType tokenPaymentType =
+                Optional.ofNullable(payload.get(TOKEN_TYPE_FIELD))
+                        .map(tokenType -> valueOf(tokenType.asText()))
+                        .orElse(CARD);
+        String tokenLink = randomUUID().toString();
+        authDao.storeToken(token.getHashedToken(),
+                tokenLink,
+                payload.get(ACCOUNT_ID_FIELD).asText(),
+                payload.get(DESCRIPTION_FIELD).asText(),
+                payload.get(CREATED_BY_FIELD).asText(),
+                tokenPaymentType);
+        LOGGER.info("Created token with token_link {} ", tokenLink);
+        return ok(ImmutableMap.of("token", token.getApiKey())).build();
     }
 
     @Path(FRONTEND_AUTH_PATH + "/{accountId}")
@@ -139,35 +136,18 @@ public class PublicAuthResource {
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @DELETE
-    public Response revokeSingleToken(@PathParam("accountId") String accountId, JsonNode payload) {
-        JsonNode jsonNode;
-        if (payload == null || (jsonNode = payload.get("token_link")) == null) {
-            return badRequestResponse(LOGGER, "Missing fields: [token_link]");
-        }
-        String tokenLink = jsonNode.asText();
+    public Response revokeSingleToken(@PathParam("accountId") String accountId, JsonNode payload) throws ValidationException, TokenNotFoundException {
+
+        validatePayloadHasFields(payload, "token_link");
+
+        String tokenLink = payload.get("token_link").asText();
+
         return authDao.revokeSingleToken(accountId, tokenLink)
                 .map(revokedDate -> {
                     LOGGER.info("revoked with token_link {} on date {}", tokenLink, revokedDate);
                     return ok(ImmutableMap.of("revoked", revokedDate)).build();
                 })
-                .orElseGet(() -> notFoundResponse(LOGGER, "Could not revoke token with token_link " + tokenLink));
-    }
-
-    private Optional<String> validateCreatePayload(JsonNode payload) {
-        List<String> missingFieldsInRequestPayload = findMissingFieldsInRequestPayload(payload, ACCOUNT_ID_FIELD, DESCRIPTION_FIELD, CREATED_BY_FIELD);
-        if (!missingFieldsInRequestPayload.isEmpty()) {
-            return Optional.of("Missing fields: [" + Joiner.on(", ").join(missingFieldsInRequestPayload) + "]");
-        }
-        return Optional.empty();
-    }
-
-    private List<String> findMissingFieldsInRequestPayload(JsonNode requestPayload, String... expectedFieldsInRequestPayload) {
-        if (requestPayload == null) {
-            return asList(expectedFieldsInRequestPayload);
-        }
-        return Stream.of(expectedFieldsInRequestPayload)
-                .filter(expectedKey -> requestPayload.get(expectedKey) == null)
-                .collect(Collectors.toList());
+                .orElseThrow(() -> new TokenNotFoundException("Could not revoke token with token_link " + tokenLink));
     }
 
     private void validatePayloadHasFields(JsonNode payload, String... expectedFields) throws ValidationException {
