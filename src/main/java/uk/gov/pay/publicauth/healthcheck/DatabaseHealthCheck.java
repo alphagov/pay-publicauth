@@ -8,11 +8,10 @@ import uk.gov.pay.publicauth.app.config.PublicAuthConfiguration;
 
 import javax.inject.Inject;
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-
-import java.sql.DriverManager;
 import java.util.HashMap;
 import java.util.Map;
 

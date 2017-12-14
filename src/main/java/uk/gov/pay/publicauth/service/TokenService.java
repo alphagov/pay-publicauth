@@ -11,7 +11,9 @@ import uk.gov.pay.publicauth.model.Tokens;
 
 import java.util.Optional;
 
-import static uk.gov.pay.publicauth.service.RandomIdGenerator.*;
+import static uk.gov.pay.publicauth.service.RandomIdGenerator.RANDOM_ID_MAX_LENGTH;
+import static uk.gov.pay.publicauth.service.RandomIdGenerator.RANDOM_ID_MIN_LENGTH;
+import static uk.gov.pay.publicauth.service.RandomIdGenerator.newId;
 
 public class TokenService {
 

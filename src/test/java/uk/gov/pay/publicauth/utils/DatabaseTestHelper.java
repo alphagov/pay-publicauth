@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.TimeZone;
 
-import static uk.gov.pay.publicauth.model.TokenPaymentType.*;
+import static uk.gov.pay.publicauth.model.TokenPaymentType.CARD;
 
 public class DatabaseTestHelper {
     private DBI jdbi;
