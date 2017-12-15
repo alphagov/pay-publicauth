@@ -13,7 +13,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.core.Is.is;
-import static uk.gov.pay.publicauth.service.RandomIdGenerator.*;
+import static uk.gov.pay.publicauth.service.RandomIdGenerator.RANDOM_ID_MAX_LENGTH;
+import static uk.gov.pay.publicauth.service.RandomIdGenerator.RANDOM_ID_MIN_LENGTH;
+import static uk.gov.pay.publicauth.service.RandomIdGenerator.newId;
 
 public class RandomIdGeneratorTest {
 

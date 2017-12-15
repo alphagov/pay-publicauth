@@ -18,17 +18,15 @@ import static javax.ws.rs.core.Response.status;
 
 @Path("/")
 public class HealthCheckResource {
-    public static final String HEALTHCHECK = "healthcheck";
-    public static final String HEALTHY = "healthy";
 
-    Environment environment;
+    private final Environment environment;
 
     public HealthCheckResource(Environment environment) {
         this.environment = environment;
     }
 
     @GET
-    @Path(HEALTHCHECK)
+    @Path("healthcheck")
     @Produces(APPLICATION_JSON)
     public Response healthCheck() throws JsonProcessingException {
         SortedMap<String, HealthCheck.Result> results = environment.healthChecks().runHealthChecks();
@@ -40,7 +38,7 @@ public class HealthCheckResource {
                 .filter(HealthCheck.Result::isHealthy)
                 .count();
 
-        if(healthy) {
+        if (healthy) {
             return Response.ok().entity(response).build();
         }
         return status(503).entity(response).build();
@@ -48,8 +46,8 @@ public class HealthCheckResource {
 
     private Map<String, Map<String, Boolean>> getResponse(SortedMap<String, HealthCheck.Result> results) {
         Map<String, Map<String, Boolean>> response = new HashMap<>();
-        for (SortedMap.Entry<String, HealthCheck.Result> entry : results.entrySet() ) {
-            response.put(entry.getKey(), ImmutableMap.of(HEALTHY, entry.getValue().isHealthy()));
+        for (SortedMap.Entry<String, HealthCheck.Result> entry : results.entrySet()) {
+            response.put(entry.getKey(), ImmutableMap.of("healthy", entry.getValue().isHealthy()));
         }
         return response;
     }

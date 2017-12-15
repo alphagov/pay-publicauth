@@ -12,7 +12,7 @@ import org.joda.time.ReadableInstant;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mindrot.jbcrypt.BCrypt;
-import uk.gov.pay.publicauth.model.TokenPaymentType;
+import uk.gov.pay.publicauth.resources.PublicAuthResource;
 import uk.gov.pay.publicauth.utils.DropwizardAppWithPostgresRule;
 
 import java.util.List;
@@ -23,11 +23,17 @@ import static com.jayway.restassured.RestAssured.given;
 import static com.jayway.restassured.http.ContentType.JSON;
 import static javax.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.both;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.core.Is.is;
-import static org.joda.time.DateTimeZone.*;
-import static uk.gov.pay.publicauth.model.TokenPaymentType.*;
-import static uk.gov.pay.publicauth.resources.PublicAuthResource.*;
+import static org.joda.time.DateTimeZone.UTC;
+import static uk.gov.pay.publicauth.model.TokenPaymentType.CARD;
+import static uk.gov.pay.publicauth.model.TokenPaymentType.DIRECT_DEBIT;
 
 public class PublicAuthResourceITest {
 
@@ -43,10 +49,10 @@ public class PublicAuthResourceITest {
     private static final String ACCOUNT_ID_2 = "ACCOUNT-ID-2";
     private static final String TOKEN_DESCRIPTION = "TOKEN DESCRIPTION";
     private static final String TOKEN_DESCRIPTION_2 = "Token description 2";
-    public static final String USER_EMAIL = "user@email.com";
-    public static final String TOKEN_HASH_COLUMN = "token_hash";
-    public static final String CREATED_USER_NAME = "user-name";
-    public static final String CREATED_USER_NAME2 = "user-name-2";
+    private static final String USER_EMAIL = "user@email.com";
+    private static final String TOKEN_HASH_COLUMN = "token_hash";
+    private static final String CREATED_USER_NAME = "user-name";
+    private static final String CREATED_USER_NAME2 = "user-name-2";
 
     private DateTime now = DateTime.now();
 
@@ -103,17 +109,17 @@ public class PublicAuthResourceITest {
         String tokenApiKey = newToken.substring(0, newToken.length() - apiKeyHashSize);
         String hashedToken = BCrypt.hashpw(tokenApiKey, SALT);
 
-        Optional<String> newTokenDescription = app.getDatabaseHelper().lookupColumnForTokenTable(DESCRIPTION_FIELD, TOKEN_HASH_COLUMN, hashedToken);
+        Optional<String> newTokenDescription = app.getDatabaseHelper().lookupColumnForTokenTable("description", TOKEN_HASH_COLUMN, hashedToken);
 
         assertThat(newTokenDescription.get(), equalTo(TOKEN_DESCRIPTION));
 
-        Optional<String> newTokenAccountId = app.getDatabaseHelper().lookupColumnForTokenTable(ACCOUNT_ID_FIELD, TOKEN_HASH_COLUMN, hashedToken);
+        Optional<String> newTokenAccountId = app.getDatabaseHelper().lookupColumnForTokenTable("account_id", TOKEN_HASH_COLUMN, hashedToken);
         assertThat(newTokenAccountId.get(), equalTo(ACCOUNT_ID));
 
-        Optional<String> newCreatedByEmail = app.getDatabaseHelper().lookupColumnForTokenTable(CREATED_BY_FIELD, TOKEN_HASH_COLUMN, hashedToken);
+        Optional<String> newCreatedByEmail = app.getDatabaseHelper().lookupColumnForTokenTable("created_by", TOKEN_HASH_COLUMN, hashedToken);
         assertThat(newCreatedByEmail.get(), equalTo(USER_EMAIL));
 
-        Optional<String> newTokenType = app.getDatabaseHelper().lookupColumnForTokenTable(TOKEN_TYPE_FIELD, TOKEN_HASH_COLUMN, hashedToken);
+        Optional<String> newTokenType = app.getDatabaseHelper().lookupColumnForTokenTable("token_type", TOKEN_HASH_COLUMN, hashedToken);
         assertThat(newTokenType.get(), equalTo(CARD.toString()));
     }
 
@@ -128,7 +134,7 @@ public class PublicAuthResourceITest {
         String tokenApiKey = newToken.substring(0, newToken.length() - apiKeyHashSize);
         String hashedToken = BCrypt.hashpw(tokenApiKey, SALT);
 
-        Optional<String> newTokenType = app.getDatabaseHelper().lookupColumnForTokenTable(TOKEN_TYPE_FIELD, TOKEN_HASH_COLUMN, hashedToken);
+        Optional<String> newTokenType = app.getDatabaseHelper().lookupColumnForTokenTable("token_type", TOKEN_HASH_COLUMN, hashedToken);
         assertThat(newTokenType.get(), equalTo(DIRECT_DEBIT.toString()));
     }
 

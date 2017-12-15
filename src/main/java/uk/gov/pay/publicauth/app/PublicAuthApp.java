@@ -20,6 +20,8 @@ import uk.gov.pay.publicauth.app.config.PublicAuthConfiguration;
 import uk.gov.pay.publicauth.auth.Token;
 import uk.gov.pay.publicauth.auth.TokenAuthenticator;
 import uk.gov.pay.publicauth.dao.AuthTokenDao;
+import uk.gov.pay.publicauth.exception.TokenNotFoundExceptionMapper;
+import uk.gov.pay.publicauth.exception.ValidationExceptionMapper;
 import uk.gov.pay.publicauth.filters.LoggingFilter;
 import uk.gov.pay.publicauth.healthcheck.DatabaseHealthCheck;
 import uk.gov.pay.publicauth.resources.HealthCheckResource;
@@ -31,7 +33,6 @@ import java.util.concurrent.TimeUnit;
 
 import static java.util.EnumSet.of;
 import static javax.servlet.DispatcherType.REQUEST;
-import static uk.gov.pay.publicauth.resources.PublicAuthResource.API_VERSION_PATH;
 
 public class PublicAuthApp extends Application<PublicAuthConfiguration> {
 
@@ -79,10 +80,12 @@ public class PublicAuthApp extends Application<PublicAuthConfiguration> {
 
         environment.jersey().register(new PublicAuthResource(new AuthTokenDao(jdbi), tokenService));
         environment.jersey().register(new HealthCheckResource(environment));
+        environment.jersey().register(new ValidationExceptionMapper());
+        environment.jersey().register(new TokenNotFoundExceptionMapper());
         environment.healthChecks().register("database", new DatabaseHealthCheck(conf,environment));
 
         environment.servlets().addFilter("LoggingFilter", new LoggingFilter())
-                .addMappingForUrlPatterns(of(REQUEST), true, API_VERSION_PATH + "/*");
+                .addMappingForUrlPatterns(of(REQUEST), true, "/v1" + "/*");
     }
 
     private void initialiseMetrics(PublicAuthConfiguration configuration, Environment environment) {
