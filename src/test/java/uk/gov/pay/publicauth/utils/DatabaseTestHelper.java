@@ -1,11 +1,13 @@
 package uk.gov.pay.publicauth.utils;
 
-import io.dropwizard.jdbi.args.JodaDateTimeMapper;
+import io.dropwizard.jdbi.args.ZonedDateTimeMapper;
 import org.joda.time.DateTime;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.util.StringMapper;
 import uk.gov.pay.publicauth.model.TokenPaymentType;
 
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TimeZone;
@@ -13,6 +15,7 @@ import java.util.TimeZone;
 import static uk.gov.pay.publicauth.model.TokenPaymentType.CARD;
 
 public class DatabaseTestHelper {
+
     private DBI jdbi;
 
     public DatabaseTestHelper(DBI jdbi) {
@@ -20,29 +23,26 @@ public class DatabaseTestHelper {
     }
 
     public void insertAccount(String tokenHash, String randomTokenLink, String accountId, String description, String createdBy) {
-        insertAccount(tokenHash, randomTokenLink, accountId, description, null, createdBy, DateTime.now());
+        insertAccount(tokenHash, randomTokenLink, accountId, description, null, createdBy, ZonedDateTime.now(ZoneOffset.UTC));
     }
 
-    public void insertAccount(String tokenHash, String randomTokenLink, String accountId, String description, DateTime revoked, String createdBy) {
-        insertAccount(tokenHash, randomTokenLink, accountId, description, revoked, createdBy, DateTime.now());
+    public void insertAccount(String tokenHash, String randomTokenLink, String accountId, String description, ZonedDateTime revoked, String createdBy) {
+        insertAccount(tokenHash, randomTokenLink, accountId, description, revoked, createdBy, ZonedDateTime.now(ZoneOffset.UTC));
     }
 
-    public void insertAccount(String tokenHash, String randomTokenLink, String accountId, String description, DateTime revoked, String createdBy, DateTime lastUsed) {
+    public void insertAccount(String tokenHash, String randomTokenLink, String accountId, String description, ZonedDateTime revoked, String createdBy, ZonedDateTime lastUsed) {
         insertAccount(tokenHash, randomTokenLink, accountId, description, revoked, createdBy, lastUsed, CARD);
     }
 
-    public void insertAccount(String tokenHash, String randomTokenLink, String accountId, String description, DateTime revoked, String createdBy, DateTime lastUsed, TokenPaymentType tokenPaymentType) {
+    public void insertAccount(String tokenHash, String randomTokenLink, String accountId, String description, ZonedDateTime revoked, String createdBy, ZonedDateTime lastUsed, TokenPaymentType tokenPaymentType) {
         jdbi.withHandle(handle ->
         handle.insert("INSERT INTO tokens(token_hash, token_link, account_id, description, token_type, revoked, created_by, last_used) VALUES (?,?,?,?,?,(? at time zone 'utc'),?,(? at time zone 'utc'))",
-                tokenHash, randomTokenLink, accountId, description, tokenPaymentType, revoked, createdBy, lastUsed));
+                tokenHash, randomTokenLink, accountId, description, tokenPaymentType,
+                revoked, createdBy, lastUsed));
     }
 
-    public DateTime issueTimestampForAccount(String accountId) {
+    public ZonedDateTime issueTimestampForAccount(String accountId) {
         return getDateTimeColumn("issued", accountId);
-    }
-
-    public DateTime revokeTimestampForAccount(String accountId) {
-        return getDateTimeColumn("revoked", accountId);
     }
 
     public java.util.Optional<String> lookupColumnForTokenTable(String column, String idKey, String idValue) {
@@ -64,18 +64,11 @@ public class DatabaseTestHelper {
         return ret;
     }
 
-    public DateTime getDateTimeColumn(String column, String accountId) {
+    public ZonedDateTime getDateTimeColumn(String column, String accountId) {
         return jdbi.withHandle(handle ->
                 handle.createQuery("SELECT " + column + " FROM tokens WHERE account_id=:accountId")
                         .bind("accountId", accountId)
-                        .map(new JodaDateTimeMapper(Optional.of(TimeZone.getTimeZone("UTC"))))
-                        .first());
-    }
-
-    public DateTime getCurrentTime() {
-        return jdbi.withHandle(handle ->
-                handle.createQuery("SELECT (now() at time zone 'utc')")
-                        .map(new JodaDateTimeMapper(Optional.of(TimeZone.getTimeZone("UTC"))))
+                        .map(new ZonedDateTimeMapper(Optional.of(TimeZone.getTimeZone("UTC"))))
                         .first());
     }
 
