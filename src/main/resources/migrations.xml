@@ -82,4 +82,13 @@
 
         <addDefaultValue tableName="tokens" columnName="token_type" defaultValue="CARD"/>
     </changeSet>
+
+    <changeSet id="add account_external_id column to tokens table" author="">
+        <addColumn tableName="tokens">
+            <column name="account_external_id" type="varchar(36)">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
 </databaseChangeLog>

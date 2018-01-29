@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import io.dropwizard.auth.Auth;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.gov.pay.publicauth.auth.Token;
@@ -48,6 +49,7 @@ public class PublicAuthResource {
     private static final Logger LOGGER = LoggerFactory.getLogger(PublicAuthResource.class);
 
     private static final String ACCOUNT_ID_FIELD = "account_id";
+    private static final String ACCOUNT_EXTERNAL_ID_FIELD = "account_external_id";
     private static final String TOKEN_TYPE_FIELD = "token_type";
     private static final String TOKEN_LINK_FIELD = "token_link";
     private static final String DESCRIPTION_FIELD = "description";
@@ -79,18 +81,23 @@ public class PublicAuthResource {
     @Consumes(APPLICATION_JSON)
     @POST
     public Response createTokenForAccount(JsonNode payload) throws ValidationException {
-
-        validatePayloadHasFields(payload, ACCOUNT_ID_FIELD, DESCRIPTION_FIELD, CREATED_BY_FIELD);
+        LOGGER.info("Received create token request");
+        validatePayloadHasFields(payload, ACCOUNT_ID_FIELD, ACCOUNT_EXTERNAL_ID_FIELD, DESCRIPTION_FIELD, CREATED_BY_FIELD);
+        LOGGER.info("Creating token for account {}, external id {}", payload.get(ACCOUNT_ID_FIELD).asText(), payload.get(ACCOUNT_EXTERNAL_ID_FIELD).asText());
 
         Tokens token = tokenService.issueTokens();
+        //todo check if this can be removed after updating selfservice and scripts
         TokenPaymentType tokenPaymentType =
                 Optional.ofNullable(payload.get(TOKEN_TYPE_FIELD))
                         .map(tokenType -> valueOf(tokenType.asText()))
                         .orElse(CARD);
+
+        String accountExternalId = parseAccountExternalId(payload.get(ACCOUNT_EXTERNAL_ID_FIELD).asText());
         String tokenLink = randomUUID().toString();
         authDao.storeToken(token.getHashedToken(),
                 tokenLink,
                 payload.get(ACCOUNT_ID_FIELD).asText(),
+                accountExternalId ,
                 payload.get(DESCRIPTION_FIELD).asText(),
                 payload.get(CREATED_BY_FIELD).asText(),
                 tokenPaymentType);
@@ -98,14 +105,28 @@ public class PublicAuthResource {
         return ok(ImmutableMap.of("token", token.getApiKey())).build();
     }
 
+    private String parseAccountExternalId(String externalId) {
+        if (externalId.equals("") || externalId.equals("null")) {
+            return null;
+        }
+        return externalId;
+    }
     @Path("/v1/frontend/auth/{accountId}")
     @Produces(APPLICATION_JSON)
     @GET
-    public Response getIssuedTokensForAccount(@PathParam("accountId") String accountId, @QueryParam("state") TokenStateFilterParam state) {
+    public Response getIssuedTokensForAccount(@PathParam("accountId") String accountId,
+                                              @QueryParam("state") TokenStateFilterParam state) {
         state = Optional.ofNullable(state).orElse(ACTIVE);
-        List<Map<String, Object>> tokensWithoutNullRevoked = authDao.findTokensWithState(accountId, state);
+        List<Map<String, Object>> tokensWithoutNullRevoked;
+        //fixme remove this block once all gateway accounts have an external id
+        if (StringUtils.isNumeric(accountId)) {
+            tokensWithoutNullRevoked  = authDao.findTokensWithStateById(accountId, state);
+        } else {
+            tokensWithoutNullRevoked = authDao.findTokensWithStateByExternalId(accountId, state);
+        }
         return ok(ImmutableMap.of("tokens", tokensWithoutNullRevoked)).build();
     }
+
 
     @Path("/v1/frontend/auth")
     @Consumes(APPLICATION_JSON)
@@ -139,7 +160,15 @@ public class PublicAuthResource {
 
         String tokenLink = payload.get(TOKEN_LINK_FIELD).asText();
 
-        return authDao.revokeSingleToken(accountId, tokenLink)
+        //fixme remove this block once all gateway accounts have an external id
+        Optional<String> maybeToken;
+        if (StringUtils.isNumeric(accountId)) {
+            maybeToken = authDao.revokeSingleToken(accountId, tokenLink);
+        } else {
+            maybeToken = authDao.revokeSingleTokenByExternalId(accountId, tokenLink);
+        }
+
+        return maybeToken
                 .map(revokedDate -> {
                     LOGGER.info("revoked with token_link {} on date {}", tokenLink, revokedDate);
                     return ok(ImmutableMap.of("revoked", revokedDate)).build();
