@@ -97,7 +97,7 @@ public class AuthTokenDaoTest {
 
     @Test
     public void shouldFindActiveTokens() throws Exception {
-        ZonedDateTime inserted = ZonedDateTime.now(ZoneOffset.UTC);
+        ZonedDateTime inserted = app.getDatabaseHelper().getCurrentTime();
         ZonedDateTime lastUsed = inserted.plusMinutes(30);
         ZonedDateTime revoked = inserted.plusMinutes(45);
         app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, TEST_USER_NAME, lastUsed);
@@ -119,7 +119,7 @@ public class AuthTokenDaoTest {
 
     @Test
     public void shouldReturnCardTokensIfTokenTypeIsNull() throws Exception {
-        ZonedDateTime inserted = ZonedDateTime.now(ZoneOffset.UTC);
+        ZonedDateTime inserted = app.getDatabaseHelper().getCurrentTime();
         ZonedDateTime lastUsed = inserted.plusMinutes(30);
         app.getDatabaseHelper().insertAccount(TOKEN_HASH_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, TEST_USER_NAME_2, lastUsed, null);
 
@@ -139,7 +139,7 @@ public class AuthTokenDaoTest {
 
     @Test
     public void shouldFindRevokedTokens() throws Exception {
-        ZonedDateTime inserted = ZonedDateTime.now(ZoneOffset.UTC);
+        ZonedDateTime inserted = app.getDatabaseHelper().getCurrentTime();
         ZonedDateTime lastUsed = inserted.plusMinutes(30);
         ZonedDateTime revoked = inserted.plusMinutes(45);
         app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, TEST_USER_NAME, lastUsed);
@@ -162,7 +162,7 @@ public class AuthTokenDaoTest {
     public void shouldInsertNewToken() {
         authTokenDao.storeToken("token-hash", "token-link", "account-id", "description", "user", CARD);
         Map<String, Object> tokenByHash = app.getDatabaseHelper().getTokenByHash("token-hash");
-        ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC);
+        ZonedDateTime now = app.getDatabaseHelper().getCurrentTime();
 
         assertThat(tokenByHash.get("token_hash"), is("token-hash"));
         assertThat(tokenByHash.get("account_id"), is("account-id"));
@@ -186,7 +186,7 @@ public class AuthTokenDaoTest {
 
     @Test
     public void shouldFindTokenByTokenLink() throws Exception {
-        ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC);
+        ZonedDateTime now = app.getDatabaseHelper().getCurrentTime();
         app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, null, TEST_USER_NAME, now, DIRECT_DEBIT);
         Optional<Map<String, Object>> tokenMayBe = authTokenDao.findTokenByTokenLink(TOKEN_LINK);
         Map<String, Object> token = tokenMayBe.get();
@@ -202,7 +202,7 @@ public class AuthTokenDaoTest {
 
     @Test
     public void shouldFindByTokenLinkAndReturnCardTokensIfTokenTypeIsNull() throws Exception {
-        ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC);
+        ZonedDateTime now = app.getDatabaseHelper().getCurrentTime();
         app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, null, TEST_USER_NAME, now, null);
         Optional<Map<String, Object>> tokenMayBe = authTokenDao.findTokenByTokenLink(TOKEN_LINK);
         Map<String, Object> token = tokenMayBe.get();

@@ -72,4 +72,10 @@ public class DatabaseTestHelper {
                         .first());
     }
 
+    public ZonedDateTime getCurrentTime() {
+        return jdbi.withHandle(handle ->
+                handle.createQuery("SELECT (now() at time zone 'utc')")
+                        .map(new ZonedDateTimeMapper(Optional.of(TimeZone.getTimeZone("UTC"))))
+                        .first());
+    }
 }
