@@ -2,15 +2,16 @@ package uk.gov.pay.publicauth.dao;
 
 import com.google.common.collect.Lists;
 import org.hamcrest.Matcher;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
-import org.joda.time.ReadableInstant;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import uk.gov.pay.publicauth.utils.DropwizardAppWithPostgresRule;
 
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.chrono.ChronoZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -32,7 +33,9 @@ public class AuthTokenDaoTest {
 
     public static final String TEST_USER_NAME = "test-user-name";
     public static final String TEST_USER_NAME_2 = "test-user-name-2";
-    private  DateTime now = DateTime.now();
+
+    private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("dd MMM YYYY - HH:mm");
+
 
     @Rule
     public DropwizardAppWithPostgresRule app = new DropwizardAppWithPostgresRule();
@@ -94,9 +97,9 @@ public class AuthTokenDaoTest {
 
     @Test
     public void shouldFindActiveTokens() throws Exception {
-        DateTime inserted = app.getDatabaseHelper().getCurrentTime().toDateTime(DateTimeZone.UTC);
-        DateTime lastUsed = inserted.plusMinutes(30);
-        DateTime revoked = inserted.plusMinutes(45);
+        ZonedDateTime inserted = app.getDatabaseHelper().getCurrentTime();
+        ZonedDateTime lastUsed = inserted.plusMinutes(30);
+        ZonedDateTime revoked = inserted.plusMinutes(45);
         app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, TEST_USER_NAME, lastUsed);
         app.getDatabaseHelper().insertAccount(TOKEN_HASH_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, TEST_USER_NAME_2, lastUsed, DIRECT_DEBIT);
 
@@ -110,14 +113,14 @@ public class AuthTokenDaoTest {
         assertThat(firstToken.containsKey("revoked"), is(false));
         assertThat(firstToken.get("created_by"), is(TEST_USER_NAME_2));
         assertThat(firstToken.get("token_type"), is(DIRECT_DEBIT.toString()));
-        assertThat(firstToken.get("last_used"), is(lastUsed.toString("dd MMM YYYY - HH:mm")));
-        assertThat(firstToken.get("issued_date"), is(inserted.toString("dd MMM YYYY - HH:mm")));
+        assertThat(firstToken.get("last_used"), is(lastUsed.format(DATE_TIME_FORMAT)));
+        assertThat(firstToken.get("issued_date"), is(inserted.format(DATE_TIME_FORMAT)));
     }
 
     @Test
     public void shouldReturnCardTokensIfTokenTypeIsNull() throws Exception {
-        DateTime inserted = app.getDatabaseHelper().getCurrentTime().toDateTime(DateTimeZone.UTC);
-        DateTime lastUsed = inserted.plusMinutes(30);
+        ZonedDateTime inserted = app.getDatabaseHelper().getCurrentTime();
+        ZonedDateTime lastUsed = inserted.plusMinutes(30);
         app.getDatabaseHelper().insertAccount(TOKEN_HASH_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, TEST_USER_NAME_2, lastUsed, null);
 
         List<Map<String, Object>> tokens = authTokenDao.findTokensWithState(ACCOUNT_ID, ACTIVE);
@@ -130,15 +133,15 @@ public class AuthTokenDaoTest {
         assertThat(firstToken.containsKey("revoked"), is(false));
         assertThat(firstToken.get("created_by"), is(TEST_USER_NAME_2));
         assertThat(firstToken.get("token_type"), is(CARD.toString()));
-        assertThat(firstToken.get("last_used"), is(lastUsed.toString("dd MMM YYYY - HH:mm")));
-        assertThat(firstToken.get("issued_date"), is(inserted.toString("dd MMM YYYY - HH:mm")));
+        assertThat(firstToken.get("last_used"), is(lastUsed.format(DATE_TIME_FORMAT)));
+        assertThat(firstToken.get("issued_date"), is(inserted.format(DATE_TIME_FORMAT)));
     }
 
     @Test
     public void shouldFindRevokedTokens() throws Exception {
-        DateTime inserted = app.getDatabaseHelper().getCurrentTime().toDateTime(DateTimeZone.UTC);
-        DateTime lastUsed = inserted.plusMinutes(30);
-        DateTime revoked = inserted.plusMinutes(45);
+        ZonedDateTime inserted = app.getDatabaseHelper().getCurrentTime();
+        ZonedDateTime lastUsed = inserted.plusMinutes(30);
+        ZonedDateTime revoked = inserted.plusMinutes(45);
         app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, TEST_USER_NAME, lastUsed);
         app.getDatabaseHelper().insertAccount(TOKEN_HASH_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, TEST_USER_NAME_2, lastUsed);
 
@@ -149,17 +152,17 @@ public class AuthTokenDaoTest {
         assertThat(firstToken.get("token_link"), is(TOKEN_LINK));
         assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION));
         assertThat(firstToken.containsKey("revoked"), is(true));
-        assertThat(firstToken.get("revoked"), is(revoked.toString("dd MMM YYYY - HH:mm")));
+        assertThat(firstToken.get("revoked"), is(revoked.format(DATE_TIME_FORMAT)));
         assertThat(firstToken.get("created_by"), is(TEST_USER_NAME));
-        assertThat(firstToken.get("last_used"), is(lastUsed.toString("dd MMM YYYY - HH:mm")));
-        assertThat(firstToken.get("issued_date"), is(inserted.toString("dd MMM YYYY - HH:mm")));
+        assertThat(firstToken.get("last_used"), is(lastUsed.format(DATE_TIME_FORMAT)));
+        assertThat(firstToken.get("issued_date"), is(inserted.format(DATE_TIME_FORMAT)));
     }
 
     @Test
     public void shouldInsertNewToken() {
         authTokenDao.storeToken("token-hash", "token-link", "account-id", "description", "user", CARD);
         Map<String, Object> tokenByHash = app.getDatabaseHelper().getTokenByHash("token-hash");
-        DateTime now = app.getDatabaseHelper().getCurrentTime();
+        ZonedDateTime now = app.getDatabaseHelper().getCurrentTime();
 
         assertThat(tokenByHash.get("token_hash"), is("token-hash"));
         assertThat(tokenByHash.get("account_id"), is("account-id"));
@@ -167,7 +170,7 @@ public class AuthTokenDaoTest {
         assertThat(tokenByHash.get("created_by"), is("user"));
         assertNull(tokenByHash.get("last_used"));
         assertThat(tokenByHash.get("token_type"), is(CARD.toString()));
-        DateTime tokenIssueTime = app.getDatabaseHelper().issueTimestampForAccount("account-id");
+        ZonedDateTime tokenIssueTime = app.getDatabaseHelper().issueTimestampForAccount("account-id");
         assertThat(tokenIssueTime, isCloseTo(now));
     }
 
@@ -183,8 +186,8 @@ public class AuthTokenDaoTest {
 
     @Test
     public void shouldFindTokenByTokenLink() throws Exception {
-        DateTime nowFromDB = app.getDatabaseHelper().getCurrentTime().toDateTime(DateTimeZone.UTC);
-        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, null, TEST_USER_NAME, nowFromDB, DIRECT_DEBIT);
+        ZonedDateTime now = app.getDatabaseHelper().getCurrentTime();
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, null, TEST_USER_NAME, now, DIRECT_DEBIT);
         Optional<Map<String, Object>> tokenMayBe = authTokenDao.findTokenByTokenLink(TOKEN_LINK);
         Map<String, Object> token = tokenMayBe.get();
 
@@ -193,14 +196,14 @@ public class AuthTokenDaoTest {
         assertThat(TEST_USER_NAME, is(token.get("created_by")));
         assertThat(token.get("token_type"), is(DIRECT_DEBIT.toString()));
         assertThat(token.get("revoked"), is(nullValue()));
-        assertThat(token.get("issued_date"), is(nowFromDB.toString("dd MMM YYYY - HH:mm")));
-        assertThat(token.get("last_used"), is(nowFromDB.toString("dd MMM YYYY - HH:mm")));
+        assertThat(token.get("issued_date"), is(now.format(DATE_TIME_FORMAT)));
+        assertThat(token.get("last_used"), is(now.format(DATE_TIME_FORMAT)));
     }
 
     @Test
     public void shouldFindByTokenLinkAndReturnCardTokensIfTokenTypeIsNull() throws Exception {
-        DateTime nowFromDB = app.getDatabaseHelper().getCurrentTime().toDateTime(DateTimeZone.UTC);
-        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, null, TEST_USER_NAME, nowFromDB, null);
+        ZonedDateTime now = app.getDatabaseHelper().getCurrentTime();
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, null, TEST_USER_NAME, now, null);
         Optional<Map<String, Object>> tokenMayBe = authTokenDao.findTokenByTokenLink(TOKEN_LINK);
         Map<String, Object> token = tokenMayBe.get();
         assertThat(TOKEN_LINK, is(token.get("token_link")));
@@ -208,8 +211,8 @@ public class AuthTokenDaoTest {
         assertThat(TEST_USER_NAME, is(token.get("created_by")));
         assertThat(token.get("token_type"), is(CARD.toString()));
         assertThat(token.get("revoked"), is(nullValue()));
-        assertThat(token.get("issued_date"), is(nowFromDB.toString("dd MMM YYYY - HH:mm")));
-        assertThat(token.get("last_used"), is(nowFromDB.toString("dd MMM YYYY - HH:mm")));
+        assertThat(token.get("issued_date"), is(now.format(DATE_TIME_FORMAT)));
+        assertThat(token.get("last_used"), is(now.format(DATE_TIME_FORMAT)));
     }
 
     @Test
@@ -223,7 +226,7 @@ public class AuthTokenDaoTest {
 
     @Test
     public void notUpdateARevokedToken() throws Exception {
-        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, DateTime.now(), TEST_USER_NAME);
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, ZonedDateTime.now(), TEST_USER_NAME);
 
         boolean updateResult = authTokenDao.updateTokenDescription(TOKEN_LINK, TOKEN_DESCRIPTION_2);
 
@@ -238,7 +241,7 @@ public class AuthTokenDaoTest {
 
         Optional<String> revokedDate = authTokenDao.revokeSingleToken(ACCOUNT_ID, TOKEN_LINK);
 
-        assertThat(revokedDate.get(), is(now.toString("dd MMM YYYY")));
+        assertThat(revokedDate.get(), is(ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ofPattern("dd MMM YYYY"))));
 
         Optional<String> revokedInDb = app.getDatabaseHelper().lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK);
         assertThat(revokedInDb.isPresent(), is(true));
@@ -259,7 +262,7 @@ public class AuthTokenDaoTest {
 
     @Test
     public void shouldNotRevokeATokenAlreadyRevoked() throws Exception {
-        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, DateTime.now(), TEST_USER_NAME);
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, ZonedDateTime.now(), TEST_USER_NAME);
 
         Optional<String> revokedDate = authTokenDao.revokeSingleToken(ACCOUNT_ID, TOKEN_LINK);
 
@@ -276,7 +279,7 @@ public class AuthTokenDaoTest {
         authTokenDao.storeToken(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, "test@email.com", CARD);
     }
 
-    private Matcher<ReadableInstant> isCloseTo(DateTime now) {
+    private Matcher<ChronoZonedDateTime<?>> isCloseTo(ZonedDateTime now) {
         return both(greaterThan(now.minusSeconds(5))).and(lessThan(now.plusSeconds(5)));
     }
 }
