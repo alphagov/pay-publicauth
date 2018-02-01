@@ -66,7 +66,6 @@ public class PublicAuthResourceITest {
     public DropwizardAppWithPostgresRule app = new DropwizardAppWithPostgresRule();
     private String validTokenPayload = new Gson().toJson(
             ImmutableMap.of("account_id", ACCOUNT_ID,
-                    "account_external_id", "null",
                     "description", TOKEN_DESCRIPTION,
                     "created_by", USER_EMAIL));
     private String validTokenPayloadWithTokenTypeAndExternalId = new Gson().toJson(
@@ -156,7 +155,7 @@ public class PublicAuthResourceITest {
     public void respondWith400_ifAccountAndDescriptionAreMissing() throws Exception {
         createTokenFor("{}")
                 .statusCode(400)
-                .body("message", is("Missing fields: [account_id, account_external_id, description, created_by]"));
+                .body("message", is("Missing fields: [account_id, description, created_by]"));
     }
 
     @Test
@@ -177,7 +176,7 @@ public class PublicAuthResourceITest {
     public void respondWith400_ifBodyIsMissing() throws Exception {
         createTokenFor("")
                 .statusCode(400)
-                .body("message", is("Missing fields: [account_id, account_external_id, description, created_by]"));
+                .body("message", is("Missing fields: [account_id, description, created_by]"));
     }
 
     @Test

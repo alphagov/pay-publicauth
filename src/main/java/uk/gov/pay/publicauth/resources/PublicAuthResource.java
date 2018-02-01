@@ -11,7 +11,6 @@ import uk.gov.pay.publicauth.auth.Token;
 import uk.gov.pay.publicauth.dao.AuthTokenDao;
 import uk.gov.pay.publicauth.exception.TokenNotFoundException;
 import uk.gov.pay.publicauth.exception.ValidationException;
-import uk.gov.pay.publicauth.model.TokenPaymentType;
 import uk.gov.pay.publicauth.model.TokenStateFilterParam;
 import uk.gov.pay.publicauth.model.Tokens;
 import uk.gov.pay.publicauth.service.TokenService;
@@ -34,13 +33,11 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.Arrays.asList;
-import static java.util.UUID.randomUUID;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.Response.Status.UNAUTHORIZED;
 import static javax.ws.rs.core.Response.ok;
-import static uk.gov.pay.publicauth.model.TokenPaymentType.CARD;
-import static uk.gov.pay.publicauth.model.TokenPaymentType.valueOf;
 import static uk.gov.pay.publicauth.model.TokenStateFilterParam.ACTIVE;
+import static uk.gov.pay.publicauth.resources.CreateTokenParser.*;
 
 @Singleton
 @Path("/")
@@ -49,7 +46,6 @@ public class PublicAuthResource {
     private static final Logger LOGGER = LoggerFactory.getLogger(PublicAuthResource.class);
 
     private static final String ACCOUNT_ID_FIELD = "account_id";
-    private static final String ACCOUNT_EXTERNAL_ID_FIELD = "account_external_id";
     private static final String TOKEN_TYPE_FIELD = "token_type";
     private static final String TOKEN_LINK_FIELD = "token_link";
     private static final String DESCRIPTION_FIELD = "description";
@@ -57,7 +53,7 @@ public class PublicAuthResource {
 
     private final AuthTokenDao authDao;
     private final TokenService tokenService;
-
+    private final CreateTokenParser createTokenParser = new CreateTokenParser();
     public PublicAuthResource(AuthTokenDao authDao,
                               TokenService tokenService) {
         this.authDao = authDao;
@@ -82,35 +78,26 @@ public class PublicAuthResource {
     @POST
     public Response createTokenForAccount(JsonNode payload) throws ValidationException {
         LOGGER.info("Received create token request");
-        validatePayloadHasFields(payload, ACCOUNT_ID_FIELD, ACCOUNT_EXTERNAL_ID_FIELD, DESCRIPTION_FIELD, CREATED_BY_FIELD);
-        LOGGER.info("Creating token for account {}, external id {}", payload.get(ACCOUNT_ID_FIELD).asText(), payload.get(ACCOUNT_EXTERNAL_ID_FIELD).asText());
+        validatePayloadHasFields(payload, ACCOUNT_ID_FIELD, DESCRIPTION_FIELD, CREATED_BY_FIELD);
 
         Tokens token = tokenService.issueTokens();
-        //todo check if this can be removed after updating selfservice and scripts
-        TokenPaymentType tokenPaymentType =
-                Optional.ofNullable(payload.get(TOKEN_TYPE_FIELD))
-                        .map(tokenType -> valueOf(tokenType.asText()))
-                        .orElse(CARD);
-
-        String accountExternalId = parseAccountExternalId(payload.get(ACCOUNT_EXTERNAL_ID_FIELD).asText());
-        String tokenLink = randomUUID().toString();
-        authDao.storeToken(token.getHashedToken(),
-                tokenLink,
-                payload.get(ACCOUNT_ID_FIELD).asText(),
-                accountExternalId ,
-                payload.get(DESCRIPTION_FIELD).asText(),
-                payload.get(CREATED_BY_FIELD).asText(),
-                tokenPaymentType);
-        LOGGER.info("Created token with token_link {} ", tokenLink);
+        ParsedToken parsedToken = createTokenParser.parse(payload);
+        authDao.storeToken(
+                token.getHashedToken(),
+                parsedToken.getTokenLink(),
+                parsedToken.getAccountId(),
+                parsedToken.getAccountExternalId(),
+                parsedToken.getDescription(),
+                parsedToken.getCreatedBy(),
+                parsedToken.getTokenPaymentType());
+        LOGGER.info(
+                "Creating token with token_link {} for account {}, account external id {}",
+                parsedToken.getTokenLink(),
+                parsedToken.getAccountId(),
+                parsedToken.getAccountExternalId());
         return ok(ImmutableMap.of("token", token.getApiKey())).build();
     }
 
-    private String parseAccountExternalId(String externalId) {
-        if (externalId.equals("") || externalId.equals("null")) {
-            return null;
-        }
-        return externalId;
-    }
     @Path("/v1/frontend/auth/{accountId}")
     @Produces(APPLICATION_JSON)
     @GET
