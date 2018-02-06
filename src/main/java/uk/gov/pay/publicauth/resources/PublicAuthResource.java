@@ -4,13 +4,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import io.dropwizard.auth.Auth;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.gov.pay.publicauth.auth.Token;
 import uk.gov.pay.publicauth.dao.AuthTokenDao;
 import uk.gov.pay.publicauth.exception.TokenNotFoundException;
 import uk.gov.pay.publicauth.exception.ValidationException;
-import uk.gov.pay.publicauth.model.TokenPaymentType;
 import uk.gov.pay.publicauth.model.TokenStateFilterParam;
 import uk.gov.pay.publicauth.model.Tokens;
 import uk.gov.pay.publicauth.service.TokenService;
@@ -33,13 +33,11 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.Arrays.asList;
-import static java.util.UUID.randomUUID;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.Response.Status.UNAUTHORIZED;
 import static javax.ws.rs.core.Response.ok;
-import static uk.gov.pay.publicauth.model.TokenPaymentType.CARD;
-import static uk.gov.pay.publicauth.model.TokenPaymentType.valueOf;
 import static uk.gov.pay.publicauth.model.TokenStateFilterParam.ACTIVE;
+import static uk.gov.pay.publicauth.resources.CreateTokenParser.*;
 
 @Singleton
 @Path("/")
@@ -55,7 +53,7 @@ public class PublicAuthResource {
 
     private final AuthTokenDao authDao;
     private final TokenService tokenService;
-
+    private final CreateTokenParser createTokenParser = new CreateTokenParser();
     public PublicAuthResource(AuthTokenDao authDao,
                               TokenService tokenService) {
         this.authDao = authDao;
@@ -79,33 +77,43 @@ public class PublicAuthResource {
     @Consumes(APPLICATION_JSON)
     @POST
     public Response createTokenForAccount(JsonNode payload) throws ValidationException {
-
+        LOGGER.info("Received create token request");
         validatePayloadHasFields(payload, ACCOUNT_ID_FIELD, DESCRIPTION_FIELD, CREATED_BY_FIELD);
 
         Tokens token = tokenService.issueTokens();
-        TokenPaymentType tokenPaymentType =
-                Optional.ofNullable(payload.get(TOKEN_TYPE_FIELD))
-                        .map(tokenType -> valueOf(tokenType.asText()))
-                        .orElse(CARD);
-        String tokenLink = randomUUID().toString();
-        authDao.storeToken(token.getHashedToken(),
-                tokenLink,
-                payload.get(ACCOUNT_ID_FIELD).asText(),
-                payload.get(DESCRIPTION_FIELD).asText(),
-                payload.get(CREATED_BY_FIELD).asText(),
-                tokenPaymentType);
-        LOGGER.info("Created token with token_link {} ", tokenLink);
+        ParsedToken parsedToken = createTokenParser.parse(payload);
+        authDao.storeToken(
+                token.getHashedToken(),
+                parsedToken.getTokenLink(),
+                parsedToken.getAccountId(),
+                parsedToken.getAccountExternalId(),
+                parsedToken.getDescription(),
+                parsedToken.getCreatedBy(),
+                parsedToken.getTokenPaymentType());
+        LOGGER.info(
+                "Creating token with token_link {} for account {}, account external id {}",
+                parsedToken.getTokenLink(),
+                parsedToken.getAccountId(),
+                parsedToken.getAccountExternalId());
         return ok(ImmutableMap.of("token", token.getApiKey())).build();
     }
 
     @Path("/v1/frontend/auth/{accountId}")
     @Produces(APPLICATION_JSON)
     @GET
-    public Response getIssuedTokensForAccount(@PathParam("accountId") String accountId, @QueryParam("state") TokenStateFilterParam state) {
+    public Response getIssuedTokensForAccount(@PathParam("accountId") String accountId,
+                                              @QueryParam("state") TokenStateFilterParam state) {
         state = Optional.ofNullable(state).orElse(ACTIVE);
-        List<Map<String, Object>> tokensWithoutNullRevoked = authDao.findTokensWithState(accountId, state);
+        List<Map<String, Object>> tokensWithoutNullRevoked;
+        //fixme remove this block once all gateway accounts have an external id
+        if (StringUtils.isNumeric(accountId)) {
+            tokensWithoutNullRevoked  = authDao.findTokensWithStateById(accountId, state);
+        } else {
+            tokensWithoutNullRevoked = authDao.findTokensWithStateByExternalId(accountId, state);
+        }
         return ok(ImmutableMap.of("tokens", tokensWithoutNullRevoked)).build();
     }
+
 
     @Path("/v1/frontend/auth")
     @Consumes(APPLICATION_JSON)
@@ -139,7 +147,15 @@ public class PublicAuthResource {
 
         String tokenLink = payload.get(TOKEN_LINK_FIELD).asText();
 
-        return authDao.revokeSingleToken(accountId, tokenLink)
+        //fixme remove this block once all gateway accounts have an external id
+        Optional<String> maybeToken;
+        if (StringUtils.isNumeric(accountId)) {
+            maybeToken = authDao.revokeSingleToken(accountId, tokenLink);
+        } else {
+            maybeToken = authDao.revokeSingleTokenByExternalId(accountId, tokenLink);
+        }
+
+        return maybeToken
                 .map(revokedDate -> {
                     LOGGER.info("revoked with token_link {} on date {}", tokenLink, revokedDate);
                     return ok(ImmutableMap.of("revoked", revokedDate)).build();

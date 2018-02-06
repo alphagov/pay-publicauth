@@ -39,7 +39,7 @@ public class AuthTokenDao {
         );
     }
 
-    public List<Map<String, Object>> findTokensWithState(String accountId, TokenStateFilterParam tokenStateFilterParam) {
+    public List<Map<String, Object>> findTokensWithStateById(String accountId, TokenStateFilterParam tokenStateFilterParam) {
         String revoked = (tokenStateFilterParam.equals(TokenStateFilterParam.REVOKED)) ? "AND revoked IS NOT NULL " : "AND revoked IS NULL ";
         String revokedDate = (tokenStateFilterParam.equals(TokenStateFilterParam.REVOKED)) ? "to_char(revoked,'DD Mon YYYY - HH24:MI') as revoked, " : "";
 
@@ -49,10 +49,30 @@ public class AuthTokenDao {
                         revokedDate +
                         "created_by, " +
                         "to_char(last_used,'DD Mon YYYY - HH24:MI') as last_used " +
-                        "FROM tokens WHERE account_id = :account_id " +
+                        "FROM tokens WHERE " +
+                        "account_id = :account_id " +
                         revoked +
                         "ORDER BY issued DESC")
                         .bind("account_id", accountId)
+                        .list());
+    }
+
+//we need coalesce(token_type, 'CARD') because we haven't backfilled previous tokens after introducing token_type
+    public List<Map<String, Object>> findTokensWithStateByExternalId(String accountExternalId, TokenStateFilterParam tokenStateFilterParam) {
+        String revoked = (tokenStateFilterParam.equals(TokenStateFilterParam.REVOKED)) ? "AND revoked IS NOT NULL " : "AND revoked IS NULL ";
+        String revokedDate = (tokenStateFilterParam.equals(TokenStateFilterParam.REVOKED)) ? "to_char(revoked,'DD Mon YYYY - HH24:MI') as revoked, " : "";
+
+        return jdbi.withHandle(handle ->
+                handle.createQuery("SELECT token_link, description, coalesce(token_type, 'CARD') as token_type, " +
+                        "to_char(issued,'DD Mon YYYY - HH24:MI') as issued_date, " +
+                        revokedDate +
+                        "created_by, " +
+                        "to_char(last_used,'DD Mon YYYY - HH24:MI') as last_used " +
+                        "FROM tokens WHERE " +
+                        "account_external_id = :account_external_id " +
+                        revoked +
+                        "ORDER BY issued DESC")
+                        .bind("account_external_id", accountExternalId)
                         .list());
     }
 
@@ -63,10 +83,10 @@ public class AuthTokenDao {
         return rowsUpdated > 0;
     }
 
-    public void storeToken(String tokenHash, String randomTokenLink, String accountId, String description, String createdBy, TokenPaymentType tokenPaymentType) {
+    public void storeToken(String tokenHash, String randomTokenLink, String accountId, String accountExternalId, String description, String createdBy, TokenPaymentType tokenPaymentType) {
         Integer rowsUpdated = jdbi.withHandle(handle ->
-                handle.insert("INSERT INTO tokens(token_hash, token_link, description, account_id, created_by, token_type) VALUES (?,?,?,?,?,?)",
-                        tokenHash, randomTokenLink, description, accountId, createdBy, tokenPaymentType)
+                handle.insert("INSERT INTO tokens(token_hash, token_link, description, account_id, account_external_id, created_by, token_type) VALUES (?,?,?,?,?,?,?)",
+                        tokenHash, randomTokenLink, description, accountId, accountExternalId, createdBy, tokenPaymentType)
         );
         if (rowsUpdated != 1) {
             LOGGER.error("Unable to store new token for account '{}'. '{}' rows were updated", accountId, rowsUpdated);
@@ -82,7 +102,14 @@ public class AuthTokenDao {
                         .map(StringMapper.FIRST)
                         .first()));
     }
-
+    public Optional<String> revokeSingleTokenByExternalId(String accountExternalId, String tokenLink) {
+        return Optional.ofNullable(jdbi.withHandle(handle ->
+                handle.createQuery("UPDATE tokens SET revoked=(now() at time zone 'utc') WHERE account_external_id=:accountId AND token_link=:tokenLink AND revoked IS NULL RETURNING to_char(revoked,'DD Mon YYYY')")
+                        .bind("accountId", accountExternalId)
+                        .bind("tokenLink", tokenLink)
+                        .map(StringMapper.FIRST)
+                        .first()));
+    }
     public Optional<Map<String, Object>> findTokenByTokenLink(String tokenLink) {
         return Optional.ofNullable(jdbi.withHandle(handle ->
                 handle.createQuery("SELECT token_link, description, coalesce(token_type, 'CARD') as token_type, " +
