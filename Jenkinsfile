@@ -51,7 +51,8 @@ pipeline {
         branch 'master'
       }
       steps {
-        deploy("publicauth", "test", null, true)
+        deploy("publicauth", "test", null, false, false)
+        deployEcs("publicauth", "test", null, true, true)
       }
     }
   }
