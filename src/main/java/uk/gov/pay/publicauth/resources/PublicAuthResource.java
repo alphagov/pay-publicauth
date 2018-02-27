@@ -1,5 +1,6 @@
 package uk.gov.pay.publicauth.resources;
 
+import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
@@ -63,6 +64,7 @@ public class PublicAuthResource {
     }
 
     @Path("/v1/api/auth")
+    @Timed
     @Produces(APPLICATION_JSON)
     @GET
     public Response authenticate(@Auth Token token) {
@@ -75,6 +77,7 @@ public class PublicAuthResource {
     }
 
     @Path("/v1/frontend/auth")
+    @Timed
     @Produces(APPLICATION_JSON)
     @Consumes(APPLICATION_JSON)
     @POST
@@ -99,6 +102,7 @@ public class PublicAuthResource {
     }
 
     @Path("/v1/frontend/auth/{accountId}")
+    @Timed
     @Produces(APPLICATION_JSON)
     @GET
     public Response getIssuedTokensForAccount(@PathParam("accountId") String accountId, @QueryParam("state") TokenStateFilterParam state) {
@@ -108,6 +112,7 @@ public class PublicAuthResource {
     }
 
     @Path("/v1/frontend/auth")
+    @Timed
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @PUT
@@ -130,6 +135,7 @@ public class PublicAuthResource {
     }
 
     @Path("/v1/frontend/auth/{accountId}")
+    @Timed
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @DELETE
