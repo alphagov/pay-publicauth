@@ -110,13 +110,47 @@ pipeline {
       }
     }
     stage('Deploy') {
-      when {
-        branch 'master'
-      }
-      steps {
-        deployEcs("publicauth", "test", null, true, true)
-      }
-    }
+     when {
+       branch 'master'
+     }
+     steps {
+       deployEcs("publicauth", "test", null, false, false)
+     }
+   }
+   stage('Smoke Tests') {
+     failFast true
+     parallel {
+       stage('Card Smoke Test') {
+         when { branch 'master' }
+         steps { runCardSmokeTest() }
+       }
+       stage('Direct Debit Smoke Test') {
+         when { branch 'master' }
+         steps { runDirectDebitSmokeTest() }
+       }
+     }
+   }
+   stage('Complete') {
+     failFast true
+     parallel {
+       stage('Tag Build') {
+         when {
+           branch 'master'
+         }
+         steps {
+           tagDeployment("publicauth")
+         }
+       }
+       stage('Trigger Deploy Notification') {
+         when {
+           branch 'master'
+         }
+         steps {
+           triggerGraphiteDeployEvent("publicauth")
+         }
+       }
+     }
+   }
   }
   post {
     failure {
