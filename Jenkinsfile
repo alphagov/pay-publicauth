@@ -114,7 +114,7 @@ pipeline {
        branch 'master'
      }
      steps {
-       deployEcs("publicauth", "test", null, false, false)
+       deployEcs("publicauth")
      }
    }
    stage('Smoke Tests') {
