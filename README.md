@@ -3,11 +3,39 @@ Payments Public API Authentication Service
 
 ## API Keys
 
-One of the responsibilities of this service is to issue API keys so integrators can request operations through the Public API. An API Key is composed by: Token + HMAC (Token, Signature).
+Anatomy of an api key:
 
-_Tokens_ are randomly generated values and these values are stored in the database (hashed) identifying a single accountID.
+```
+u3tl8gajo9paj0xki31jm1psr3v21m5urh50zoa7a262w4ntzoo6cqhu82
+`------------------------------'`------------------------'
+       TOKEN                          CHECKSUM
+```
 
-pay-publicauth creates an _API key_ by concatinating the token value as plain text with the HMAC signature of the same token using a secret key. The HMAC signature is used to confirm the token was issued by the pay-publicauth service.
+| Item | Definition |
+|------|------------|
+| `TOKEN` | randomly generated base 32 string, 130 bits entropy, variable length |
+| `CHECKSUM` | `hmacSha1(TOKEN + TOKEN_API_HMAC_SECRET)`, base32 encoded. Always 32 characters long |
+| `TOKEN_API_HMAC_SECRET` | secret provided via application environment |
+| `TOKEN_DB_BCRYPT_SALT` | bcrypt salt provided via application environment |
+| `TOKEN_HASH` | `bcrypt(TOKEN, TOKEN_DB_BCRYPT_SALT)` - the value we actually store in the database |
+
+API KEY generation algorithm:
+
+1. `TOKEN` := 130 bit random number and encode to base32
+2. `CHECKSUM` := `hmacSha1(concat(TOKEN, TOKEN_API_HMAC_SECRET))`
+3. `API_KEY` := `concat(TOKEN, CHECKSUM)`
+4. `TOKEN_HASH` := `bcrypt(TOKEN, TOKEN_DB_BCRYPT_SALT)`
+5. store `TOKEN_HASH` in database
+6. return `API_KEY`
+
+API KEY validation algorithm:
+
+1. `API_KEY` is provided as `Authorization: Bearer someverylongstringandachecksum`
+2. Extract `API_KEY` := `someverylongstringandachecksum`
+3. Split the string at a known character index based on the length of the sha1 suffix ie. `TOKEN` := `someverylongstring` `ACTUAL_CHECKSUM` := `andachecksum`
+4. verify that `hmacsha1(concat(TOKEN, TOKEN_API_HMAC_SECRET))` == `ACTUAL_CHECKSUM`
+5. `TOKEN_HASH` := `bcrypt(TOKEN, TOKEN_DB_BCRYPT_SALT)`
+6. lookup `TOKEN_HASH` in database; return `true` iff found
 
 ## Environment variables
 | NAME                  | DESCRIPTION                                                                    |
