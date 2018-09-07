@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.gov.pay.publicauth.app.config.TokensConfiguration;
 import uk.gov.pay.publicauth.auth.Token;
+import uk.gov.pay.publicauth.model.TokenHash;
 import uk.gov.pay.publicauth.model.Tokens;
 
 import java.util.Optional;
@@ -50,8 +51,8 @@ public class TokenService {
         return extractAndEncryptTokenFrom(apiKey);
     }
 
-    private String encrypt(String token) {
-        return BCrypt.hashpw(token, encryptDBSalt);
+    private TokenHash encrypt(String token) {
+        return TokenHash.of(BCrypt.hashpw(token, encryptDBSalt));
     }
 
     private String createApiKey(String token) {

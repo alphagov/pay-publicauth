@@ -9,6 +9,7 @@ import org.mindrot.jbcrypt.BCrypt;
 import org.mockito.runners.MockitoJUnitRunner;
 import uk.gov.pay.publicauth.app.config.TokensConfiguration;
 import uk.gov.pay.publicauth.auth.Token;
+import uk.gov.pay.publicauth.model.TokenHash;
 import uk.gov.pay.publicauth.model.Tokens;
 
 import java.util.List;
@@ -46,11 +47,11 @@ public class TokenServiceTest {
 
         Tokens tokens = tokenService.issueTokens();
 
-        String hashedToken = tokens.getHashedToken();
+        TokenHash hashedToken = tokens.getHashedToken();
 
         assertThat(hashedToken, is(notNullValue()));
-        assertThat(hashedToken.length(), is(60));
-        assertThat(hashedToken, startsWith(EXPECTED_SALT));
+        assertThat(hashedToken.getValue().length(), is(60));
+        assertThat(hashedToken.getValue(), startsWith(EXPECTED_SALT));
     }
 
     @Test
@@ -87,7 +88,7 @@ public class TokenServiceTest {
 
         String plainToken = apiKey.substring(0, tokenEnd);
 
-        assertThat(BCrypt.hashpw(plainToken, EXPECTED_SALT), is(tokens.getHashedToken()));
+        assertThat(BCrypt.hashpw(plainToken, EXPECTED_SALT), is(tokens.getHashedToken().getValue()));
     }
 
     @Test

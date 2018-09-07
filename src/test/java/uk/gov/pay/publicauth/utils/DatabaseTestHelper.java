@@ -1,9 +1,10 @@
 package uk.gov.pay.publicauth.utils;
 
 import io.dropwizard.jdbi.args.ZonedDateTimeMapper;
-import org.joda.time.DateTime;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.util.StringMapper;
+import uk.gov.pay.publicauth.model.TokenHash;
+import uk.gov.pay.publicauth.model.TokenLink;
 import uk.gov.pay.publicauth.model.TokenPaymentType;
 
 import java.time.ZoneOffset;
@@ -22,22 +23,22 @@ public class DatabaseTestHelper {
         this.jdbi = jdbi;
     }
 
-    public void insertAccount(String tokenHash, String randomTokenLink, String accountId, String description, String createdBy) {
+    public void insertAccount(TokenHash tokenHash, TokenLink randomTokenLink, String accountId, String description, String createdBy) {
         insertAccount(tokenHash, randomTokenLink, accountId, description, null, createdBy, ZonedDateTime.now(ZoneOffset.UTC));
     }
 
-    public void insertAccount(String tokenHash, String randomTokenLink, String accountId, String description, ZonedDateTime revoked, String createdBy) {
+    public void insertAccount(TokenHash tokenHash, TokenLink randomTokenLink, String accountId, String description, ZonedDateTime revoked, String createdBy) {
         insertAccount(tokenHash, randomTokenLink, accountId, description, revoked, createdBy, ZonedDateTime.now(ZoneOffset.UTC));
     }
 
-    public void insertAccount(String tokenHash, String randomTokenLink, String accountId, String description, ZonedDateTime revoked, String createdBy, ZonedDateTime lastUsed) {
+    public void insertAccount(TokenHash tokenHash, TokenLink randomTokenLink, String accountId, String description, ZonedDateTime revoked, String createdBy, ZonedDateTime lastUsed) {
         insertAccount(tokenHash, randomTokenLink, accountId, description, revoked, createdBy, lastUsed, CARD);
     }
 
-    public void insertAccount(String tokenHash, String randomTokenLink, String accountId, String description, ZonedDateTime revoked, String createdBy, ZonedDateTime lastUsed, TokenPaymentType tokenPaymentType) {
+    public void insertAccount(TokenHash tokenHash, TokenLink randomTokenLink, String accountId, String description, ZonedDateTime revoked, String createdBy, ZonedDateTime lastUsed, TokenPaymentType tokenPaymentType) {
         jdbi.withHandle(handle ->
         handle.insert("INSERT INTO tokens(token_hash, token_link, account_id, description, token_type, revoked, created_by, last_used) VALUES (?,?,?,?,?,(? at time zone 'utc'),?,(? at time zone 'utc'))",
-                tokenHash, randomTokenLink, accountId, description, tokenPaymentType,
+                tokenHash.getValue(), randomTokenLink.getValue(), accountId, description, tokenPaymentType,
                 revoked, createdBy, lastUsed));
     }
 
@@ -54,12 +55,12 @@ public class DatabaseTestHelper {
 
     }
 
-    public Map<String, Object> getTokenByHash(String tokenHash) {
+    public Map<String, Object> getTokenByHash(TokenHash tokenHash) {
         Map<String, Object> ret = jdbi.withHandle(h ->
                 h.createQuery("SELECT token_id, token_type, token_hash, account_id, issued, revoked, token_link, description, created_by " +
                         "FROM tokens t " +
                         "WHERE token_hash = :token_hash")
-                        .bind("token_hash", tokenHash)
+                        .bind("token_hash", tokenHash.getValue())
                         .first());
         return ret;
     }
