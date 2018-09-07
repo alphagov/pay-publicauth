@@ -1,6 +1,5 @@
 package uk.gov.pay.publicauth.auth;
 
-import io.dropwizard.auth.AuthenticationException;
 import io.dropwizard.auth.Authenticator;
 import uk.gov.pay.publicauth.service.TokenService;
 
@@ -15,7 +14,7 @@ public class TokenAuthenticator implements Authenticator<String, Token> {
     }
 
     @Override
-    public Optional<Token> authenticate(String bearerToken) throws AuthenticationException {
+    public Optional<Token> authenticate(String bearerToken) {
         return tokenService.extractEncryptedTokenFrom(bearerToken);
     }
 }

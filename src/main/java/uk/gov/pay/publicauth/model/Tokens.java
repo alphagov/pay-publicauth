@@ -2,16 +2,16 @@ package uk.gov.pay.publicauth.model;
 
 public class Tokens {
 
-    private final String hashedToken;
+    private final TokenHash hashedToken;
 
     private final String apiKey;
 
-    public Tokens(String hashedToken, String apiKey) {
+    public Tokens(TokenHash hashedToken, String apiKey) {
         this.hashedToken = hashedToken;
         this.apiKey = apiKey;
     }
 
-    public String getHashedToken() {
+    public TokenHash getHashedToken() {
         return hashedToken;
     }
 
