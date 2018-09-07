@@ -250,7 +250,7 @@ public class AuthTokenDaoTest {
     }
 
     @Test
-    public void shouldRevokeASingleTokenByToken() {
+    public void shouldRevokeASingleTokenByTokenHash() {
         app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, TEST_USER_NAME);
 
         Optional<String> revokedDate = authTokenDao.revokeSingleToken(ACCOUNT_ID, TOKEN_HASH);

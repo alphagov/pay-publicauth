@@ -2,7 +2,7 @@ package uk.gov.pay.publicauth.model;
 
 import java.util.Objects;
 
-public class TokenHash implements TokenIdentifier {
+public class TokenHash {
     private final String tokenHash;
 
     private TokenHash (String tokenHash) {
@@ -32,13 +32,7 @@ public class TokenHash implements TokenIdentifier {
     public String toString() {
         return "token_hash";
     }
-
-    @Override
-    public String getColumnName() {
-        return "token_hash";
-    }
-
-    @Override
+    
     public String getValue() {
         return tokenHash;
     }

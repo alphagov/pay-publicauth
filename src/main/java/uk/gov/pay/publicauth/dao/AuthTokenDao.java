@@ -5,7 +5,6 @@ import org.skife.jdbi.v2.util.StringMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.gov.pay.publicauth.model.TokenHash;
-import uk.gov.pay.publicauth.model.TokenIdentifier;
 import uk.gov.pay.publicauth.model.TokenLink;
 import uk.gov.pay.publicauth.model.TokenPaymentType;
 import uk.gov.pay.publicauth.model.TokenStateFilterParam;
@@ -77,12 +76,19 @@ public class AuthTokenDao {
         }
     }
     
-    public Optional<String> revokeSingleToken(String accountId, TokenIdentifier token) {
-        String query = String.format("UPDATE tokens SET revoked=(now() at time zone 'utc') WHERE account_id=:accountId AND %s=:token AND revoked IS NULL RETURNING to_char(revoked,'DD Mon YYYY')", token.getColumnName());
+    public Optional<String> revokeSingleToken(String accountId, TokenHash tokenHash) {
         return Optional.ofNullable(jdbi.withHandle(handle ->
-                handle.createQuery(query)
+                handle.createQuery("UPDATE tokens SET revoked=(now() at time zone 'utc') WHERE account_id=:accountId AND token_hash=:tokenHash AND revoked IS NULL RETURNING to_char(revoked,'DD Mon YYYY')")
                         .bind("accountId", accountId)
-                        .bind("token", token.getValue())
+                        .bind("tokenHash", tokenHash.getValue())
+                        .map(StringMapper.FIRST)
+                        .first()));
+    }
+    public Optional<String> revokeSingleToken(String accountId, TokenLink tokenLink) {
+        return Optional.ofNullable(jdbi.withHandle(handle ->
+                handle.createQuery("UPDATE tokens SET revoked=(now() at time zone 'utc') WHERE account_id=:accountId AND token_link=:tokenLink AND revoked IS NULL RETURNING to_char(revoked,'DD Mon YYYY')")
+                        .bind("accountId", accountId)
+                        .bind("tokenLink", tokenLink.getValue())
                         .map(StringMapper.FIRST)
                         .first()));
     }

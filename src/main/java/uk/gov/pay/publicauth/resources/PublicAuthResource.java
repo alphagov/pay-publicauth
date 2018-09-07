@@ -12,7 +12,6 @@ import uk.gov.pay.publicauth.dao.AuthTokenDao;
 import uk.gov.pay.publicauth.exception.TokenNotFoundException;
 import uk.gov.pay.publicauth.exception.ValidationException;
 import uk.gov.pay.publicauth.model.TokenHash;
-import uk.gov.pay.publicauth.model.TokenIdentifier;
 import uk.gov.pay.publicauth.model.TokenLink;
 import uk.gov.pay.publicauth.model.TokenPaymentType;
 import uk.gov.pay.publicauth.model.TokenStateFilterParam;
@@ -30,13 +29,13 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Response;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static java.util.Arrays.asList;
-import static java.util.Collections.EMPTY_LIST;
 import static java.util.UUID.randomUUID;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.Response.Status.UNAUTHORIZED;
@@ -131,7 +130,7 @@ public class PublicAuthResource {
             LOGGER.info("Updated description of token with ", tokenLink);
             return authDao.findTokenByTokenLink(tokenLink)
                     .map(token -> ok(token).build())
-                    .orElseThrow(() -> new TokenNotFoundException("Could not update  description of token with " + tokenLink));
+                    .orElseThrow(() -> new TokenNotFoundException("Could not update description of token with " + tokenLink));
         }
 
         LOGGER.error("Could not update description of token with token_link " + tokenLink);
@@ -145,38 +144,46 @@ public class PublicAuthResource {
     @DELETE
     public Response revokeSingleToken(@PathParam("accountId") String accountId, JsonNode payload) throws ValidationException, TokenNotFoundException {
 
-        validatePayloadHasFields(payload, EMPTY_LIST, asList(TOKEN_LINK_FIELD, TOKEN_HASH_FIELD));
-        TokenIdentifier token = Optional.ofNullable(payload.get(TOKEN_HASH_FIELD))
-                .map(t -> (TokenIdentifier) TokenHash.of(t.asText()))
-                .orElseGet(() -> TokenLink.of(payload.get(TOKEN_LINK_FIELD).asText()));
-        return authDao.revokeSingleToken(accountId, token)
-                .map(revokedDate -> {
-                    LOGGER.info("revoked token on date {}", revokedDate);
-                    return ok(ImmutableMap.of("revoked", revokedDate)).build();
-                })
-                .orElseThrow(() -> new TokenNotFoundException("Could not revoke token with " + token.toString()));
+        validatePayloadHasFields(payload, Collections.emptyList(), asList(TOKEN_LINK_FIELD, TOKEN_HASH_FIELD));
+
+        if (payload.hasNonNull(TOKEN_HASH_FIELD)) {
+            return authDao.revokeSingleToken(accountId, TokenHash.of(payload.get(TOKEN_HASH_FIELD).asText()))
+                    .map(this::buildRevokedTokenResponse)
+                    .orElseThrow(() -> new TokenNotFoundException("Could not revoke token"));
+        } else {
+            TokenLink tokenLink = TokenLink.of(payload.get(TOKEN_LINK_FIELD).asText());
+            return authDao.revokeSingleToken(accountId, tokenLink)
+                    .map(this::buildRevokedTokenResponse)
+                    .orElseThrow(() -> new TokenNotFoundException("Could not revoke token with " + tokenLink));
+        }
+
+    }
+
+    private Response buildRevokedTokenResponse(String revokedDate) {
+        LOGGER.info("revoked token on date {}", revokedDate);
+        return ok(ImmutableMap.of("revoked", revokedDate)).build();
     }
 
     private void validatePayloadHasFields(JsonNode payload, String... expectedFields) throws ValidationException {
-        validatePayloadHasFields(payload, asList(expectedFields), EMPTY_LIST);
+        validatePayloadHasFields(payload, asList(expectedFields), Collections.emptyList());
     }
-    
-    private void validatePayloadHasFields(JsonNode payload, List<String> expectedFields, List<String> optionalFields) throws ValidationException {
+
+    private void validatePayloadHasFields(JsonNode payload, List<String> expectedFields, List<String> atLeastOneOfTheseFieldsMustExist) throws ValidationException {
         if (payload == null) {
             throw new ValidationException("Body cannot be empty");
         }
         List<String> missingFields = expectedFields
-                    .stream()
-                    .filter(expectedKey -> !payload.has(expectedKey))
-                    .collect(Collectors.toList());
+                .stream()
+                .filter(expectedKey -> !payload.has(expectedKey))
+                .collect(Collectors.toList());
         if (!missingFields.isEmpty()) {
             throw new ValidationException("Missing fields: [" + Joiner.on(", ").join(missingFields) + "]");
         }
-        
-        if (!optionalFields.isEmpty() && optionalFields
-                    .stream()
-                    .allMatch(expectedKey -> !payload.has(expectedKey))) {
-            throw new ValidationException("At least one of these fields is missing: [" + Joiner.on(", ").join(optionalFields) + "]");
+
+        if (!atLeastOneOfTheseFieldsMustExist.isEmpty() && atLeastOneOfTheseFieldsMustExist
+                .stream()
+                .noneMatch(payload::has)) {
+            throw new ValidationException("At least one of these fields must be present: [" + Joiner.on(", ").join(atLeastOneOfTheseFieldsMustExist) + "]");
         }
     }
 }

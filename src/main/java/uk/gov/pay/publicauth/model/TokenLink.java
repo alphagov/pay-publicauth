@@ -2,7 +2,7 @@ package uk.gov.pay.publicauth.model;
 
 import java.util.Objects;
 
-public class TokenLink implements TokenIdentifier {
+public class TokenLink {
     private final String tokenLink;
 
     private TokenLink(String tokenLink) {
@@ -32,12 +32,6 @@ public class TokenLink implements TokenIdentifier {
         return "token_link " + tokenLink;
     }
 
-    @Override
-    public String getColumnName() {
-        return "token_link";
-    }
-
-    @Override
     public String getValue() {
         return tokenLink;
     }

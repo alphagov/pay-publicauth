@@ -421,7 +421,7 @@ public class PublicAuthResourceITest {
 
         revokeSingleToken(ACCOUNT_ID, "{}")
                 .statusCode(400)
-                .body("message", is("At least one of these fields is missing: [token_link, token_hash]"));
+                .body("message", is("At least one of these fields must be present: [token_link, token_hash]"));
 
         Optional<String> revokedInDb = app.getDatabaseHelper().lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.getValue());
         assertThat(revokedInDb.isPresent(), is(false));
