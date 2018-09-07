@@ -82,4 +82,24 @@
 
         <addDefaultValue tableName="tokens" columnName="token_type" defaultValue="CARD"/>
     </changeSet>
+
+    <changeSet id="add type column to tokens table" author="">
+        <addColumn tableName="tokens">
+            <column name="type" type="varchar(36)">
+                <constraints nullable="true" unique="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="backfill existing tokens with API default value" author="">
+        <sql>
+            UPDATE tokens SET type = 'API';
+        </sql>
+    </changeSet>
+
+    <changeSet id="add not null constraint and default value to type in tokens table" author="">
+        <addNotNullConstraint tableName="tokens" columnName="type" />
+        <addDefaultValue tableName="tokens" columnName="type" defaultValue="API"/>
+    </changeSet>
+
 </databaseChangeLog>
