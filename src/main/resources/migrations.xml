@@ -91,15 +91,14 @@
         </addColumn>
     </changeSet>
 
+    <changeSet id="add default value to type in tokens table" author="">
+        <addDefaultValue tableName="tokens" columnName="type" defaultValue="API"/>
+    </changeSet>
+
     <changeSet id="backfill existing tokens with API default value" author="">
         <sql>
             UPDATE tokens SET type = 'API';
         </sql>
     </changeSet>
-
-    <changeSet id="add not null constraint and default value to type in tokens table" author="">
-        <addNotNullConstraint tableName="tokens" columnName="type" />
-        <addDefaultValue tableName="tokens" columnName="type" defaultValue="API"/>
-    </changeSet>
-
+    
 </databaseChangeLog>
