@@ -14,7 +14,8 @@ import uk.gov.pay.publicauth.exception.ValidationException;
 import uk.gov.pay.publicauth.model.TokenHash;
 import uk.gov.pay.publicauth.model.TokenLink;
 import uk.gov.pay.publicauth.model.TokenPaymentType;
-import uk.gov.pay.publicauth.model.TokenStateFilterParam;
+import uk.gov.pay.publicauth.model.TokenState;
+import uk.gov.pay.publicauth.model.TokenType;
 import uk.gov.pay.publicauth.model.Tokens;
 import uk.gov.pay.publicauth.service.TokenService;
 
@@ -41,8 +42,8 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.Response.Status.UNAUTHORIZED;
 import static javax.ws.rs.core.Response.ok;
 import static uk.gov.pay.publicauth.model.TokenPaymentType.CARD;
-import static uk.gov.pay.publicauth.model.TokenPaymentType.valueOf;
-import static uk.gov.pay.publicauth.model.TokenStateFilterParam.ACTIVE;
+import static uk.gov.pay.publicauth.model.TokenState.ACTIVE;
+import static uk.gov.pay.publicauth.model.TokenType.*;
 
 @Singleton
 @Path("/")
@@ -52,6 +53,7 @@ public class PublicAuthResource {
 
     private static final String ACCOUNT_ID_FIELD = "account_id";
     private static final String TOKEN_TYPE_FIELD = "token_type";
+    private static final String TYPE_FIELD = "type";
     private static final String TOKEN_LINK_FIELD = "token_link";
     private static final String TOKEN_HASH_FIELD = "token_hash";
     private static final String DESCRIPTION_FIELD = "description";
@@ -91,11 +93,16 @@ public class PublicAuthResource {
         Tokens token = tokenService.issueTokens();
         TokenPaymentType tokenPaymentType =
                 Optional.ofNullable(payload.get(TOKEN_TYPE_FIELD))
-                        .map(tokenType -> valueOf(tokenType.asText()))
+                        .map(tokenType -> TokenPaymentType.valueOf(tokenType.asText()))
                         .orElse(CARD);
+        TokenType tokenType =
+                Optional.ofNullable(payload.get(TYPE_FIELD))
+                        .map(type -> valueOf(type.asText()))
+                        .orElse(API);
         TokenLink tokenLink = TokenLink.of(randomUUID().toString());
         authDao.storeToken(token.getHashedToken(),
                 tokenLink,
+                tokenType,
                 payload.get(ACCOUNT_ID_FIELD).asText(),
                 payload.get(DESCRIPTION_FIELD).asText(),
                 payload.get(CREATED_BY_FIELD).asText(),
@@ -108,9 +115,12 @@ public class PublicAuthResource {
     @Timed
     @Produces(APPLICATION_JSON)
     @GET
-    public Response getIssuedTokensForAccount(@PathParam("accountId") String accountId, @QueryParam("state") TokenStateFilterParam state) {
+    public Response getIssuedTokensForAccount(@PathParam("accountId") String accountId, 
+                                              @QueryParam("state") TokenState state,
+                                              @QueryParam("type") TokenType type) {
         state = Optional.ofNullable(state).orElse(ACTIVE);
-        List<Map<String, Object>> tokensWithoutNullRevoked = authDao.findTokensWithState(accountId, state);
+        type = Optional.ofNullable(type).orElse(API);
+        List<Map<String, Object>> tokensWithoutNullRevoked = authDao.findTokensBy(accountId, state, type);
         return ok(ImmutableMap.of("tokens", tokensWithoutNullRevoked)).build();
     }
 
