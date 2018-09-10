@@ -14,7 +14,8 @@ import uk.gov.pay.publicauth.exception.ValidationException;
 import uk.gov.pay.publicauth.model.TokenHash;
 import uk.gov.pay.publicauth.model.TokenLink;
 import uk.gov.pay.publicauth.model.TokenPaymentType;
-import uk.gov.pay.publicauth.model.TokenStateFilterParam;
+import uk.gov.pay.publicauth.model.TokenState;
+import uk.gov.pay.publicauth.model.TokenSource;
 import uk.gov.pay.publicauth.model.Tokens;
 import uk.gov.pay.publicauth.service.TokenService;
 
@@ -41,8 +42,8 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.Response.Status.UNAUTHORIZED;
 import static javax.ws.rs.core.Response.ok;
 import static uk.gov.pay.publicauth.model.TokenPaymentType.CARD;
-import static uk.gov.pay.publicauth.model.TokenPaymentType.valueOf;
-import static uk.gov.pay.publicauth.model.TokenStateFilterParam.ACTIVE;
+import static uk.gov.pay.publicauth.model.TokenState.ACTIVE;
+import static uk.gov.pay.publicauth.model.TokenSource.API;
 
 @Singleton
 @Path("/")
@@ -52,8 +53,9 @@ public class PublicAuthResource {
 
     private static final String ACCOUNT_ID_FIELD = "account_id";
     private static final String TOKEN_TYPE_FIELD = "token_type";
+    private static final String TYPE_FIELD = "type";
     private static final String TOKEN_LINK_FIELD = "token_link";
-    private static final String TOKEN_HASH_FIELD = "token_hash";
+    private static final String TOKEN_FIELD = "token";
     private static final String DESCRIPTION_FIELD = "description";
     private static final String CREATED_BY_FIELD = "created_by";
 
@@ -91,11 +93,16 @@ public class PublicAuthResource {
         Tokens token = tokenService.issueTokens();
         TokenPaymentType tokenPaymentType =
                 Optional.ofNullable(payload.get(TOKEN_TYPE_FIELD))
-                        .map(tokenType -> valueOf(tokenType.asText()))
+                        .map(paymentType -> TokenPaymentType.fromString(paymentType.asText()))
                         .orElse(CARD);
+        TokenSource tokenSource =
+                Optional.ofNullable(payload.get(TYPE_FIELD))
+                        .map(source -> TokenSource.fromString(source.asText()))
+                        .orElse(API);
         TokenLink tokenLink = TokenLink.of(randomUUID().toString());
         authDao.storeToken(token.getHashedToken(),
                 tokenLink,
+                tokenSource,
                 payload.get(ACCOUNT_ID_FIELD).asText(),
                 payload.get(DESCRIPTION_FIELD).asText(),
                 payload.get(CREATED_BY_FIELD).asText(),
@@ -108,9 +115,12 @@ public class PublicAuthResource {
     @Timed
     @Produces(APPLICATION_JSON)
     @GET
-    public Response getIssuedTokensForAccount(@PathParam("accountId") String accountId, @QueryParam("state") TokenStateFilterParam state) {
+    public Response getIssuedTokensForAccount(@PathParam("accountId") String accountId, 
+                                              @QueryParam("state") TokenState state,
+                                              @QueryParam("type") TokenSource type) {
         state = Optional.ofNullable(state).orElse(ACTIVE);
-        List<Map<String, Object>> tokensWithoutNullRevoked = authDao.findTokensWithState(accountId, state);
+        type = Optional.ofNullable(type).orElse(API);
+        List<Map<String, Object>> tokensWithoutNullRevoked = authDao.findTokensBy(accountId, state, type);
         return ok(ImmutableMap.of("tokens", tokensWithoutNullRevoked)).build();
     }
 
@@ -144,12 +154,14 @@ public class PublicAuthResource {
     @DELETE
     public Response revokeSingleToken(@PathParam("accountId") String accountId, JsonNode payload) throws ValidationException, TokenNotFoundException {
 
-        validatePayloadHasFields(payload, Collections.emptyList(), asList(TOKEN_LINK_FIELD, TOKEN_HASH_FIELD));
+        validatePayloadHasFields(payload, Collections.emptyList(), asList(TOKEN_LINK_FIELD, TOKEN_FIELD));
 
-        if (payload.hasNonNull(TOKEN_HASH_FIELD)) {
-            return authDao.revokeSingleToken(accountId, TokenHash.of(payload.get(TOKEN_HASH_FIELD).asText()))
-                    .map(this::buildRevokedTokenResponse)
-                    .orElseThrow(() -> new TokenNotFoundException("Could not revoke token"));
+        if (payload.hasNonNull(TOKEN_FIELD)) {
+             return tokenService.extractEncryptedTokenFrom(payload.get(TOKEN_FIELD).asText())
+            .map(token -> authDao.revokeSingleToken(accountId, TokenHash.of(token.getName()))
+                    .map(this::buildRevokedTokenResponse))
+                     .orElseThrow(() -> new TokenNotFoundException("Could not revoke token"))
+                     .orElseThrow(() -> new TokenNotFoundException("Could not extract encrypted token while revoking token"));
         } else {
             TokenLink tokenLink = TokenLink.of(payload.get(TOKEN_LINK_FIELD).asText());
             return authDao.revokeSingleToken(accountId, tokenLink)
