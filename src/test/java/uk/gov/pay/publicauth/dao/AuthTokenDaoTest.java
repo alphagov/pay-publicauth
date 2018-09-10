@@ -30,8 +30,8 @@ import static uk.gov.pay.publicauth.model.TokenPaymentType.CARD;
 import static uk.gov.pay.publicauth.model.TokenPaymentType.DIRECT_DEBIT;
 import static uk.gov.pay.publicauth.model.TokenState.ACTIVE;
 import static uk.gov.pay.publicauth.model.TokenState.REVOKED;
-import static uk.gov.pay.publicauth.model.TokenType.API;
-import static uk.gov.pay.publicauth.model.TokenType.PRODUCTS;
+import static uk.gov.pay.publicauth.model.TokenSource.API;
+import static uk.gov.pay.publicauth.model.TokenSource.PRODUCTS;
 
 public class AuthTokenDaoTest {
 

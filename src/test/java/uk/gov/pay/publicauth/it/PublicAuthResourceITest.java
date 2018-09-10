@@ -35,8 +35,8 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.core.Is.is;
 import static uk.gov.pay.publicauth.model.TokenPaymentType.CARD;
 import static uk.gov.pay.publicauth.model.TokenPaymentType.DIRECT_DEBIT;
-import static uk.gov.pay.publicauth.model.TokenType.API;
-import static uk.gov.pay.publicauth.model.TokenType.PRODUCTS;
+import static uk.gov.pay.publicauth.model.TokenSource.API;
+import static uk.gov.pay.publicauth.model.TokenSource.PRODUCTS;
 
 public class PublicAuthResourceITest {
 
@@ -65,12 +65,12 @@ public class PublicAuthResourceITest {
             ImmutableMap.of("account_id", ACCOUNT_ID,
                     "description", TOKEN_DESCRIPTION,
                     "created_by", USER_EMAIL));
-    private String validTokenPayloadWithTokenPaymentType = new Gson().toJson(
+    private String validDirectDebitTokenPayload = new Gson().toJson(
             ImmutableMap.of("account_id", ACCOUNT_ID,
                     "description", TOKEN_DESCRIPTION,
                     "token_type", DIRECT_DEBIT.toString(),
                     "created_by", USER_EMAIL));
-    private String validTokenPayloadWithTokenType = new Gson().toJson(
+    private String validProductsTokenPayload = new Gson().toJson(
             ImmutableMap.of("account_id", ACCOUNT_ID,
                     "description", TOKEN_DESCRIPTION,
                     "type", PRODUCTS.toString(),
@@ -133,7 +133,7 @@ public class PublicAuthResourceITest {
 
     @Test
     public void respondWith200_whenCreateAToken_ifProvidedAccountIdDescriptionAndTokenType() {
-        String newToken = createTokenFor(validTokenPayloadWithTokenPaymentType)
+        String newToken = createTokenFor(validDirectDebitTokenPayload)
                 .statusCode(200)
                 .body("token", is(notNullValue()))
                 .extract().path("token");
@@ -148,7 +148,7 @@ public class PublicAuthResourceITest {
 
     @Test
     public void respondWith200_whenCreateAToken_ifProvidedAccountIdDescriptionAndType() {
-        String newToken = createTokenFor(validTokenPayloadWithTokenType)
+        String newToken = createTokenFor(validProductsTokenPayload)
                 .statusCode(200)
                 .body("token", is(notNullValue()))
                 .extract().path("token");

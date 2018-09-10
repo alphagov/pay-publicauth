@@ -15,7 +15,7 @@ import uk.gov.pay.publicauth.model.TokenHash;
 import uk.gov.pay.publicauth.model.TokenLink;
 import uk.gov.pay.publicauth.model.TokenPaymentType;
 import uk.gov.pay.publicauth.model.TokenState;
-import uk.gov.pay.publicauth.model.TokenType;
+import uk.gov.pay.publicauth.model.TokenSource;
 import uk.gov.pay.publicauth.model.Tokens;
 import uk.gov.pay.publicauth.service.TokenService;
 
@@ -43,7 +43,7 @@ import static javax.ws.rs.core.Response.Status.UNAUTHORIZED;
 import static javax.ws.rs.core.Response.ok;
 import static uk.gov.pay.publicauth.model.TokenPaymentType.CARD;
 import static uk.gov.pay.publicauth.model.TokenState.ACTIVE;
-import static uk.gov.pay.publicauth.model.TokenType.*;
+import static uk.gov.pay.publicauth.model.TokenSource.API;
 
 @Singleton
 @Path("/")
@@ -93,16 +93,16 @@ public class PublicAuthResource {
         Tokens token = tokenService.issueTokens();
         TokenPaymentType tokenPaymentType =
                 Optional.ofNullable(payload.get(TOKEN_TYPE_FIELD))
-                        .map(tokenType -> TokenPaymentType.valueOf(tokenType.asText()))
+                        .map(paymentType -> TokenPaymentType.fromString(paymentType.asText()))
                         .orElse(CARD);
-        TokenType tokenType =
+        TokenSource tokenSource =
                 Optional.ofNullable(payload.get(TYPE_FIELD))
-                        .map(type -> valueOf(type.asText()))
+                        .map(source -> TokenSource.fromString(source.asText()))
                         .orElse(API);
         TokenLink tokenLink = TokenLink.of(randomUUID().toString());
         authDao.storeToken(token.getHashedToken(),
                 tokenLink,
-                tokenType,
+                tokenSource,
                 payload.get(ACCOUNT_ID_FIELD).asText(),
                 payload.get(DESCRIPTION_FIELD).asText(),
                 payload.get(CREATED_BY_FIELD).asText(),
@@ -117,7 +117,7 @@ public class PublicAuthResource {
     @GET
     public Response getIssuedTokensForAccount(@PathParam("accountId") String accountId, 
                                               @QueryParam("state") TokenState state,
-                                              @QueryParam("type") TokenType type) {
+                                              @QueryParam("type") TokenSource type) {
         state = Optional.ofNullable(state).orElse(ACTIVE);
         type = Optional.ofNullable(type).orElse(API);
         List<Map<String, Object>> tokensWithoutNullRevoked = authDao.findTokensBy(accountId, state, type);
