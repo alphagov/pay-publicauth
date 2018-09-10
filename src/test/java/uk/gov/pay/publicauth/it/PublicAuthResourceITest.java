@@ -480,7 +480,7 @@ public class PublicAuthResourceITest {
 
         revokeSingleToken(ACCOUNT_ID, "{}")
                 .statusCode(400)
-                .body("message", is("At least one of these fields must be present: [token_link, token_hash]"));
+                .body("message", is("At least one of these fields must be present: [token_link, token]"));
 
         Optional<String> revokedInDb = app.getDatabaseHelper().lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.getValue());
         assertThat(revokedInDb.isPresent(), is(false));
@@ -499,10 +499,10 @@ public class PublicAuthResourceITest {
     }
 
     @Test
-    public void respondWith200_whenSingleTokenIsRevokedByTokenHash() {
+    public void respondWith200_whenSingleTokenIsRevokedByToken() {
         app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
-
-        revokeSingleToken(ACCOUNT_ID, "{\"token_hash\" : \"" + HASHED_BEARER_TOKEN.getValue() + "\"}")
+        String fullBearerToken = BEARER_TOKEN + "qgs2ot3itqer7ag9mvvbs8snqb5jfas3";
+        revokeSingleToken(ACCOUNT_ID, "{\"token\" : \"" + fullBearerToken + "\"}")
                 .statusCode(200)
                 .body("revoked", is(ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ofPattern("dd MMM YYYY"))));
 

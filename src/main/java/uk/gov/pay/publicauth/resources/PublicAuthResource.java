@@ -55,7 +55,7 @@ public class PublicAuthResource {
     private static final String TOKEN_TYPE_FIELD = "token_type";
     private static final String TYPE_FIELD = "type";
     private static final String TOKEN_LINK_FIELD = "token_link";
-    private static final String TOKEN_HASH_FIELD = "token_hash";
+    private static final String TOKEN_FIELD = "token";
     private static final String DESCRIPTION_FIELD = "description";
     private static final String CREATED_BY_FIELD = "created_by";
 
@@ -154,12 +154,14 @@ public class PublicAuthResource {
     @DELETE
     public Response revokeSingleToken(@PathParam("accountId") String accountId, JsonNode payload) throws ValidationException, TokenNotFoundException {
 
-        validatePayloadHasFields(payload, Collections.emptyList(), asList(TOKEN_LINK_FIELD, TOKEN_HASH_FIELD));
+        validatePayloadHasFields(payload, Collections.emptyList(), asList(TOKEN_LINK_FIELD, TOKEN_FIELD));
 
-        if (payload.hasNonNull(TOKEN_HASH_FIELD)) {
-            return authDao.revokeSingleToken(accountId, TokenHash.of(payload.get(TOKEN_HASH_FIELD).asText()))
-                    .map(this::buildRevokedTokenResponse)
-                    .orElseThrow(() -> new TokenNotFoundException("Could not revoke token"));
+        if (payload.hasNonNull(TOKEN_FIELD)) {
+             return tokenService.extractEncryptedTokenFrom(payload.get(TOKEN_FIELD).asText())
+            .map(token -> authDao.revokeSingleToken(accountId, TokenHash.of(token.getName()))
+                    .map(this::buildRevokedTokenResponse))
+                     .orElseThrow(() -> new TokenNotFoundException("Could not revoke token"))
+                     .orElseThrow(() -> new TokenNotFoundException("Could not retrieve token_hash from token"));
         } else {
             TokenLink tokenLink = TokenLink.of(payload.get(TOKEN_LINK_FIELD).asText());
             return authDao.revokeSingleToken(accountId, tokenLink)
