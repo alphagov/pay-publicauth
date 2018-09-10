@@ -161,7 +161,7 @@ public class PublicAuthResource {
             .map(token -> authDao.revokeSingleToken(accountId, TokenHash.of(token.getName()))
                     .map(this::buildRevokedTokenResponse))
                      .orElseThrow(() -> new TokenNotFoundException("Could not revoke token"))
-                     .orElseThrow(() -> new TokenNotFoundException("Could not retrieve token_hash from token"));
+                     .orElseThrow(() -> new TokenNotFoundException("Could not extract encrypted token while revoking token"));
         } else {
             TokenLink tokenLink = TokenLink.of(payload.get(TOKEN_LINK_FIELD).asText());
             return authDao.revokeSingleToken(accountId, tokenLink)
