@@ -147,7 +147,7 @@
         <dependency>
             <groupId>uk.gov.pay</groupId>
             <artifactId>testing</artifactId>
-            <version>1.0.0-f6097986677849386f283bb84072198b57931b1b</version>
+            <version>1.0.0-546f91c674677f30d58f93c224089f31c64a69c5</version>
             <scope>test</scope>
         </dependency>
         <dependency>
