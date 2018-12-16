@@ -33,6 +33,7 @@ import static uk.gov.pay.publicauth.model.TokenState.REVOKED;
 import static uk.gov.pay.publicauth.model.TokenSource.API;
 import static uk.gov.pay.publicauth.model.TokenSource.PRODUCTS;
 
+@SuppressWarnings("OptionalGetWithoutIsPresent")
 public class AuthTokenDaoTest {
 
     public static final String TEST_USER_NAME = "test-user-name";
