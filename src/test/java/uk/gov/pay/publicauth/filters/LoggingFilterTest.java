@@ -81,7 +81,7 @@ public class LoggingFilterTest {
         String endLogMessage = loggingEvents.get(1).getFormattedMessage();
         assertThat(endLogMessage, containsString(format("[%s] - %s to %s ended - total time ", requestId, requestMethod, requestUrl)));
         String[] timeTaken = StringUtils.substringsBetween(endLogMessage, "total time ", "ms");
-        assertTrue(NumberUtils.isNumber(timeTaken[0]));
+        assertTrue(NumberUtils.isCreatable(timeTaken[0]));
         verify(mockFilterChain).doFilter(mockRequest, mockResponse);
     }
 
@@ -130,7 +130,7 @@ public class LoggingFilterTest {
         String endLogMessage = loggingEvents.get(2).getFormattedMessage();
         assertThat(endLogMessage, containsString(format("[%s] - %s to %s ended - total time ", requestId, requestMethod, requestUrl)));
         String[] timeTaken = StringUtils.substringsBetween(endLogMessage, "total time ", "ms");
-        assertTrue(NumberUtils.isNumber(timeTaken[0]));
+        assertTrue(NumberUtils.isCreatable(timeTaken[0]));
     }
 
     @SuppressWarnings("unchecked")
