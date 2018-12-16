@@ -6,7 +6,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mindrot.jbcrypt.BCrypt;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import uk.gov.pay.publicauth.app.config.TokensConfiguration;
 import uk.gov.pay.publicauth.auth.Token;
 import uk.gov.pay.publicauth.model.TokenHash;

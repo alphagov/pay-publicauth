@@ -3,7 +3,7 @@ package uk.gov.pay.publicauth.it;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import uk.gov.pay.publicauth.utils.DropwizardAppWithPostgresRule;
 
 import static com.jayway.restassured.RestAssured.given;
