@@ -12,11 +12,6 @@ public class DependentResourceWaitCommand extends ConfiguredCommand<PublicAuthCo
     }
 
     @Override
-    public void configure(Subparser subparser) {
-        super.configure(subparser);
-    }
-
-    @Override
     protected void run(Bootstrap<PublicAuthConfiguration> bs, Namespace ns, PublicAuthConfiguration conf) {
         ApplicationStartupDependentResourceChecker applicationStartupDependentResourceChecker = new ApplicationStartupDependentResourceChecker(new ApplicationStartupDependentResource(conf));
         applicationStartupDependentResourceChecker.checkAndWaitForResources();
