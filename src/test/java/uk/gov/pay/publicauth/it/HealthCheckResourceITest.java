@@ -16,7 +16,7 @@ public class HealthCheckResourceITest {
     public DropwizardAppWithPostgresRule app = new DropwizardAppWithPostgresRule();
 
     @Test
-    public void checkHealthcheck_allIsHealthy() throws Exception {
+    public void checkHealthcheck_allIsHealthy() {
         given().port(app.getLocalPort())
                 .get("healthcheck")
                 .then()
@@ -26,7 +26,7 @@ public class HealthCheckResourceITest {
     }
 
     @Test
-    public void checkHealthCheck_isUnHealthy() throws Exception {
+    public void checkHealthCheck_isUnHealthy() {
         app.stopPostgres();
         given().port(app.getLocalPort())
                 .get("healthcheck")

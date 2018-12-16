@@ -22,7 +22,7 @@ public class RandomIdGeneratorTest {
     private static final List<Character> BASE32_DICTIONARY = asList("0123456789abcdefghijklmnopqrstuv".toCharArray());
 
     @Test
-    public void shouldGenerateRandomIds() throws Exception {
+    public void shouldGenerateRandomIds() {
         // given
         int numbersOfIdsToGenerate = 1000;
         Set<String> randomIds = IntStream.range(0, numbersOfIdsToGenerate)

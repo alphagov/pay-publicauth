@@ -61,7 +61,7 @@ public class DatabaseHealthCheck extends HealthCheck {
     }
 
     @Override
-    protected Result check() throws Exception {
+    protected Result check() {
         Connection connection = null;
         try {
             connection = DriverManager.getConnection(
