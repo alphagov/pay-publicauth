@@ -1,6 +1,5 @@
 package uk.gov.pay.publicauth.model;
 
-import org.omg.PortableInterceptor.ACTIVE;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
