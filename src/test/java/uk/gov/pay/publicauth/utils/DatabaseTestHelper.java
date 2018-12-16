@@ -62,13 +62,12 @@ public class DatabaseTestHelper {
     }
 
     public Map<String, Object> getTokenByHash(TokenHash tokenHash) {
-        Map<String, Object> ret = jdbi.withHandle(h ->
+        return jdbi.withHandle(h ->
                 h.createQuery("SELECT token_id, type, token_type, token_hash, account_id, issued, revoked, token_link, description, created_by " +
                         "FROM tokens t " +
                         "WHERE token_hash = :token_hash")
                         .bind("token_hash", tokenHash.getValue())
                         .first());
-        return ret;
     }
 
     public ZonedDateTime getDateTimeColumn(String column, String accountId) {
