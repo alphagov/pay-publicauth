@@ -21,7 +21,7 @@ public class DatabaseTestHelper {
 
     private final DBI jdbi;
 
-    public DatabaseTestHelper(DBI jdbi) {
+    DatabaseTestHelper(DBI jdbi) {
         this.jdbi = jdbi;
     }
 
