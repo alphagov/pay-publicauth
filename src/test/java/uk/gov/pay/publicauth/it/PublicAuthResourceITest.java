@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.io.BaseEncoding;
 import com.google.gson.Gson;
 import com.jayway.restassured.response.ValidatableResponse;
+import org.apache.commons.codec.digest.HmacAlgorithms;
 import org.apache.commons.codec.digest.HmacUtils;
 import org.hamcrest.Matcher;
 import org.junit.Rule;
@@ -646,6 +647,6 @@ public class PublicAuthResourceITest {
     }
 
     private String encodedHmacValueOf(String input) {
-        return BaseEncoding.base32Hex().lowerCase().omitPadding().encode(HmacUtils.hmacSha1("qwer9yuhgf", input));
+        return BaseEncoding.base32Hex().lowerCase().omitPadding().encode(new HmacUtils(HmacAlgorithms.HMAC_SHA_1, "qwer9yuhgf").hmac(input));
     }
 }
