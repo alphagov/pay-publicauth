@@ -19,7 +19,7 @@ import static uk.gov.pay.publicauth.model.TokenSource.API;
 
 public class DatabaseTestHelper {
 
-    private DBI jdbi;
+    private final DBI jdbi;
 
     public DatabaseTestHelper(DBI jdbi) {
         this.jdbi = jdbi;

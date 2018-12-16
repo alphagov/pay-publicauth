@@ -24,7 +24,7 @@ public class RandomIdGeneratorTest {
     @Test
     public void shouldGenerateRandomIds() {
         // given
-        int numbersOfIdsToGenerate = 1000;
+        final int numbersOfIdsToGenerate = 1000;
         Set<String> randomIds = IntStream.range(0, numbersOfIdsToGenerate)
                 .parallel()
                 .mapToObj(value -> newId()).collect(Collectors.toSet());

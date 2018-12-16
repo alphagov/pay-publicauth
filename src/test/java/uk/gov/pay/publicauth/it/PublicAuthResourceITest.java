@@ -62,17 +62,17 @@ public class PublicAuthResourceITest {
     private static final String CREATED_USER_NAME2 = "user-name-2";
 
     @Rule
-    public DropwizardAppWithPostgresRule app = new DropwizardAppWithPostgresRule();
-    private String validTokenPayload = new Gson().toJson(
+    public final DropwizardAppWithPostgresRule app = new DropwizardAppWithPostgresRule();
+    private final String validTokenPayload = new Gson().toJson(
             ImmutableMap.of("account_id", ACCOUNT_ID,
                     "description", TOKEN_DESCRIPTION,
                     "created_by", USER_EMAIL));
-    private String validDirectDebitTokenPayload = new Gson().toJson(
+    private final String validDirectDebitTokenPayload = new Gson().toJson(
             ImmutableMap.of("account_id", ACCOUNT_ID,
                     "description", TOKEN_DESCRIPTION,
                     "token_type", DIRECT_DEBIT.toString(),
                     "created_by", USER_EMAIL));
-    private String validProductsTokenPayload = new Gson().toJson(
+    private final String validProductsTokenPayload = new Gson().toJson(
             ImmutableMap.of("account_id", ACCOUNT_ID,
                     "description", TOKEN_DESCRIPTION,
                     "type", PRODUCTS.toString(),

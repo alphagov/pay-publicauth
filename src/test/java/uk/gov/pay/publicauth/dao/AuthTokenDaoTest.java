@@ -43,7 +43,7 @@ public class AuthTokenDaoTest {
 
 
     @Rule
-    public DropwizardAppWithPostgresRule app = new DropwizardAppWithPostgresRule();
+    public final DropwizardAppWithPostgresRule app = new DropwizardAppWithPostgresRule();
 
     @Rule
     public ExpectedException expectedEx = ExpectedException.none();

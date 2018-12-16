@@ -7,7 +7,7 @@ import java.util.Optional;
 
 public class TokenAuthenticator implements Authenticator<String, Token> {
 
-    private TokenService tokenService;
+    private final TokenService tokenService;
 
     public TokenAuthenticator(TokenService tokenService) {
         this.tokenService = tokenService;

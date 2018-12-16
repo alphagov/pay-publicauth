@@ -20,18 +20,18 @@ public class DropwizardAppWithPostgresRule implements TestRule {
 
     private static final Logger logger = LoggerFactory.getLogger(DropwizardAppWithPostgresRule.class);
 
-    private String configFilePath = resourceFilePath("config/test-it-config.yaml");
+    private final String configFilePath = resourceFilePath("config/test-it-config.yaml");
 
-    private PostgresDockerRule postgres = new PostgresDockerRule();
+    private final PostgresDockerRule postgres = new PostgresDockerRule();
 
-    private DropwizardAppRule<PublicAuthConfiguration> app = new DropwizardAppRule<>(
+    private final DropwizardAppRule<PublicAuthConfiguration> app = new DropwizardAppRule<>(
             PublicAuthApp.class,
             configFilePath,
             config("database.url", postgres.getConnectionUrl()),
             config("database.user", postgres.getUsername()),
             config("database.password", postgres.getPassword()));
 
-    private RuleChain rules = RuleChain.outerRule(postgres).around(app);
+    private final RuleChain rules = RuleChain.outerRule(postgres).around(app);
     private DatabaseTestHelper databaseHelper;
 
     @Override

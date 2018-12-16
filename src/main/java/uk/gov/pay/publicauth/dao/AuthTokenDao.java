@@ -18,7 +18,7 @@ public class AuthTokenDao {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AuthTokenDao.class);
 
-    private DBI jdbi;
+    private final DBI jdbi;
 
     public AuthTokenDao(DBI jdbi) {
         this.jdbi = jdbi;

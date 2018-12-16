@@ -13,7 +13,7 @@ import static org.hamcrest.Matchers.is;
 public class HealthCheckResourceITest {
 
     @Rule
-    public DropwizardAppWithPostgresRule app = new DropwizardAppWithPostgresRule();
+    public final DropwizardAppWithPostgresRule app = new DropwizardAppWithPostgresRule();
 
     @Test
     public void checkHealthcheck_allIsHealthy() {
