@@ -23,7 +23,7 @@ public class DatabaseHealthCheck extends HealthCheck {
     private Integer statsHealthy = 0;
 
     static {
-        longDatabaseStatsMap = new HashMap<String, Long>();
+        longDatabaseStatsMap = new HashMap<>();
         longDatabaseStatsMap.put("numbackends", 0L);
         longDatabaseStatsMap.put("xact_commit", 0L);
         longDatabaseStatsMap.put("xact_rollback", 0L);
@@ -38,7 +38,7 @@ public class DatabaseHealthCheck extends HealthCheck {
         longDatabaseStatsMap.put("temp_files", 0L);
         longDatabaseStatsMap.put("temp_bytes", 0L);
         longDatabaseStatsMap.put("deadlocks", 0L);
-        doubleDatabaseStatsMap = new HashMap<String, Double>();
+        doubleDatabaseStatsMap = new HashMap<>();
         doubleDatabaseStatsMap.put("blk_read_time", 0.0);
         doubleDatabaseStatsMap.put("blk_write_time", 0.0);
     }
