@@ -3,7 +3,7 @@ package uk.gov.pay.publicauth.it;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import uk.gov.pay.publicauth.utils.DropwizardAppWithPostgresRule;
 
 import static com.jayway.restassured.RestAssured.given;
@@ -13,10 +13,10 @@ import static org.hamcrest.Matchers.is;
 public class HealthCheckResourceITest {
 
     @Rule
-    public DropwizardAppWithPostgresRule app = new DropwizardAppWithPostgresRule();
+    public final DropwizardAppWithPostgresRule app = new DropwizardAppWithPostgresRule();
 
     @Test
-    public void checkHealthcheck_allIsHealthy() throws Exception {
+    public void checkHealthcheck_allIsHealthy() {
         given().port(app.getLocalPort())
                 .get("healthcheck")
                 .then()
@@ -26,7 +26,7 @@ public class HealthCheckResourceITest {
     }
 
     @Test
-    public void checkHealthCheck_isUnHealthy() throws Exception {
+    public void checkHealthCheck_isUnHealthy() {
         app.stopPostgres();
         given().port(app.getLocalPort())
                 .get("healthcheck")

@@ -63,7 +63,7 @@ public class PublicAuthApp extends Application<PublicAuthConfiguration> {
 
 
     @Override
-    public void run(PublicAuthConfiguration conf, Environment environment) throws Exception {
+    public void run(PublicAuthConfiguration conf, Environment environment) {
         DataSourceFactory dataSourceFactory = conf.getDataSourceFactory();
 
         jdbi = new DBIFactory().build(environment, dataSourceFactory, "postgresql");

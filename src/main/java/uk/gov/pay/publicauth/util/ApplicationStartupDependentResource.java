@@ -11,7 +11,7 @@ public class ApplicationStartupDependentResource {
 
     private final PublicAuthConfiguration configuration;
 
-    public ApplicationStartupDependentResource(PublicAuthConfiguration configuration) {
+    ApplicationStartupDependentResource(PublicAuthConfiguration configuration) {
         this.configuration = configuration;
     }
 

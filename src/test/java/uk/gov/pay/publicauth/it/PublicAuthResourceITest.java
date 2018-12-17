@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.io.BaseEncoding;
 import com.google.gson.Gson;
 import com.jayway.restassured.response.ValidatableResponse;
+import org.apache.commons.codec.digest.HmacAlgorithms;
 import org.apache.commons.codec.digest.HmacUtils;
 import org.hamcrest.Matcher;
 import org.junit.Rule;
@@ -38,6 +39,7 @@ import static uk.gov.pay.publicauth.model.TokenPaymentType.DIRECT_DEBIT;
 import static uk.gov.pay.publicauth.model.TokenSource.API;
 import static uk.gov.pay.publicauth.model.TokenSource.PRODUCTS;
 
+@SuppressWarnings("OptionalGetWithoutIsPresent")
 public class PublicAuthResourceITest {
 
     private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("dd MMM YYYY - HH:mm");
@@ -60,17 +62,17 @@ public class PublicAuthResourceITest {
     private static final String CREATED_USER_NAME2 = "user-name-2";
 
     @Rule
-    public DropwizardAppWithPostgresRule app = new DropwizardAppWithPostgresRule();
-    private String validTokenPayload = new Gson().toJson(
+    public final DropwizardAppWithPostgresRule app = new DropwizardAppWithPostgresRule();
+    private final String validTokenPayload = new Gson().toJson(
             ImmutableMap.of("account_id", ACCOUNT_ID,
                     "description", TOKEN_DESCRIPTION,
                     "created_by", USER_EMAIL));
-    private String validDirectDebitTokenPayload = new Gson().toJson(
+    private final String validDirectDebitTokenPayload = new Gson().toJson(
             ImmutableMap.of("account_id", ACCOUNT_ID,
                     "description", TOKEN_DESCRIPTION,
                     "token_type", DIRECT_DEBIT.toString(),
                     "created_by", USER_EMAIL));
-    private String validProductsTokenPayload = new Gson().toJson(
+    private final String validProductsTokenPayload = new Gson().toJson(
             ImmutableMap.of("account_id", ACCOUNT_ID,
                     "description", TOKEN_DESCRIPTION,
                     "type", PRODUCTS.toString(),
@@ -645,6 +647,6 @@ public class PublicAuthResourceITest {
     }
 
     private String encodedHmacValueOf(String input) {
-        return BaseEncoding.base32Hex().lowerCase().omitPadding().encode(HmacUtils.hmacSha1("qwer9yuhgf", input));
+        return BaseEncoding.base32Hex().lowerCase().omitPadding().encode(new HmacUtils(HmacAlgorithms.HMAC_SHA_1, "qwer9yuhgf").hmac(input));
     }
 }

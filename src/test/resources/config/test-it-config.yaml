@@ -14,6 +14,9 @@ logging:
         timeZone: UTC
         target: stdout
         logFormat: "[%thread] %highlight(%-5level) %cyan(%logger{15}) - %msg %n"
+    loggers:
+      # Liquibase is very chatty and we only want to hear from it if things go wrong
+      "liquibase": WARN
 
 database:
   driverClass: org.postgresql.Driver
@@ -24,7 +27,7 @@ database:
   maxWaitForConnection: 1s
 
   # the SQL query to run when validating a connection's liveness
-  validationQuery: "/* MyService Health Check */ SELECT 1"
+  validationQuery: "/* PublicAuth Health Check */ SELECT 1"
 
   # the timeout before a connection validation queries fail
   validationQueryTimeout: 3s

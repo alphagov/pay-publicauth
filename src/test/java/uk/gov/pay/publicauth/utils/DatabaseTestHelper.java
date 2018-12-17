@@ -2,7 +2,7 @@ package uk.gov.pay.publicauth.utils;
 
 import io.dropwizard.jdbi.args.ZonedDateTimeMapper;
 import org.skife.jdbi.v2.DBI;
-import org.skife.jdbi.v2.util.StringMapper;
+import org.skife.jdbi.v2.util.StringColumnMapper;
 import uk.gov.pay.publicauth.model.TokenHash;
 import uk.gov.pay.publicauth.model.TokenLink;
 import uk.gov.pay.publicauth.model.TokenPaymentType;
@@ -19,9 +19,9 @@ import static uk.gov.pay.publicauth.model.TokenSource.API;
 
 public class DatabaseTestHelper {
 
-    private DBI jdbi;
+    private final DBI jdbi;
 
-    public DatabaseTestHelper(DBI jdbi) {
+    DatabaseTestHelper(DBI jdbi) {
         this.jdbi = jdbi;
     }
 
@@ -56,19 +56,18 @@ public class DatabaseTestHelper {
         return java.util.Optional.ofNullable(jdbi.withHandle(handle ->
                 handle.createQuery("SELECT " + column + " FROM tokens WHERE " + idKey + "=:placeholder")
                         .bind("placeholder", idValue)
-                        .map(StringMapper.FIRST)
+                        .map(StringColumnMapper.INSTANCE)
                         .first()));
 
     }
 
     public Map<String, Object> getTokenByHash(TokenHash tokenHash) {
-        Map<String, Object> ret = jdbi.withHandle(h ->
+        return jdbi.withHandle(h ->
                 h.createQuery("SELECT token_id, type, token_type, token_hash, account_id, issued, revoked, token_link, description, created_by " +
                         "FROM tokens t " +
                         "WHERE token_hash = :token_hash")
                         .bind("token_hash", tokenHash.getValue())
                         .first());
-        return ret;
     }
 
     public ZonedDateTime getDateTimeColumn(String column, String accountId) {

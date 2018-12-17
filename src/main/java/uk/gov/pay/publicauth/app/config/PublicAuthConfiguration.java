@@ -13,7 +13,7 @@ public class PublicAuthConfiguration extends Configuration {
     @Valid
     @NotNull
     @JsonProperty("database")
-    private DataSourceFactory dataSourceFactory = new DataSourceFactory();
+    private final DataSourceFactory dataSourceFactory = new DataSourceFactory();
 
     @Valid
     @NotNull

@@ -1,6 +1,7 @@
 package uk.gov.pay.publicauth.service;
 
 import com.google.common.io.BaseEncoding;
+import org.apache.commons.codec.digest.HmacAlgorithms;
 import org.apache.commons.codec.digest.HmacUtils;
 import org.mindrot.jbcrypt.BCrypt;
 import org.slf4j.Logger;
@@ -56,7 +57,7 @@ public class TokenService {
     }
 
     private String createApiKey(String token) {
-        byte[] hmacBytes = HmacUtils.hmacSha1(apiKeyHmacSecret, token);
+        byte[] hmacBytes = new HmacUtils(HmacAlgorithms.HMAC_SHA_1, apiKeyHmacSecret).hmac(token);
         String encodedHmac = BaseEncoding.base32Hex().lowerCase().omitPadding().encode(hmacBytes);
         return token + encodedHmac;
     }
@@ -79,7 +80,7 @@ public class TokenService {
     private boolean tokenMatchesHmac(String token, String currentHmac) {
         final String hmacCalculatedFromToken = BaseEncoding.base32Hex()
                 .lowerCase().omitPadding()
-                .encode(HmacUtils.hmacSha1(apiKeyHmacSecret, token));
+                .encode(new HmacUtils(HmacAlgorithms.HMAC_SHA_1, apiKeyHmacSecret).hmac(token));
 
         return hmacCalculatedFromToken.equals(currentHmac);
     }

@@ -33,16 +33,17 @@ import static uk.gov.pay.publicauth.model.TokenState.REVOKED;
 import static uk.gov.pay.publicauth.model.TokenSource.API;
 import static uk.gov.pay.publicauth.model.TokenSource.PRODUCTS;
 
+@SuppressWarnings("OptionalGetWithoutIsPresent")
 public class AuthTokenDaoTest {
 
-    public static final String TEST_USER_NAME = "test-user-name";
-    public static final String TEST_USER_NAME_2 = "test-user-name-2";
+    private static final String TEST_USER_NAME = "test-user-name";
+    private static final String TEST_USER_NAME_2 = "test-user-name-2";
 
     private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("dd MMM YYYY - HH:mm");
 
 
     @Rule
-    public DropwizardAppWithPostgresRule app = new DropwizardAppWithPostgresRule();
+    public final DropwizardAppWithPostgresRule app = new DropwizardAppWithPostgresRule();
 
     @Rule
     public ExpectedException expectedEx = ExpectedException.none();
