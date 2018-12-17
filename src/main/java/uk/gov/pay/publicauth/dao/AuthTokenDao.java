@@ -1,7 +1,7 @@
 package uk.gov.pay.publicauth.dao;
 
 import org.skife.jdbi.v2.DBI;
-import org.skife.jdbi.v2.util.StringMapper;
+import org.skife.jdbi.v2.util.StringColumnMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.gov.pay.publicauth.model.TokenHash;
@@ -84,7 +84,7 @@ public class AuthTokenDao {
                 handle.createQuery("UPDATE tokens SET revoked=(now() at time zone 'utc') WHERE account_id=:accountId AND token_hash=:tokenHash AND revoked IS NULL RETURNING to_char(revoked,'DD Mon YYYY')")
                         .bind("accountId", accountId)
                         .bind("tokenHash", tokenHash.getValue())
-                        .map(StringMapper.FIRST)
+                        .map(StringColumnMapper.INSTANCE)
                         .first()));
     }
     public Optional<String> revokeSingleToken(String accountId, TokenLink tokenLink) {
@@ -92,7 +92,7 @@ public class AuthTokenDao {
                 handle.createQuery("UPDATE tokens SET revoked=(now() at time zone 'utc') WHERE account_id=:accountId AND token_link=:tokenLink AND revoked IS NULL RETURNING to_char(revoked,'DD Mon YYYY')")
                         .bind("accountId", accountId)
                         .bind("tokenLink", tokenLink.getValue())
-                        .map(StringMapper.FIRST)
+                        .map(StringColumnMapper.INSTANCE)
                         .first()));
     }
     public Optional<Map<String, Object>> findTokenByTokenLink(TokenLink tokenLink) {

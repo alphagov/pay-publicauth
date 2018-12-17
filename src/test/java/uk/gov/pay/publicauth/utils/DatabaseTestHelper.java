@@ -2,7 +2,7 @@ package uk.gov.pay.publicauth.utils;
 
 import io.dropwizard.jdbi.args.ZonedDateTimeMapper;
 import org.skife.jdbi.v2.DBI;
-import org.skife.jdbi.v2.util.StringMapper;
+import org.skife.jdbi.v2.util.StringColumnMapper;
 import uk.gov.pay.publicauth.model.TokenHash;
 import uk.gov.pay.publicauth.model.TokenLink;
 import uk.gov.pay.publicauth.model.TokenPaymentType;
@@ -56,7 +56,7 @@ public class DatabaseTestHelper {
         return java.util.Optional.ofNullable(jdbi.withHandle(handle ->
                 handle.createQuery("SELECT " + column + " FROM tokens WHERE " + idKey + "=:placeholder")
                         .bind("placeholder", idValue)
-                        .map(StringMapper.FIRST)
+                        .map(StringColumnMapper.INSTANCE)
                         .first()));
 
     }
