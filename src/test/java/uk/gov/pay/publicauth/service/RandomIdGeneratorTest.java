@@ -8,7 +8,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.google.common.primitives.Chars.asList;
-import static org.apache.commons.collections4.CollectionUtils.containsAll;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
@@ -33,10 +32,10 @@ public class RandomIdGeneratorTest {
         assertThat(randomIds.size(), is(numbersOfIdsToGenerate));
 
         // then 2. expects dictionary in Base32Hex
-        randomIds.stream().forEach(id -> {
-            assertThat(containsAll(BASE32_DICTIONARY, asList(id.toCharArray())), is(true));
+        for (String id : randomIds) {
+            assertThat(BASE32_DICTIONARY.containsAll(asList(id.toCharArray())), is(true));
             assertThat(id.length(), greaterThanOrEqualTo(RANDOM_ID_MIN_LENGTH));
             assertThat(id.length(), lessThanOrEqualTo(RANDOM_ID_MAX_LENGTH));
-        });
+        }
     }
 }
