@@ -140,12 +140,6 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-collections4</artifactId>
-            <version>4.2</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>uk.gov.pay</groupId>
             <artifactId>testing</artifactId>
             <version>1.0.0-f6097986677849386f283bb84072198b57931b1b</version>
