@@ -27,7 +27,7 @@ pipeline {
     stage('Maven Build') {
       steps {
         script {
-          def long stepBuildTime = System.currentTimeMillis()
+          long stepBuildTime = System.currentTimeMillis()
 
           sh 'docker pull govukpay/postgres:9.6.6'
           sh 'mvn clean package'
