@@ -28,7 +28,7 @@ public class ApplicationStartupDependentResourceChecker {
         long timeToWait = 0;
         while(!databaseAvailable) {
             timeToWait += PROGRESSIVE_SECONDS_TO_WAIT;
-            logger.info("Waiting for "+ timeToWait +" seconds till the database is available ...");
+            logger.info("Waiting for {} seconds till the database is available ...", timeToWait);
             applicationStartupDependentResource.sleep(timeToWait * 1000);
             databaseAvailable = isDatabaseAvailable();
         }

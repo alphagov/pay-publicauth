@@ -5,8 +5,6 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.classic.spi.LoggingEvent;
 import ch.qos.logback.core.Appender;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.math.NumberUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -25,9 +23,9 @@ import java.util.UUID;
 
 import static java.lang.String.format;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.matchesRegex;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -80,8 +78,7 @@ public class LoggingFilterTest {
         assertThat(loggingEvents.get(0).getFormattedMessage(), is(format("[%s] - %s to %s began", requestId, requestMethod, requestUrl)));
         String endLogMessage = loggingEvents.get(1).getFormattedMessage();
         assertThat(endLogMessage, containsString(format("[%s] - %s to %s ended - total time ", requestId, requestMethod, requestUrl)));
-        String[] timeTaken = StringUtils.substringsBetween(endLogMessage, "total time ", "ms");
-        assertTrue(NumberUtils.isCreatable(timeTaken[0]));
+        assertThat(endLogMessage, matchesRegex(".*total time \\d+ms"));
         verify(mockFilterChain).doFilter(mockRequest, mockResponse);
     }
 
@@ -124,13 +121,12 @@ public class LoggingFilterTest {
         List<LoggingEvent> loggingEvents = loggingEventArgumentCaptor.getAllValues();
 
         assertThat(loggingEvents.get(0).getFormattedMessage(), is(format("[%s] - %s to %s began", requestId, requestMethod, requestUrl)));
-        assertThat(loggingEvents.get(1).getFormattedMessage(), is("Exception - publicauth request - " + requestUrl + " - exception - " + exception.getMessage()));
+        assertThat(loggingEvents.get(1).getFormattedMessage(), is(format("[%s] - Exception - %s", requestId, exception.getMessage())));
         assertThat(loggingEvents.get(1).getLevel(), is(Level.ERROR));
         assertThat(loggingEvents.get(1).getThrowableProxy().getMessage(), is("Failed request"));
         String endLogMessage = loggingEvents.get(2).getFormattedMessage();
         assertThat(endLogMessage, containsString(format("[%s] - %s to %s ended - total time ", requestId, requestMethod, requestUrl)));
-        String[] timeTaken = StringUtils.substringsBetween(endLogMessage, "total time ", "ms");
-        assertTrue(NumberUtils.isCreatable(timeTaken[0]));
+        assertThat(endLogMessage, matchesRegex(".*total time \\d+ms"));
     }
 
     @SuppressWarnings("unchecked")
