@@ -23,14 +23,12 @@ public class ApplicationStartupDependentResourceChecker {
 
     private void waitingForDatabaseConnectivity() {
         logger.info("Checking for database availability >>>");
-        boolean databaseAvailable = isDatabaseAvailable();
 
         long timeToWait = 0;
-        while(!databaseAvailable) {
+        while(!isDatabaseAvailable()) {
             timeToWait += PROGRESSIVE_SECONDS_TO_WAIT;
             logger.info("Waiting for {} seconds till the database is available ...", timeToWait);
             applicationStartupDependentResource.sleep(timeToWait * 1000);
-            databaseAvailable = isDatabaseAvailable();
         }
         logger.info("Database available.");
     }
