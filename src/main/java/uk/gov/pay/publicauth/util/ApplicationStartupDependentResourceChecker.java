@@ -3,7 +3,6 @@ package uk.gov.pay.publicauth.util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.Connection;
 import java.sql.SQLException;
 
 public class ApplicationStartupDependentResourceChecker {
@@ -36,8 +35,7 @@ public class ApplicationStartupDependentResourceChecker {
 
     private boolean isDatabaseAvailable() {
         try {
-            Connection connection = applicationStartupDependentResource.getDatabaseConnection();
-            connection.close();
+            applicationStartupDependentResource.getDatabaseConnection().close();
             return true;
         } catch (SQLException e) {
             return false;
