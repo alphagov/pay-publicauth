@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.Optional;
 
 import static com.google.common.primitives.Chars.asList;
-import static org.apache.commons.collections4.CollectionUtils.containsAll;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.core.Is.is;
@@ -65,7 +64,7 @@ public class TokenServiceTest {
         // Minimum length guarantee is 32 for Hmac and an extremely very unlikely
         // minimum value of 1 length for the random Token this value is more likely to be 24~26 chars length
         assertThat(apiKey.length(), is(greaterThan(33)));
-        assertThat(containsAll(BASE32_HEX_DICTIONARY, asList(apiKey.toCharArray())), is(true));
+        assertThat(BASE32_HEX_DICTIONARY.containsAll(asList(apiKey.toCharArray())), is(true));
     }
 
     @Test
