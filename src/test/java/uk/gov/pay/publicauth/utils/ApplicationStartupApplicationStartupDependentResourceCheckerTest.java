@@ -13,7 +13,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.slf4j.LoggerFactory;
-import uk.gov.pay.publicauth.app.config.PublicAuthConfiguration;
 import uk.gov.pay.publicauth.util.ApplicationStartupDependentResource;
 import uk.gov.pay.publicauth.util.ApplicationStartupDependentResourceChecker;
 
@@ -33,9 +32,6 @@ public class ApplicationStartupApplicationStartupDependentResourceCheckerTest {
 
     @InjectMocks
     ApplicationStartupDependentResourceChecker applicationStartupDependentResourceChecker;
-
-    @Mock
-    PublicAuthConfiguration mockPublicAuthConfiguration;
 
     @Mock
     ApplicationStartupDependentResource mockApplicationStartupDependentResource;

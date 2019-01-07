@@ -18,7 +18,7 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 
-public class TrustStoreLoader {
+class TrustStoreLoader {
     private static final Logger logger = LoggerFactory.getLogger(TrustStoreLoader.class);
 
     private static final String CERTS_PATH;
@@ -46,9 +46,9 @@ public class TrustStoreLoader {
                             CertificateFactory cf = CertificateFactory.getInstance("X.509");
                             Certificate cert = cf.generateCertificate(new ByteArrayInputStream(Files.readAllBytes(certPath)));
                             TRUST_STORE.setCertificateEntry(certPath.getFileName().toString(), cert);
-                            logger.info("Loaded cert " + certPath);
+                            logger.info("Loaded cert {}", certPath);
                         } catch (SecurityException | KeyStoreException | CertificateException | IOException e) {
-                            logger.error("Could not load " + certPath, e);
+                            logger.error("Could not load {}", certPath, e);
                         }
                     }
                 });
@@ -68,14 +68,6 @@ public class TrustStoreLoader {
         catch (GeneralSecurityException e) {
             throw new RuntimeException("Could not initialize SSLContext", e);
         }
-    }
-
-    public static KeyStore getTrustStore() {
-        return TRUST_STORE;
-    }
-
-    public static String getTrustStorePassword() {
-        return TRUST_STORE_PASSWORD;
     }
 
     public static SSLContext getSSLContext() {
