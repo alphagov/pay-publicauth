@@ -9,6 +9,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
@@ -38,24 +39,17 @@ class TrustStoreLoader {
             throw new RuntimeException("Could not create a keystore", e);
         }
 
-        if (CERTS_PATH != null) {
+        if (CERTS_PATH == null) {
+            logger.warn("CERTS_PATH environment variable not set - not loading any certificates");
+        } else {
             try {
-                Files.walk(Paths.get(CERTS_PATH)).forEach(certPath -> {
-                    if (Files.isRegularFile(certPath)) {
-                        try {
-                            CertificateFactory cf = CertificateFactory.getInstance("X.509");
-                            Certificate cert = cf.generateCertificate(new ByteArrayInputStream(Files.readAllBytes(certPath)));
-                            TRUST_STORE.setCertificateEntry(certPath.getFileName().toString(), cert);
-                            logger.info("Loaded cert {}", certPath);
-                        } catch (SecurityException | KeyStoreException | CertificateException | IOException e) {
-                            logger.error("Could not load {}", certPath, e);
-                        }
-                    }
-                });
+                Files.walk(Paths.get(CERTS_PATH))
+                        .filter(Files::isRegularFile)
+                        .forEach(TrustStoreLoader::loadCert);
             } catch (NoSuchFileException nsfe) {
-                logger.warn("Did not find any certificates to load");
+                logger.warn("Did not find any certificates to load in {}", CERTS_PATH);
             } catch (IOException ioe) {
-                logger.error("Error walking certs directory", ioe);
+                logger.error("Error walking certs directory {}", CERTS_PATH, ioe);
             }
         }
 
@@ -70,7 +64,17 @@ class TrustStoreLoader {
         }
     }
 
-    public static SSLContext getSSLContext() {
+    private static void loadCert(Path certificate) {
+        try {
+            CertificateFactory cf = CertificateFactory.getInstance("X.509");
+            Certificate certData = cf.generateCertificate(new ByteArrayInputStream(Files.readAllBytes(certificate)));
+            TrustStoreLoader.TRUST_STORE.setCertificateEntry(certificate.getFileName().toString(), certData);
+            logger.info("Loaded cert {}", certificate);
+        } catch (SecurityException | KeyStoreException | CertificateException | IOException e) {
+            logger.error("Could not load {}", certificate, e);
+        }
+    }
+    static SSLContext getSSLContext() {
         return SSL_CONTEXT;
     }
 }
