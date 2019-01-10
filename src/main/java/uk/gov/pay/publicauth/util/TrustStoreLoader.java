@@ -38,7 +38,9 @@ public class TrustStoreLoader {
             throw new RuntimeException("Could not create a keystore", e);
         }
 
-        if (CERTS_PATH != null) {
+        if (CERTS_PATH == null) {
+            logger.warn("CERTS_PATH environment variable not set - not loading any certificates");
+        } else {
             try {
                 Files.walk(Paths.get(CERTS_PATH)).forEach(certPath -> {
                     if (Files.isRegularFile(certPath)) {
@@ -46,16 +48,16 @@ public class TrustStoreLoader {
                             CertificateFactory cf = CertificateFactory.getInstance("X.509");
                             Certificate cert = cf.generateCertificate(new ByteArrayInputStream(Files.readAllBytes(certPath)));
                             TRUST_STORE.setCertificateEntry(certPath.getFileName().toString(), cert);
-                            logger.info("Loaded cert " + certPath);
+                            logger.info("Loaded cert {}", certPath);
                         } catch (SecurityException | KeyStoreException | CertificateException | IOException e) {
-                            logger.error("Could not load " + certPath, e);
+                            logger.error("Could not load {}", certPath, e);
                         }
                     }
                 });
             } catch (NoSuchFileException nsfe) {
-                logger.warn("Did not find any certificates to load");
+                logger.warn("Did not find any certificates to load in {}", CERTS_PATH);
             } catch (IOException ioe) {
-                logger.error("Error walking certs directory", ioe);
+                logger.error("Error walking certs directory {}", CERTS_PATH, ioe);
             }
         }
 
