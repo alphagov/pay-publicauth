@@ -9,6 +9,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
@@ -18,7 +19,7 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 
-public class TrustStoreLoader {
+class TrustStoreLoader {
     private static final Logger logger = LoggerFactory.getLogger(TrustStoreLoader.class);
 
     private static final String CERTS_PATH;
@@ -42,18 +43,9 @@ public class TrustStoreLoader {
             logger.warn("CERTS_PATH environment variable not set - not loading any certificates");
         } else {
             try {
-                Files.walk(Paths.get(CERTS_PATH)).forEach(certPath -> {
-                    if (Files.isRegularFile(certPath)) {
-                        try {
-                            CertificateFactory cf = CertificateFactory.getInstance("X.509");
-                            Certificate cert = cf.generateCertificate(new ByteArrayInputStream(Files.readAllBytes(certPath)));
-                            TRUST_STORE.setCertificateEntry(certPath.getFileName().toString(), cert);
-                            logger.info("Loaded cert {}", certPath);
-                        } catch (SecurityException | KeyStoreException | CertificateException | IOException e) {
-                            logger.error("Could not load {}", certPath, e);
-                        }
-                    }
-                });
+                Files.walk(Paths.get(CERTS_PATH))
+                        .filter(Files::isRegularFile)
+                        .forEach(TrustStoreLoader::loadCertificate);
             } catch (NoSuchFileException nsfe) {
                 logger.warn("Did not find any certificates to load in {}", CERTS_PATH);
             } catch (IOException ioe) {
@@ -72,15 +64,18 @@ public class TrustStoreLoader {
         }
     }
 
-    public static KeyStore getTrustStore() {
-        return TRUST_STORE;
+    private static void loadCertificate(Path certificate) {
+        try {
+            CertificateFactory cf = CertificateFactory.getInstance("X.509");
+            Certificate certData = cf.generateCertificate(new ByteArrayInputStream(Files.readAllBytes(certificate)));
+            TRUST_STORE.setCertificateEntry(certificate.getFileName().toString(), certData);
+            logger.info("Loaded cert {}", certificate);
+        } catch (SecurityException | KeyStoreException | CertificateException | IOException e) {
+            logger.error("Could not load {}", certificate, e);
+        }
     }
 
-    public static String getTrustStorePassword() {
-        return TRUST_STORE_PASSWORD;
-    }
-
-    public static SSLContext getSSLContext() {
+    static SSLContext getSSLContext() {
         return SSL_CONTEXT;
     }
 }
