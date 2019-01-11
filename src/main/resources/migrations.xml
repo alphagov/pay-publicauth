@@ -6,6 +6,12 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
          http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
 
+    <changeSet id="uuid-ossp extension" author="">
+        <sql>
+            CREATE EXTENSION "uuid-ossp";
+        </sql>
+    </changeSet>
+
     <changeSet id="build token table" author="">
         <createTable tableName="tokens">
             <column name="token_id" type="bigserial" autoIncrement="true">

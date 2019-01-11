@@ -2,6 +2,7 @@ package uk.gov.pay.publicauth.dao;
 
 import com.google.common.collect.Lists;
 import org.hamcrest.Matcher;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -28,10 +29,10 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertNull;
 import static uk.gov.pay.publicauth.model.TokenPaymentType.CARD;
 import static uk.gov.pay.publicauth.model.TokenPaymentType.DIRECT_DEBIT;
-import static uk.gov.pay.publicauth.model.TokenState.ACTIVE;
-import static uk.gov.pay.publicauth.model.TokenState.REVOKED;
 import static uk.gov.pay.publicauth.model.TokenSource.API;
 import static uk.gov.pay.publicauth.model.TokenSource.PRODUCTS;
+import static uk.gov.pay.publicauth.model.TokenState.ACTIVE;
+import static uk.gov.pay.publicauth.model.TokenState.REVOKED;
 
 @SuppressWarnings("OptionalGetWithoutIsPresent")
 public class AuthTokenDaoTest {
@@ -61,6 +62,11 @@ public class AuthTokenDaoTest {
     @Before
     public void setUp() {
         authTokenDao = new AuthTokenDao(app.getJdbi());
+    }
+
+    @After
+    public void after() {
+        app.stopPostgres();
     }
 
     @Test
@@ -286,13 +292,13 @@ public class AuthTokenDaoTest {
         Optional<String> revokedInDb = app.getDatabaseHelper().lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.getValue());
         assertThat(revokedInDb.isPresent(), is(true));
     }
-    
+
     @Test
     public void shouldNotRevokeATokenForAnotherAccount() {
         app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, TEST_USER_NAME);
         app.getDatabaseHelper().insertAccount(TOKEN_HASH_2, TOKEN_LINK_2, ACCOUNT_ID_2, TOKEN_DESCRIPTION_2, TEST_USER_NAME);
 
-        Optional<String> revokedDate  = authTokenDao.revokeSingleToken(ACCOUNT_ID, TOKEN_LINK_2);
+        Optional<String> revokedDate = authTokenDao.revokeSingleToken(ACCOUNT_ID, TOKEN_LINK_2);
 
         assertThat(revokedDate.isPresent(), is(false));
 

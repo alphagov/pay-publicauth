@@ -1,5 +1,6 @@
 package uk.gov.pay.publicauth.it;
 
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -14,6 +15,11 @@ public class HealthCheckResourceITest {
 
     @Rule
     public final DropwizardAppWithPostgresRule app = new DropwizardAppWithPostgresRule();
+
+    @After
+    public void after() {
+        app.stopPostgres();
+    }
 
     @Test
     public void checkHealthcheck_allIsHealthy() {

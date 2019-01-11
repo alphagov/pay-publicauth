@@ -7,6 +7,7 @@ import com.jayway.restassured.response.ValidatableResponse;
 import org.apache.commons.codec.digest.HmacAlgorithms;
 import org.apache.commons.codec.digest.HmacUtils;
 import org.hamcrest.Matcher;
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mindrot.jbcrypt.BCrypt;
@@ -77,6 +78,12 @@ public class PublicAuthResourceITest {
                     "description", TOKEN_DESCRIPTION,
                     "type", PRODUCTS.toString(),
                     "created_by", USER_EMAIL));
+
+    @After
+    public void after() {
+        app.stopPostgres();
+    }
+    
     @Test
     public void respondWith200_whenAuthWithValidToken() {
         app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);

@@ -8,7 +8,7 @@ import org.junit.runners.model.Statement;
 import org.skife.jdbi.v2.DBI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import uk.gov.pay.commons.testing.db.PostgresDockerRule;
+import org.testcontainers.containers.PostgreSQLContainer;
 import uk.gov.pay.publicauth.app.PublicAuthApp;
 import uk.gov.pay.publicauth.app.config.PublicAuthConfiguration;
 
@@ -21,17 +21,24 @@ public class DropwizardAppWithPostgresRule implements TestRule {
 
     private final String configFilePath = resourceFilePath("config/test-it-config.yaml");
 
-    private final PostgresDockerRule postgres = new PostgresDockerRule();
+    private final PostgreSQLContainer postgreSQLContainer = new PostgreSQLContainer("postgres:9.6.6");
 
-    private final DropwizardAppRule<PublicAuthConfiguration> app = new DropwizardAppRule<>(
-            PublicAuthApp.class,
-            configFilePath,
-            config("database.url", postgres.getConnectionUrl()),
-            config("database.user", postgres.getUsername()),
-            config("database.password", postgres.getPassword()));
+    private final DropwizardAppRule<PublicAuthConfiguration> app;
 
-    private final RuleChain rules = RuleChain.outerRule(postgres).around(app);
+    private final RuleChain rules;
     private DatabaseTestHelper databaseHelper;
+
+    public DropwizardAppWithPostgresRule() {
+        postgreSQLContainer.start();
+        app = new DropwizardAppRule<>(
+                PublicAuthApp.class,
+                configFilePath,
+                config("database.url", postgreSQLContainer.getJdbcUrl()),
+                config("database.user", postgreSQLContainer.getUsername()),
+                config("database.password", postgreSQLContainer.getPassword()));
+
+        rules = RuleChain.outerRule(postgreSQLContainer).around(app);
+    }
 
     @Override
     public Statement apply(Statement base, Description description) {
@@ -61,7 +68,7 @@ public class DropwizardAppWithPostgresRule implements TestRule {
     }
 
     public void stopPostgres() {
-        postgres.stop();
+        postgreSQLContainer.stop();
     }
 
     private void restoreDropwizardsLogging() {
