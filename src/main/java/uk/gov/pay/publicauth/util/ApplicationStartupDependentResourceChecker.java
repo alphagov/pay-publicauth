@@ -3,8 +3,6 @@ package uk.gov.pay.publicauth.util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.SQLException;
-
 import java.time.Duration;
 import java.util.function.Consumer;
 
@@ -21,13 +19,9 @@ public class ApplicationStartupDependentResourceChecker {
         this.waiter = waiter;
     }
 
-    public void checkAndWaitForResources() {
-        waitingForDatabaseConnectivity();
-    }
-
-    private void waitingForDatabaseConnectivity() {
+    public void checkAndWaitForResource() {
         long timeToWait = 0;
-        while(!isDatabaseAvailable()) {
+        while(!applicationStartupDependentResource.isAvailable()) {
             timeToWait += PROGRESSIVE_SECONDS_TO_WAIT;
             logger.info("Waiting for {} seconds till the database is available ...", timeToWait);
             waiter.accept(Duration.ofSeconds(timeToWait));
@@ -35,14 +29,4 @@ public class ApplicationStartupDependentResourceChecker {
         logger.info("Database available.");
     }
 
-
-    private boolean isDatabaseAvailable() {
-        try {
-            applicationStartupDependentResource.getDatabaseConnection().close();
-            return true;
-        } catch (SQLException e) {
-            logger.warn("Unable to connect to database: {}", e.getMessage());
-            return false;
-        }
-    }
 }

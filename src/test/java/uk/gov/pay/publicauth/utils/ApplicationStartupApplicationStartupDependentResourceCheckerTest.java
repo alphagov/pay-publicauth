@@ -13,11 +13,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.slf4j.LoggerFactory;
-import uk.gov.pay.publicauth.util.ApplicationStartupDependentResource;
+import uk.gov.pay.publicauth.util.DatabaseStartupResource;
 import uk.gov.pay.publicauth.util.ApplicationStartupDependentResourceChecker;
 
-import java.sql.Connection;
-import java.sql.SQLException;
 import java.time.Duration;
 import java.util.List;
 import java.util.function.Consumer;
@@ -36,7 +34,7 @@ public class ApplicationStartupApplicationStartupDependentResourceCheckerTest {
     ApplicationStartupDependentResourceChecker applicationStartupDependentResourceChecker;
 
     @Mock
-    ApplicationStartupDependentResource mockApplicationStartupDependentResource;
+    DatabaseStartupResource mockApplicationStartupDependentResource;
     @Mock
     Consumer<Duration> mockWaiter;
 
@@ -53,61 +51,45 @@ public class ApplicationStartupApplicationStartupDependentResourceCheckerTest {
     }
 
     @Test
-    public void start_ShouldWaitAndLogUntilDatabaseIsAccessible() throws Exception {
+    public void start_ShouldWaitAndLogUntilDatabaseIsAccessible() {
 
-        Connection mockConnection = mock(Connection.class);
-        when(mockApplicationStartupDependentResource.getDatabaseConnection())
-                .thenThrow(new SQLException("not there yet"))
-                .thenReturn(mockConnection);
+        when(mockApplicationStartupDependentResource.isAvailable())
+                .thenReturn(false)
+                .thenReturn(true);
 
-        applicationStartupDependentResourceChecker.checkAndWaitForResources();
+        applicationStartupDependentResourceChecker.checkAndWaitForResource();
 
-        verify(mockApplicationStartupDependentResource, times(2)).getDatabaseConnection();
+        verify(mockApplicationStartupDependentResource, times(2)).isAvailable();
         verify(mockWaiter).accept(Duration.ofSeconds(5));
 
-        verify(mockAppender, times(3)).doAppend(loggingEventArgumentCaptor.capture());
+        verify(mockAppender, times(2)).doAppend(loggingEventArgumentCaptor.capture());
         List<LoggingEvent> allValues = loggingEventArgumentCaptor.getAllValues();
 
-        assertThat(allValues.get(0).getFormattedMessage(), is("Unable to connect to database: not there yet"));
-        assertThat(allValues.get(1).getFormattedMessage(), is("Waiting for 5 seconds till the database is available ..."));
-        assertThat(allValues.get(2).getFormattedMessage(), is("Database available."));
+        assertThat(allValues.get(0).getFormattedMessage(), is("Waiting for 5 seconds till the database is available ..."));
+        assertThat(allValues.get(1).getFormattedMessage(), is("Database available."));
     }
 
     @Test
-    public void start_ShouldProgressivelyIncrementSleepingTimeBetweenChecksForDBAccessibility() throws Exception {
-        Connection mockConnection = mock(Connection.class);
-        when(mockApplicationStartupDependentResource.getDatabaseConnection())
-                .thenThrow(new SQLException("not there"))
-                .thenThrow(new SQLException("not there yet"))
-                .thenThrow(new SQLException("still not there"))
-                .thenReturn(mockConnection);
+    public void start_ShouldProgressivelyIncrementSleepingTimeBetweenChecksForDBAccessibility() {
+        when(mockApplicationStartupDependentResource.isAvailable())
+                .thenReturn(false)
+                .thenReturn(false)
+                .thenReturn(false)
+                .thenReturn(true);
 
-        applicationStartupDependentResourceChecker.checkAndWaitForResources();
+        applicationStartupDependentResourceChecker.checkAndWaitForResource();
 
-        verify(mockApplicationStartupDependentResource, times(4)).getDatabaseConnection();
+        verify(mockApplicationStartupDependentResource, times(4)).isAvailable();
         verify(mockWaiter).accept(Duration.ofSeconds(5));
         verify(mockWaiter).accept(Duration.ofSeconds(10));
         verify(mockWaiter).accept(Duration.ofSeconds(15));
-        verify(mockAppender, times(7)).doAppend(loggingEventArgumentCaptor.capture());
+        verify(mockAppender, times(4)).doAppend(loggingEventArgumentCaptor.capture());
 
         List<LoggingEvent> logStatement = loggingEventArgumentCaptor.getAllValues();
-        assertThat(logStatement.get(0).getFormattedMessage(), is("Unable to connect to database: not there"));
-        assertThat(logStatement.get(1).getFormattedMessage(), is("Waiting for 5 seconds till the database is available ..."));
-        assertThat(logStatement.get(2).getFormattedMessage(), is("Unable to connect to database: not there yet"));
-        assertThat(logStatement.get(3).getFormattedMessage(), is("Waiting for 10 seconds till the database is available ..."));
-        assertThat(logStatement.get(4).getFormattedMessage(), is("Unable to connect to database: still not there"));
-        assertThat(logStatement.get(5).getFormattedMessage(), is("Waiting for 15 seconds till the database is available ..."));
-        assertThat(logStatement.get(6).getFormattedMessage(), is("Database available."));
-    }
-
-    @Test
-    public void start_ShouldCloseAnyAcquiredConnectionWhenTheCheckIsDone() throws Exception {
-        Connection mockConnection = mock(Connection.class);
-        when(mockApplicationStartupDependentResource.getDatabaseConnection()).thenReturn(mockConnection);
-
-        applicationStartupDependentResourceChecker.checkAndWaitForResources();
-
-        verify(mockConnection).close();
+        assertThat(logStatement.get(0).getFormattedMessage(), is("Waiting for 5 seconds till the database is available ..."));
+        assertThat(logStatement.get(1).getFormattedMessage(), is("Waiting for 10 seconds till the database is available ..."));
+        assertThat(logStatement.get(2).getFormattedMessage(), is("Waiting for 15 seconds till the database is available ..."));
+        assertThat(logStatement.get(3).getFormattedMessage(), is("Database available."));
     }
 
     @SuppressWarnings("unchecked")
