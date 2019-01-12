@@ -18,7 +18,9 @@ import uk.gov.pay.publicauth.util.ApplicationStartupDependentResourceChecker;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.time.Duration;
 import java.util.List;
+import java.util.function.Consumer;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -35,6 +37,8 @@ public class ApplicationStartupApplicationStartupDependentResourceCheckerTest {
 
     @Mock
     ApplicationStartupDependentResource mockApplicationStartupDependentResource;
+    @Mock
+    Consumer<Duration> mockWaiter;
 
     private Appender<ILoggingEvent> mockAppender;
 
@@ -59,7 +63,7 @@ public class ApplicationStartupApplicationStartupDependentResourceCheckerTest {
         applicationStartupDependentResourceChecker.checkAndWaitForResources();
 
         verify(mockApplicationStartupDependentResource, times(2)).getDatabaseConnection();
-        verify(mockApplicationStartupDependentResource).sleep(5000L);
+        verify(mockWaiter).accept(Duration.ofSeconds(5));
 
         verify(mockAppender, times(3)).doAppend(loggingEventArgumentCaptor.capture());
         List<LoggingEvent> allValues = loggingEventArgumentCaptor.getAllValues();
@@ -81,9 +85,9 @@ public class ApplicationStartupApplicationStartupDependentResourceCheckerTest {
         applicationStartupDependentResourceChecker.checkAndWaitForResources();
 
         verify(mockApplicationStartupDependentResource, times(4)).getDatabaseConnection();
-        verify(mockApplicationStartupDependentResource).sleep(5000L);
-        verify(mockApplicationStartupDependentResource).sleep(10000L);
-        verify(mockApplicationStartupDependentResource).sleep(15000L);
+        verify(mockWaiter).accept(Duration.ofSeconds(5));
+        verify(mockWaiter).accept(Duration.ofSeconds(10));
+        verify(mockWaiter).accept(Duration.ofSeconds(15));
         verify(mockAppender, times(7)).doAppend(loggingEventArgumentCaptor.capture());
 
         List<LoggingEvent> logStatement = loggingEventArgumentCaptor.getAllValues();

@@ -22,11 +22,4 @@ public class ApplicationStartupDependentResource {
                 configuration.getDataSourceFactory().getPassword());
     }
 
-    public void sleep(long durationMilliseconds) {
-        try {
-            Thread.sleep(durationMilliseconds);
-        } catch (InterruptedException ignored) {
-        }
-    }
-
 }
