@@ -64,7 +64,7 @@ public class ApplicationStartupApplicationStartupDependentResourceCheckerTest {
         verify(mockAppender, times(3)).doAppend(loggingEventArgumentCaptor.capture());
         List<LoggingEvent> allValues = loggingEventArgumentCaptor.getAllValues();
 
-        assertThat(allValues.get(0).getFormattedMessage(), is("Checking for database availability >>>"));
+        assertThat(allValues.get(0).getFormattedMessage(), is("Unable to connect to database: not there yet"));
         assertThat(allValues.get(1).getFormattedMessage(), is("Waiting for 5 seconds till the database is available ..."));
         assertThat(allValues.get(2).getFormattedMessage(), is("Database available."));
     }
@@ -84,14 +84,16 @@ public class ApplicationStartupApplicationStartupDependentResourceCheckerTest {
         verify(mockApplicationStartupDependentResource).sleep(5000L);
         verify(mockApplicationStartupDependentResource).sleep(10000L);
         verify(mockApplicationStartupDependentResource).sleep(15000L);
-        verify(mockAppender, times(5)).doAppend(loggingEventArgumentCaptor.capture());
+        verify(mockAppender, times(7)).doAppend(loggingEventArgumentCaptor.capture());
 
         List<LoggingEvent> logStatement = loggingEventArgumentCaptor.getAllValues();
-        assertThat(logStatement.get(0).getFormattedMessage(), is("Checking for database availability >>>"));
+        assertThat(logStatement.get(0).getFormattedMessage(), is("Unable to connect to database: not there"));
         assertThat(logStatement.get(1).getFormattedMessage(), is("Waiting for 5 seconds till the database is available ..."));
-        assertThat(logStatement.get(2).getFormattedMessage(), is("Waiting for 10 seconds till the database is available ..."));
-        assertThat(logStatement.get(3).getFormattedMessage(), is("Waiting for 15 seconds till the database is available ..."));
-        assertThat(logStatement.get(4).getFormattedMessage(), is("Database available."));
+        assertThat(logStatement.get(2).getFormattedMessage(), is("Unable to connect to database: not there yet"));
+        assertThat(logStatement.get(3).getFormattedMessage(), is("Waiting for 10 seconds till the database is available ..."));
+        assertThat(logStatement.get(4).getFormattedMessage(), is("Unable to connect to database: still not there"));
+        assertThat(logStatement.get(5).getFormattedMessage(), is("Waiting for 15 seconds till the database is available ..."));
+        assertThat(logStatement.get(6).getFormattedMessage(), is("Database available."));
     }
 
     @Test

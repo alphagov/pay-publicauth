@@ -21,8 +21,6 @@ public class ApplicationStartupDependentResourceChecker {
     }
 
     private void waitingForDatabaseConnectivity() {
-        logger.info("Checking for database availability >>>");
-
         long timeToWait = 0;
         while(!isDatabaseAvailable()) {
             timeToWait += PROGRESSIVE_SECONDS_TO_WAIT;
@@ -38,6 +36,7 @@ public class ApplicationStartupDependentResourceChecker {
             applicationStartupDependentResource.getDatabaseConnection().close();
             return true;
         } catch (SQLException e) {
+            logger.warn("Unable to connect to database: {}", e.getMessage());
             return false;
         }
     }
