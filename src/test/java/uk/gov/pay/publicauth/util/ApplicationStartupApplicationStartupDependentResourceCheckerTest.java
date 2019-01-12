@@ -1,4 +1,4 @@
-package uk.gov.pay.publicauth.utils;
+package uk.gov.pay.publicauth.util;
 
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.LoggingEvent;
@@ -12,8 +12,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.slf4j.LoggerFactory;
-import uk.gov.pay.publicauth.util.DatabaseStartupResource;
-import uk.gov.pay.publicauth.util.ApplicationStartupDependentResourceChecker;
 
 import java.time.Duration;
 import java.util.List;

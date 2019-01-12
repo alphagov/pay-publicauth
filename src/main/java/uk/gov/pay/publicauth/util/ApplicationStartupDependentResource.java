@@ -1,5 +1,5 @@
 package uk.gov.pay.publicauth.util;
 
-public interface ApplicationStartupDependentResource {
+interface ApplicationStartupDependentResource {
     boolean isAvailable();
 }
