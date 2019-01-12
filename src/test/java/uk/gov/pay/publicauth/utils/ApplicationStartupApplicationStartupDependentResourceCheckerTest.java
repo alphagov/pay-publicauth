@@ -1,7 +1,6 @@
 package uk.gov.pay.publicauth.utils;
 
 import ch.qos.logback.classic.Logger;
-import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.classic.spi.LoggingEvent;
 import ch.qos.logback.core.Appender;
 import org.junit.Before;
@@ -38,16 +37,15 @@ public class ApplicationStartupApplicationStartupDependentResourceCheckerTest {
     @Mock
     Consumer<Duration> mockWaiter;
 
-    private Appender<ILoggingEvent> mockAppender;
+    private Appender mockAppender;
 
     @Captor
     ArgumentCaptor<LoggingEvent> loggingEventArgumentCaptor;
 
     @Before
     public void setup() {
-        Logger root = (Logger) LoggerFactory.getLogger(ApplicationStartupDependentResourceChecker.class);
-        mockAppender = mockAppender();
-        root.addAppender(mockAppender);
+        mockAppender = mock(Appender.class);
+        ((Logger) LoggerFactory.getLogger(ApplicationStartupDependentResourceChecker.class)).addAppender(mockAppender);
     }
 
     @Test
@@ -92,10 +90,5 @@ public class ApplicationStartupApplicationStartupDependentResourceCheckerTest {
         assertThat(logStatement.get(1).getFormattedMessage(), is("Waiting for 10 seconds until DatabaseStartupResource[url=mock, user=mock] is available ..."));
         assertThat(logStatement.get(2).getFormattedMessage(), is("Waiting for 15 seconds until DatabaseStartupResource[url=mock, user=mock] is available ..."));
         assertThat(logStatement.get(3).getFormattedMessage(), is("DatabaseStartupResource[url=mock, user=mock] available."));
-    }
-
-    @SuppressWarnings("unchecked")
-    private <T> Appender<T> mockAppender() {
-        return mock(Appender.class);
     }
 }
