@@ -19,6 +19,6 @@ public class DependentResourceWaitCommand extends ConfiguredCommand<PublicAuthCo
             } catch (InterruptedException ignored) {
             }
         })
-                .checkAndWaitForResources();
+                .checkAndWaitForResource();
     }
 }

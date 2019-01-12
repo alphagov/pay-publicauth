@@ -23,10 +23,10 @@ public class ApplicationStartupDependentResourceChecker {
         long timeToWait = 0;
         while(!applicationStartupDependentResource.isAvailable()) {
             timeToWait += PROGRESSIVE_SECONDS_TO_WAIT;
-            logger.info("Waiting for {} seconds till the database is available ...", timeToWait);
+            logger.info("Waiting for {} seconds until {} is available ...", timeToWait, applicationStartupDependentResource);
             waiter.accept(Duration.ofSeconds(timeToWait));
         }
-        logger.info("Database available.");
+        logger.info("{} available.", applicationStartupDependentResource);
     }
 
 }

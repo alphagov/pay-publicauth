@@ -53,6 +53,7 @@ public class ApplicationStartupApplicationStartupDependentResourceCheckerTest {
     @Test
     public void start_ShouldWaitAndLogUntilDatabaseIsAccessible() {
 
+        when(mockApplicationStartupDependentResource.toString()).thenReturn("DatabaseStartupResource[url=mock, user=mock]");
         when(mockApplicationStartupDependentResource.isAvailable())
                 .thenReturn(false)
                 .thenReturn(true);
@@ -65,12 +66,13 @@ public class ApplicationStartupApplicationStartupDependentResourceCheckerTest {
         verify(mockAppender, times(2)).doAppend(loggingEventArgumentCaptor.capture());
         List<LoggingEvent> allValues = loggingEventArgumentCaptor.getAllValues();
 
-        assertThat(allValues.get(0).getFormattedMessage(), is("Waiting for 5 seconds till the database is available ..."));
-        assertThat(allValues.get(1).getFormattedMessage(), is("Database available."));
+        assertThat(allValues.get(0).getFormattedMessage(), is("Waiting for 5 seconds until DatabaseStartupResource[url=mock, user=mock] is available ..."));
+        assertThat(allValues.get(1).getFormattedMessage(), is("DatabaseStartupResource[url=mock, user=mock] available."));
     }
 
     @Test
     public void start_ShouldProgressivelyIncrementSleepingTimeBetweenChecksForDBAccessibility() {
+        when(mockApplicationStartupDependentResource.toString()).thenReturn("DatabaseStartupResource[url=mock, user=mock]");
         when(mockApplicationStartupDependentResource.isAvailable())
                 .thenReturn(false)
                 .thenReturn(false)
@@ -86,10 +88,10 @@ public class ApplicationStartupApplicationStartupDependentResourceCheckerTest {
         verify(mockAppender, times(4)).doAppend(loggingEventArgumentCaptor.capture());
 
         List<LoggingEvent> logStatement = loggingEventArgumentCaptor.getAllValues();
-        assertThat(logStatement.get(0).getFormattedMessage(), is("Waiting for 5 seconds till the database is available ..."));
-        assertThat(logStatement.get(1).getFormattedMessage(), is("Waiting for 10 seconds till the database is available ..."));
-        assertThat(logStatement.get(2).getFormattedMessage(), is("Waiting for 15 seconds till the database is available ..."));
-        assertThat(logStatement.get(3).getFormattedMessage(), is("Database available."));
+        assertThat(logStatement.get(0).getFormattedMessage(), is("Waiting for 5 seconds until DatabaseStartupResource[url=mock, user=mock] is available ..."));
+        assertThat(logStatement.get(1).getFormattedMessage(), is("Waiting for 10 seconds until DatabaseStartupResource[url=mock, user=mock] is available ..."));
+        assertThat(logStatement.get(2).getFormattedMessage(), is("Waiting for 15 seconds until DatabaseStartupResource[url=mock, user=mock] is available ..."));
+        assertThat(logStatement.get(3).getFormattedMessage(), is("DatabaseStartupResource[url=mock, user=mock] available."));
     }
 
     @SuppressWarnings("unchecked")
