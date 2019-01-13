@@ -20,15 +20,7 @@ import uk.gov.pay.publicauth.model.Tokens;
 import uk.gov.pay.publicauth.service.TokenService;
 
 import javax.inject.Singleton;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
+import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.List;
@@ -42,7 +34,6 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.Response.Status.UNAUTHORIZED;
 import static javax.ws.rs.core.Response.ok;
 import static uk.gov.pay.publicauth.model.TokenPaymentType.CARD;
-import static uk.gov.pay.publicauth.model.TokenState.ACTIVE;
 import static uk.gov.pay.publicauth.model.TokenSource.API;
 
 @Singleton
@@ -116,10 +107,8 @@ public class PublicAuthResource {
     @Produces(APPLICATION_JSON)
     @GET
     public Response getIssuedTokensForAccount(@PathParam("accountId") String accountId, 
-                                              @QueryParam("state") TokenState state,
-                                              @QueryParam("type") TokenSource type) {
-        state = Optional.ofNullable(state).orElse(ACTIVE);
-        type = Optional.ofNullable(type).orElse(API);
+                                              @QueryParam("state") @DefaultValue("active") TokenState state,
+                                              @QueryParam("type") @DefaultValue("api") TokenSource type) {
         List<Map<String, Object>> tokensWithoutNullRevoked = authDao.findTokensBy(accountId, state, type);
         return ok(ImmutableMap.of("tokens", tokensWithoutNullRevoked)).build();
     }
