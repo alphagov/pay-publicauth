@@ -82,14 +82,8 @@ public class PublicAuthResource {
         validatePayloadHasFields(payload, ACCOUNT_ID_FIELD, DESCRIPTION_FIELD, CREATED_BY_FIELD);
 
         Tokens token = tokenService.issueTokens();
-        TokenPaymentType tokenPaymentType =
-                Optional.ofNullable(payload.get(TOKEN_TYPE_FIELD))
-                        .map(paymentType -> TokenPaymentType.fromString(paymentType.asText()))
-                        .orElse(CARD);
-        TokenSource tokenSource =
-                Optional.ofNullable(payload.get(TYPE_FIELD))
-                        .map(source -> TokenSource.fromString(source.asText()))
-                        .orElse(API);
+        TokenPaymentType tokenPaymentType = TokenPaymentType.fromString(payload.get(TOKEN_TYPE_FIELD).asText());
+        TokenSource tokenSource = TokenSource.fromString(payload.get(TYPE_FIELD).asText());
         TokenLink tokenLink = TokenLink.of(randomUUID().toString());
         authDao.storeToken(token.getHashedToken(),
                 tokenLink,

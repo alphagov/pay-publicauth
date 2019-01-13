@@ -85,7 +85,7 @@ public class PublicAuthApp extends Application<PublicAuthConfiguration> {
         environment.healthChecks().register("database", new DatabaseHealthCheck(conf,environment));
 
         environment.servlets().addFilter("LoggingFilter", new LoggingFilter())
-                .addMappingForUrlPatterns(of(REQUEST), true, "/v1" + "/*");
+                .addMappingForUrlPatterns(of(REQUEST), true, "/v1/*");
     }
 
     private void initialiseMetrics(PublicAuthConfiguration configuration, Environment environment) {

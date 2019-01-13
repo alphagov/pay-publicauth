@@ -3,15 +3,18 @@ package uk.gov.pay.publicauth.model;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.validation.constraints.NotNull;
+
 public enum TokenPaymentType {
     CARD, DIRECT_DEBIT;
     private static final Logger LOGGER = LoggerFactory.getLogger(TokenPaymentType.class);
 
+    @NotNull
     public static TokenPaymentType fromString(final String type) {
         try {
             return TokenPaymentType.valueOf(type.toUpperCase());
         } catch (Exception e) {
-            LOGGER.error("Unknown token payment type: " + type);
+            LOGGER.error("Unknown token payment type: {}", type);
             return CARD;
         }
     }
