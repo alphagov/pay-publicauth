@@ -1,9 +1,9 @@
 package uk.gov.pay.publicauth.util;
 
 
+import io.dropwizard.db.DataSourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import uk.gov.pay.publicauth.app.config.PublicAuthConfiguration;
 
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -18,10 +18,10 @@ public class DatabaseStartupResource implements ApplicationStartupDependentResou
     private final String databaseUser;
     private final String databasePassword;
 
-    DatabaseStartupResource(PublicAuthConfiguration configuration) {
-        databaseUrl = configuration.getDataSourceFactory().getUrl();
-        databaseUser = configuration.getDataSourceFactory().getUser();
-        databasePassword = configuration.getDataSourceFactory().getPassword();
+    DatabaseStartupResource(DataSourceFactory dataSourceFactory) {
+        databaseUrl = dataSourceFactory.getUrl();
+        databaseUser = dataSourceFactory.getUser();
+        databasePassword = dataSourceFactory.getPassword();
     }
 
     public boolean isAvailable() {
