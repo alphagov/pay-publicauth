@@ -2,7 +2,6 @@ package uk.gov.pay.publicauth.resources;
 
 import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import io.dropwizard.auth.Auth;
 import org.slf4j.Logger;
@@ -189,13 +188,13 @@ public class PublicAuthResource {
                 .filter(expectedKey -> !payload.has(expectedKey))
                 .collect(Collectors.toList());
         if (!missingFields.isEmpty()) {
-            throw new ValidationException("Missing fields: [" + Joiner.on(", ").join(missingFields) + "]");
+            throw new ValidationException("Missing fields: " + missingFields);
         }
 
         if (!atLeastOneOfTheseFieldsMustExist.isEmpty() && atLeastOneOfTheseFieldsMustExist
                 .stream()
                 .noneMatch(payload::has)) {
-            throw new ValidationException("At least one of these fields must be present: [" + Joiner.on(", ").join(atLeastOneOfTheseFieldsMustExist) + "]");
+            throw new ValidationException("At least one of these fields must be present: " + atLeastOneOfTheseFieldsMustExist);
         }
     }
 }
