@@ -3,6 +3,8 @@ package uk.gov.pay.publicauth.util;
 import io.dropwizard.cli.ConfiguredCommand;
 import io.dropwizard.setup.Bootstrap;
 import net.sourceforge.argparse4j.inf.Namespace;
+import uk.gov.pay.commons.utils.startup.ApplicationStartupDependentResourceChecker;
+import uk.gov.pay.commons.utils.startup.DatabaseStartupResource;
 import uk.gov.pay.publicauth.app.config.PublicAuthConfiguration;
 
 public class DependentResourceWaitCommand extends ConfiguredCommand<PublicAuthConfiguration> {
