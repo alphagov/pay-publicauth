@@ -8,12 +8,11 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Response;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.SortedMap;
+import java.util.stream.Collectors;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static javax.ws.rs.core.Response.status;
 
 @Path("/")
 public class HealthCheckResource {
@@ -30,24 +29,15 @@ public class HealthCheckResource {
     public Response healthCheck() {
         SortedMap<String, HealthCheck.Result> results = environment.healthChecks().runHealthChecks();
 
-        Map<String, Map<String, Boolean>> response = getResponse(results);
-
-        boolean healthy = results.size() == results.values()
+        Map<String, Map<String, Boolean>> response = results.entrySet()
                 .stream()
-                .filter(HealthCheck.Result::isHealthy)
-                .count();
+                .collect(Collectors.toMap(Map.Entry::getKey,
+                        healthCheck -> ImmutableMap.of("healthy", healthCheck.getValue().isHealthy())));
 
-        if (healthy) {
-            return Response.ok().entity(response).build();
-        }
-        return status(503).entity(response).build();
-    }
+        boolean allHealthy = results.values().stream().allMatch(HealthCheck.Result::isHealthy);
 
-    private Map<String, Map<String, Boolean>> getResponse(SortedMap<String, HealthCheck.Result> results) {
-        Map<String, Map<String, Boolean>> response = new HashMap<>();
-        for (SortedMap.Entry<String, HealthCheck.Result> entry : results.entrySet()) {
-            response.put(entry.getKey(), ImmutableMap.of("healthy", entry.getValue().isHealthy()));
-        }
-        return response;
+        Response.ResponseBuilder res = allHealthy ? Response.ok() : Response.status(503);
+
+        return res.entity(response).build();
     }
 }
