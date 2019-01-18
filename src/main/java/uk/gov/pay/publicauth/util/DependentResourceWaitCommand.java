@@ -15,12 +15,7 @@ public class DependentResourceWaitCommand extends ConfiguredCommand<PublicAuthCo
 
     @Override
     protected void run(Bootstrap<PublicAuthConfiguration> bs, Namespace ns, PublicAuthConfiguration conf) {
-        new ApplicationStartupDependentResourceChecker(new DatabaseStartupResource(conf.getDataSourceFactory()), duration -> {
-            try {
-                Thread.sleep(duration.getNano() / 1000);
-            } catch (InterruptedException ignored) {
-            }
-        })
+        new ApplicationStartupDependentResourceChecker(new DatabaseStartupResource(conf.getDataSourceFactory()))
                 .checkAndWaitForResource();
     }
 }
