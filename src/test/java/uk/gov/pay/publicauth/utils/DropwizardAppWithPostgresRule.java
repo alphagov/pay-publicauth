@@ -46,7 +46,6 @@ public class DropwizardAppWithPostgresRule implements TestRule {
 
                 restoreDropwizardsLogging();
 
-
                 base.evaluate();
             }
         }, description);
