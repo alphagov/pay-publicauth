@@ -29,7 +29,7 @@ pipeline {
         script {
           long stepBuildTime = System.currentTimeMillis()
 
-          sh 'docker pull govukpay/postgres:9.6.6'
+          sh 'docker pull govukpay/postgres:9.6.12'
           sh 'mvn clean package'
 
           postSuccessfulMetrics("publicauth.maven-build", stepBuildTime)
