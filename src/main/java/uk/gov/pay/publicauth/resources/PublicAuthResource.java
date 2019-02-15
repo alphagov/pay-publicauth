@@ -106,7 +106,7 @@ public class PublicAuthResource {
                 payload.get(DESCRIPTION_FIELD).asText(),
                 payload.get(CREATED_BY_FIELD).asText(),
                 tokenPaymentType);
-        LOGGER.info("Created token with ", tokenLink);
+        LOGGER.info("Created token with {}", tokenLink);
         return ok(ImmutableMap.of("token", token.getApiKey())).build();
     }
 
@@ -136,7 +136,7 @@ public class PublicAuthResource {
         String description = payload.get(DESCRIPTION_FIELD).asText();
 
         if (authDao.updateTokenDescription(tokenLink, description)) {
-            LOGGER.info("Updated description of token with ", tokenLink);
+            LOGGER.info("Updated description of token with {}", tokenLink);
             return authDao.findTokenByTokenLink(tokenLink)
                     .map(token -> ok(token).build())
                     .orElseThrow(() -> new TokenNotFoundException("Could not update description of token with " + tokenLink));
