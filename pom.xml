@@ -86,7 +86,7 @@
                 it does not work with dropwizard 0.8.x but publicauth doesn't perform any outgoing HTTP calls -->
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
-            <version>4.5.7</version>
+            <version>4.5.8</version>
         </dependency>
         <dependency>
             <groupId>commons-codec</groupId>
