@@ -3,8 +3,8 @@ package uk.gov.pay.publicauth.healthcheck;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.health.HealthCheck;
+import io.dropwizard.db.DataSourceFactory;
 import io.dropwizard.setup.Environment;
-import uk.gov.pay.publicauth.app.config.PublicAuthConfiguration;
 
 import javax.inject.Inject;
 import java.sql.Connection;
@@ -17,9 +17,10 @@ import java.util.Map;
 
 public class DatabaseHealthCheck extends HealthCheck {
 
-    private PublicAuthConfiguration configuration;
     private static final Map<String, Long> longDatabaseStatsMap;
     private static final Map<String, Double> doubleDatabaseStatsMap;
+
+    private final DataSourceFactory dataSourceFactory;
     private Integer statsHealthy = 0;
 
     static {
@@ -44,8 +45,8 @@ public class DatabaseHealthCheck extends HealthCheck {
     }
 
     @Inject
-    public DatabaseHealthCheck(PublicAuthConfiguration configuration, Environment environment) {
-        this.configuration = configuration;
+    public DatabaseHealthCheck(DataSourceFactory dataSourceFactory, Environment environment) {
+        this.dataSourceFactory = dataSourceFactory;
         initialiseMetrics(environment.metrics());
     }
 
@@ -62,9 +63,9 @@ public class DatabaseHealthCheck extends HealthCheck {
     @Override
     protected Result check() {
         try (Connection connection = DriverManager.getConnection(
-                configuration.getDataSourceFactory().getUrl(),
-                configuration.getDataSourceFactory().getUser(),
-                configuration.getDataSourceFactory().getPassword())) {
+                dataSourceFactory.getUrl(),
+                dataSourceFactory.getUser(),
+                dataSourceFactory.getPassword())) {
             connection.setReadOnly(true);
             updateMetricData(connection);
 
