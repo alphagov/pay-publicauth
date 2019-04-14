@@ -6,20 +6,22 @@ import com.codahale.metrics.health.HealthCheck;
 import io.dropwizard.db.DataSourceFactory;
 import io.dropwizard.setup.Environment;
 
-import javax.inject.Inject;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
+
+import static java.lang.String.format;
 
 public class DatabaseHealthCheck extends HealthCheck {
 
     private static final Map<String, Long> longDatabaseStatsMap;
     private static final Map<String, Double> doubleDatabaseStatsMap;
 
+    private final String databaseName;
     private final DataSourceFactory dataSourceFactory;
     private Integer statsHealthy = 0;
 
@@ -44,20 +46,20 @@ public class DatabaseHealthCheck extends HealthCheck {
         doubleDatabaseStatsMap.put("blk_write_time", 0.0);
     }
 
-    @Inject
-    public DatabaseHealthCheck(DataSourceFactory dataSourceFactory, Environment environment) {
+    public DatabaseHealthCheck(DataSourceFactory dataSourceFactory, Environment environment, String databaseName) {
         this.dataSourceFactory = dataSourceFactory;
         initialiseMetrics(environment.metrics());
+        this.databaseName = databaseName;
     }
 
     private void initialiseMetrics(MetricRegistry metricRegistry) {
         for (String key : longDatabaseStatsMap.keySet()) {
-            metricRegistry.<Gauge<Long>>register("publicauthdb." + key, () -> longDatabaseStatsMap.get(key));
+            metricRegistry.<Gauge<Long>>register(format("%sdb.%s", databaseName, key), () -> longDatabaseStatsMap.get(key));
         }
         for (String key : doubleDatabaseStatsMap.keySet()) {
-            metricRegistry.<Gauge<Double>>register("publicauthdb." + key, () -> doubleDatabaseStatsMap.get(key));
+            metricRegistry.<Gauge<Double>>register(format("%sdb.%s", databaseName, key), () -> doubleDatabaseStatsMap.get(key));
         }
-        metricRegistry.<Gauge<Integer>>register("publicauthdb.stats_healthy", () -> statsHealthy);
+        metricRegistry.<Gauge<Integer>>register(format("%sdb.stats_healthy", databaseName), () -> statsHealthy);
     }
 
     @Override
@@ -76,8 +78,9 @@ public class DatabaseHealthCheck extends HealthCheck {
     }
 
     private void updateMetricData(Connection connection) {
-        try (Statement statement = connection.createStatement()) {
-            statement.execute("select * from pg_stat_database where datname='publicauth';");
+        try (PreparedStatement statement = connection.prepareStatement("select * from pg_stat_database where datname = ?")) {
+            statement.setString(1, databaseName);
+            statement.execute();
             try (ResultSet resultSet = statement.getResultSet()) {
                 resultSet.next();
                 for (String key : longDatabaseStatsMap.keySet()) {

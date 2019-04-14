@@ -82,7 +82,7 @@ public class PublicAuthApp extends Application<PublicAuthConfiguration> {
         environment.jersey().register(new HealthCheckResource(environment));
         environment.jersey().register(new ValidationExceptionMapper());
         environment.jersey().register(new TokenNotFoundExceptionMapper());
-        environment.healthChecks().register("database", new DatabaseHealthCheck(conf.getDataSourceFactory(), environment));
+        environment.healthChecks().register("database", new DatabaseHealthCheck(conf.getDataSourceFactory(), environment, "publicauth"));
 
         environment.servlets().addFilter("LoggingFilter", new LoggingFilter())
                 .addMappingForUrlPatterns(of(REQUEST), true, "/v1" + "/*");
