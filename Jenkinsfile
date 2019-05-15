@@ -32,7 +32,7 @@ pipeline {
 
           sh 'docker pull govukpay/postgres:9.6.12'
           sh 'mvn -version'
-          sh 'mvn clean package'
+          sh 'mvn clean verify'
 
           postSuccessfulMetrics("publicauth.maven-build", stepBuildTime)
         }

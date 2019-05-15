@@ -10,7 +10,7 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.is;
 
 @RunWith(MockitoJUnitRunner.class)
-public class HealthCheckResourceITest {
+public class HealthCheckResourceIT {
 
     @Rule
     public final DropwizardAppWithPostgresRule app = new DropwizardAppWithPostgresRule();
