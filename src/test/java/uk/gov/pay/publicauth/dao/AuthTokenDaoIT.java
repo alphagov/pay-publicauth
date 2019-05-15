@@ -34,7 +34,7 @@ import static uk.gov.pay.publicauth.model.TokenSource.API;
 import static uk.gov.pay.publicauth.model.TokenSource.PRODUCTS;
 
 @SuppressWarnings("OptionalGetWithoutIsPresent")
-public class AuthTokenDaoTest {
+public class AuthTokenDaoIT {
 
     private static final String TEST_USER_NAME = "test-user-name";
     private static final String TEST_USER_NAME_2 = "test-user-name-2";

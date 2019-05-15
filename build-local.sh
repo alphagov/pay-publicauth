@@ -4,5 +4,5 @@ set -e
 
 cd "$(dirname "$0")"
 
-mvn -DskipITs -DskipTests clean package
+mvn -DskipITs clean verify
 docker build -t govukpay/publicauth:local .
