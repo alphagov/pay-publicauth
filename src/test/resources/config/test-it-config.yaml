@@ -10,6 +10,17 @@ logging:
   level: INFO
   appenders:
     - type: console
+      layout:
+        type: json
+        timestampFormat: "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+        prettyPrint: false
+        appendLineSeparator: true
+        includes: [timestamp, threadName, level, loggerName, message, mdc, exception]
+        customFieldNames:
+          timestamp: "@timestamp"
+        additionalFields:
+          service-name: "publicauth"
+        includesMdcKeys: [X-Request-Id]
       threshold: ALL
       timeZone: UTC
       target: stdout

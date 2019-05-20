@@ -15,6 +15,7 @@ import io.dropwizard.jdbi.bundles.DBIExceptionsBundle;
 import io.dropwizard.migrations.MigrationsBundle;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
+import org.jboss.logging.MDC;
 import org.skife.jdbi.v2.DBI;
 import uk.gov.pay.commons.utils.logging.LoggingFilter;
 import uk.gov.pay.publicauth.app.config.PublicAuthConfiguration;
@@ -43,6 +44,7 @@ public class PublicAuthApp extends Application<PublicAuthConfiguration> {
 
     @Override
     public void initialize(Bootstrap<PublicAuthConfiguration> bootstrap) {
+        MDC.put("X-Request-Id", "some-dummy-val");
         bootstrap.setConfigurationSourceProvider(
                 new SubstitutingSourceProvider(bootstrap.getConfigurationSourceProvider(),
                         new EnvironmentVariableSubstitutor(false)
