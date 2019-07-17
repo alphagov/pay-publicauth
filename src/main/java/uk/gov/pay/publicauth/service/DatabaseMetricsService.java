@@ -62,23 +62,29 @@ public class DatabaseMetricsService {
 
     public void updateMetricData() {
         try (Connection connection = DriverManager.getConnection(
-                    dataSourceFactory.getUrl(),
-                    dataSourceFactory.getUser(),
-                    dataSourceFactory.getPassword())) {
+                dataSourceFactory.getUrl(),
+                dataSourceFactory.getUser(),
+                dataSourceFactory.getPassword())) {
             connection.setReadOnly(true);
             try (PreparedStatement statement = connection.prepareStatement("select * from pg_stat_database where datname = ?")) {
                 statement.setString(1, databaseName);
-                statement.execute();
-                try (ResultSet resultSet = statement.getResultSet()) {
-                    resultSet.next();
-                    for (String key : longDatabaseStatsMap.keySet()) {
-                        longDatabaseStatsMap.put(key, resultSet.getLong(key));
+                if (statement.execute()) {
+                    try (ResultSet resultSet = statement.getResultSet()) {
+                        if (resultSet.next()) {
+                            for (String key : longDatabaseStatsMap.keySet()) {
+                                longDatabaseStatsMap.put(key, resultSet.getLong(key));
+                            }
+                            for (String key : doubleDatabaseStatsMap.keySet()) {
+                                doubleDatabaseStatsMap.put(key, resultSet.getDouble(key));
+                            }
+                            statsHealthy = 1;
+                        } else {
+                            statsHealthy = 0;
+                        }
                     }
-                    for (String key : doubleDatabaseStatsMap.keySet()) {
-                        doubleDatabaseStatsMap.put(key, resultSet.getDouble(key));
-                    }
+                } else {
+                    statsHealthy = 0;
                 }
-                statsHealthy = 1;
             }
         } catch (SQLException e) {
             statsHealthy = 0;
