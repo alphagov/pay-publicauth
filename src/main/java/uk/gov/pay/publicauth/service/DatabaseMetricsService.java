@@ -1,5 +1,6 @@
 package uk.gov.pay.publicauth.service;
 
+import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 import io.dropwizard.db.DataSourceFactory;
@@ -16,22 +17,22 @@ import static java.lang.String.format;
 public class DatabaseMetricsService {
 
     private final Set<PostgresMetric> metrics = Set.of(
-            new PostgresMetric("numbackends", 0L),
-            new PostgresMetric("xact_commit", 0L),
-            new PostgresMetric("xact_rollback", 0L),
-            new PostgresMetric("blks_read", 0L),
-            new PostgresMetric("blks_hit", 0L),
-            new PostgresMetric("tup_returned", 0L),
-            new PostgresMetric("tup_fetched", 0L),
-            new PostgresMetric("tup_inserted", 0L),
-            new PostgresMetric("tup_updated", 0L),
-            new PostgresMetric("tup_deleted", 0L),
-            new PostgresMetric("conflicts", 0L),
-            new PostgresMetric("temp_files", 0L),
-            new PostgresMetric("temp_bytes", 0L),
-            new PostgresMetric("deadlocks", 0L),
-            new PostgresMetric("blk_read_time_ns", 0L),
-            new PostgresMetric("blk_write_time_ns", 0L));
+            new PostgresGaugeMetric("numbackends", 0L),
+            new PostgresCounterMetric("xact_commit", 0L),
+            new PostgresCounterMetric("xact_rollback", 0L),
+            new PostgresCounterMetric("blks_read", 0L),
+            new PostgresCounterMetric("blks_hit", 0L),
+            new PostgresCounterMetric("tup_returned", 0L),
+            new PostgresCounterMetric("tup_fetched", 0L),
+            new PostgresCounterMetric("tup_inserted", 0L),
+            new PostgresCounterMetric("tup_updated", 0L),
+            new PostgresCounterMetric("tup_deleted", 0L),
+            new PostgresCounterMetric("conflicts", 0L),
+            new PostgresCounterMetric("temp_files", 0L),
+            new PostgresCounterMetric("temp_bytes", 0L),
+            new PostgresCounterMetric("deadlocks", 0L),
+            new PostgresCounterMetric("blk_read_time_ns", 0L),
+            new PostgresCounterMetric("blk_write_time_ns", 0L));
 
     private final String databaseName;
     private final DataSourceFactory dataSourceFactory;
@@ -72,16 +73,23 @@ public class DatabaseMetricsService {
         return false;
     }
 
-    private class PostgresMetric implements Gauge<Long> {
-        private final String name;
+    private interface PostgresMetric {
+        String getName();
+        void register(MetricRegistry registry, String prefix);
+        void setValue(Long value);
+    }
+
+    private class PostgresGaugeMetric implements PostgresMetric,Gauge<Long> {
+        final String name;
         Long value;
 
-        PostgresMetric(String name, Long defaultValue) {
+        PostgresGaugeMetric(String name, Long defaultValue) {
             this.name = name;
             this.value = defaultValue;
         }
 
-        String getName() {
+        @Override
+        public String getName() {
             return name;
         }
 
@@ -90,11 +98,42 @@ public class DatabaseMetricsService {
             return value;
         }
 
-        void register(MetricRegistry registry, String prefix) {
+        @Override
+        public void register(MetricRegistry registry, String prefix) {
             registry.<Gauge<Long>>register(format("%s%s", prefix, name), this);
         }
 
-        void setValue(Long value) {
+        public void setValue(Long value) {
+            this.value = value;
+        }
+    }
+
+    private class PostgresCounterMetric extends Counter implements PostgresMetric {
+        final String name;
+        Long value;
+
+        PostgresCounterMetric(String name, Long defaultValue) {
+            this.name = name;
+            this.value = defaultValue;
+        }
+
+        @Override
+        public String getName() {
+            return name;
+        }
+
+        @Override
+        public long getCount() {
+            return value;
+        }
+
+        @Override
+        public void register(MetricRegistry registry, String prefix) {
+            registry.<Counter>register(format("%s%s", prefix, name), this);
+        }
+
+        @Override
+        public void setValue(Long value) {
             this.value = value;
         }
     }
