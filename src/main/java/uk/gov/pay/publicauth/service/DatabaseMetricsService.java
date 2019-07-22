@@ -16,22 +16,22 @@ import static java.lang.String.format;
 public class DatabaseMetricsService {
 
     private final Set<PostgresMetric> metrics = Set.of(
-            new LongPostgresMetric("numbackends", 0L),
-            new LongPostgresMetric("xact_commit", 0L),
-            new LongPostgresMetric("xact_rollback", 0L),
-            new LongPostgresMetric("blks_read", 0L),
-            new LongPostgresMetric("blks_hit", 0L),
-            new LongPostgresMetric("tup_returned", 0L),
-            new LongPostgresMetric("tup_fetched", 0L),
-            new LongPostgresMetric("tup_inserted", 0L),
-            new LongPostgresMetric("tup_updated", 0L),
-            new LongPostgresMetric("tup_deleted", 0L),
-            new LongPostgresMetric("conflicts", 0L),
-            new LongPostgresMetric("temp_files", 0L),
-            new LongPostgresMetric("temp_bytes", 0L),
-            new LongPostgresMetric("deadlocks", 0L),
-            new DoublePostgresMetric("blk_read_time", 0.0),
-            new DoublePostgresMetric("blk_write_time", 0.0));
+            new PostgresMetric("numbackends", 0L),
+            new PostgresMetric("xact_commit", 0L),
+            new PostgresMetric("xact_rollback", 0L),
+            new PostgresMetric("blks_read", 0L),
+            new PostgresMetric("blks_hit", 0L),
+            new PostgresMetric("tup_returned", 0L),
+            new PostgresMetric("tup_fetched", 0L),
+            new PostgresMetric("tup_inserted", 0L),
+            new PostgresMetric("tup_updated", 0L),
+            new PostgresMetric("tup_deleted", 0L),
+            new PostgresMetric("conflicts", 0L),
+            new PostgresMetric("temp_files", 0L),
+            new PostgresMetric("temp_bytes", 0L),
+            new PostgresMetric("deadlocks", 0L),
+            new PostgresMetric("blk_read_time_ns", 0L),
+            new PostgresMetric("blk_write_time_ns", 0L));
 
     private final String databaseName;
     private final DataSourceFactory dataSourceFactory;
@@ -53,14 +53,14 @@ public class DatabaseMetricsService {
                 dataSourceFactory.getUrl(),
                 dataSourceFactory.getUser(),
                 dataSourceFactory.getPassword());
-             PreparedStatement statement = connection.prepareStatement("select * from pg_stat_database where datname = ?")) {
+             PreparedStatement statement = connection.prepareStatement("select *, blk_read_time * 1000 as blk_read_time_ns, blk_write_time * 1000 as blk_write_time_ns from pg_stat_database where datname = ?")) {
             connection.setReadOnly(true);
             statement.setString(1, databaseName);
             if (statement.execute()) {
                 try (ResultSet resultSet = statement.getResultSet()) {
                     if (resultSet.next()) {
                         for (PostgresMetric metric : metrics) {
-                            metric.setValueFromResultSet(resultSet);
+                            metric.setValue(resultSet.getLong(metric.getName()));
                         }
                         return true;
                     }
@@ -72,11 +72,11 @@ public class DatabaseMetricsService {
         return false;
     }
 
-    private abstract class PostgresMetric<T> implements Gauge<T> {
+    private class PostgresMetric implements Gauge<Long> {
         private final String name;
-        T value;
+        Long value;
 
-        PostgresMetric(String name, T defaultValue) {
+        PostgresMetric(String name, Long defaultValue) {
             this.name = name;
             this.value = defaultValue;
         }
@@ -86,36 +86,16 @@ public class DatabaseMetricsService {
         }
 
         @Override
-        public T getValue() {
+        public Long getValue() {
             return value;
         }
 
         void register(MetricRegistry registry, String prefix) {
-            registry.<Gauge<T>>register(format("%s%s", prefix, name), this);
+            registry.<Gauge<Long>>register(format("%s%s", prefix, name), this);
         }
 
-        abstract void setValueFromResultSet(ResultSet resultSet) throws SQLException;
-    }
-
-    private class DoublePostgresMetric extends PostgresMetric<Double> {
-        DoublePostgresMetric(String name, Double value) {
-            super(name, value);
-        }
-
-        @Override
-        void setValueFromResultSet(ResultSet resultSet) throws SQLException {
-            value = resultSet.getDouble(getName());
-        }
-    }
-
-    private class LongPostgresMetric extends PostgresMetric<Long> {
-        LongPostgresMetric(String name, Long value) {
-            super(name, value);
-        }
-
-        @Override
-        void setValueFromResultSet(ResultSet resultSet) throws SQLException {
-            value = resultSet.getLong(getName());
+        void setValue(Long value) {
+            this.value = value;
         }
     }
 }
