@@ -1,5 +1,6 @@
 package uk.gov.pay.publicauth.service;
 
+import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 import io.dropwizard.db.DataSourceFactory;
@@ -16,22 +17,22 @@ import static java.lang.String.format;
 public class DatabaseMetricsService {
 
     private final Set<PostgresMetric> metrics = Set.of(
-            new LongPostgresMetric("numbackends", 0L),
-            new LongPostgresMetric("xact_commit", 0L),
-            new LongPostgresMetric("xact_rollback", 0L),
-            new LongPostgresMetric("blks_read", 0L),
-            new LongPostgresMetric("blks_hit", 0L),
-            new LongPostgresMetric("tup_returned", 0L),
-            new LongPostgresMetric("tup_fetched", 0L),
-            new LongPostgresMetric("tup_inserted", 0L),
-            new LongPostgresMetric("tup_updated", 0L),
-            new LongPostgresMetric("tup_deleted", 0L),
-            new LongPostgresMetric("conflicts", 0L),
-            new LongPostgresMetric("temp_files", 0L),
-            new LongPostgresMetric("temp_bytes", 0L),
-            new LongPostgresMetric("deadlocks", 0L),
-            new DoublePostgresMetric("blk_read_time", 0.0),
-            new DoublePostgresMetric("blk_write_time", 0.0));
+            new PostgresGaugeMetric("numbackends", 0L),
+            new PostgresCounterMetric("xact_commit", 0L),
+            new PostgresCounterMetric("xact_rollback", 0L),
+            new PostgresCounterMetric("blks_read", 0L),
+            new PostgresCounterMetric("blks_hit", 0L),
+            new PostgresCounterMetric("tup_returned", 0L),
+            new PostgresCounterMetric("tup_fetched", 0L),
+            new PostgresCounterMetric("tup_inserted", 0L),
+            new PostgresCounterMetric("tup_updated", 0L),
+            new PostgresCounterMetric("tup_deleted", 0L),
+            new PostgresCounterMetric("conflicts", 0L),
+            new PostgresCounterMetric("temp_files", 0L),
+            new PostgresCounterMetric("temp_bytes", 0L),
+            new PostgresCounterMetric("deadlocks", 0L),
+            new PostgresCounterMetric("blk_read_time_ns", 0L),
+            new PostgresCounterMetric("blk_write_time_ns", 0L));
 
     private final String databaseName;
     private final DataSourceFactory dataSourceFactory;
@@ -53,14 +54,14 @@ public class DatabaseMetricsService {
                 dataSourceFactory.getUrl(),
                 dataSourceFactory.getUser(),
                 dataSourceFactory.getPassword());
-             PreparedStatement statement = connection.prepareStatement("select * from pg_stat_database where datname = ?")) {
+             PreparedStatement statement = connection.prepareStatement("select *, blk_read_time * 1000 as blk_read_time_ns, blk_write_time * 1000 as blk_write_time_ns from pg_stat_database where datname = ?")) {
             connection.setReadOnly(true);
             statement.setString(1, databaseName);
             if (statement.execute()) {
                 try (ResultSet resultSet = statement.getResultSet()) {
                     if (resultSet.next()) {
                         for (PostgresMetric metric : metrics) {
-                            metric.setValueFromResultSet(resultSet);
+                            metric.setValue(resultSet.getLong(metric.getName()));
                         }
                         return true;
                     }
@@ -70,5 +71,70 @@ public class DatabaseMetricsService {
         }
 
         return false;
+    }
+
+    private interface PostgresMetric {
+        String getName();
+        void register(MetricRegistry registry, String prefix);
+        void setValue(Long value);
+    }
+
+    private class PostgresGaugeMetric implements PostgresMetric,Gauge<Long> {
+        final String name;
+        Long value;
+
+        PostgresGaugeMetric(String name, Long defaultValue) {
+            this.name = name;
+            this.value = defaultValue;
+        }
+
+        @Override
+        public String getName() {
+            return name;
+        }
+
+        @Override
+        public Long getValue() {
+            return value;
+        }
+
+        @Override
+        public void register(MetricRegistry registry, String prefix) {
+            registry.<Gauge<Long>>register(format("%s%s", prefix, name), this);
+        }
+
+        public void setValue(Long value) {
+            this.value = value;
+        }
+    }
+
+    private class PostgresCounterMetric extends Counter implements PostgresMetric {
+        final String name;
+        Long value;
+
+        PostgresCounterMetric(String name, Long defaultValue) {
+            this.name = name;
+            this.value = defaultValue;
+        }
+
+        @Override
+        public String getName() {
+            return name;
+        }
+
+        @Override
+        public long getCount() {
+            return value;
+        }
+
+        @Override
+        public void register(MetricRegistry registry, String prefix) {
+            registry.<Counter>register(format("%s%s", prefix, name), this);
+        }
+
+        @Override
+        public void setValue(Long value) {
+            this.value = value;
+        }
     }
 }
