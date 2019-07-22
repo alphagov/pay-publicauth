@@ -71,4 +71,51 @@ public class DatabaseMetricsService {
 
         return false;
     }
+
+    private abstract class PostgresMetric<T> implements Gauge<T> {
+        private final String name;
+        T value;
+
+        PostgresMetric(String name, T defaultValue) {
+            this.name = name;
+            this.value = defaultValue;
+        }
+
+        String getName() {
+            return name;
+        }
+
+        @Override
+        public T getValue() {
+            return value;
+        }
+
+        void register(MetricRegistry registry, String prefix) {
+            registry.<Gauge<T>>register(format("%s%s", prefix, name), this);
+        }
+
+        abstract void setValueFromResultSet(ResultSet resultSet) throws SQLException;
+    }
+
+    private class DoublePostgresMetric extends PostgresMetric<Double> {
+        DoublePostgresMetric(String name, Double value) {
+            super(name, value);
+        }
+
+        @Override
+        void setValueFromResultSet(ResultSet resultSet) throws SQLException {
+            value = resultSet.getDouble(getName());
+        }
+    }
+
+    private class LongPostgresMetric extends PostgresMetric<Long> {
+        LongPostgresMetric(String name, Long value) {
+            super(name, value);
+        }
+
+        @Override
+        void setValueFromResultSet(ResultSet resultSet) throws SQLException {
+            value = resultSet.getLong(getName());
+        }
+    }
 }
