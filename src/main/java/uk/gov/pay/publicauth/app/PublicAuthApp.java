@@ -26,6 +26,7 @@ import uk.gov.pay.publicauth.exception.ValidationExceptionMapper;
 import uk.gov.pay.publicauth.healthcheck.DatabaseHealthCheck;
 import uk.gov.pay.publicauth.resources.HealthCheckResource;
 import uk.gov.pay.publicauth.resources.PublicAuthResource;
+import uk.gov.pay.publicauth.service.DatabaseMetricsService;
 import uk.gov.pay.publicauth.service.TokenService;
 import uk.gov.pay.publicauth.util.DependentResourceWaitCommand;
 
@@ -82,19 +83,27 @@ public class PublicAuthApp extends Application<PublicAuthConfiguration> {
         environment.jersey().register(new HealthCheckResource(environment));
         environment.jersey().register(new ValidationExceptionMapper());
         environment.jersey().register(new TokenNotFoundExceptionMapper());
-        environment.healthChecks().register("database", new DatabaseHealthCheck(conf.getDataSourceFactory(), environment, "publicauth"));
+        environment.healthChecks().register("database", new DatabaseHealthCheck(conf.getDataSourceFactory()));
 
         environment.servlets().addFilter("LoggingFilter", new LoggingFilter())
                 .addMappingForUrlPatterns(of(REQUEST), true, "/v1" + "/*");
     }
 
     private void initialiseMetrics(PublicAuthConfiguration configuration, Environment environment) {
+        DatabaseMetricsService metricsService = new DatabaseMetricsService(configuration.getDataSourceFactory(), environment.metrics(), "publicauth");
+
+        environment
+                .lifecycle()
+                .scheduledExecutorService("metricscollector")
+                .threads(1)
+                .build()
+                .scheduleAtFixedRate(metricsService::updateMetricData, 0, GRAPHITE_SENDING_PERIOD_SECONDS / 2, TimeUnit.SECONDS);
+
         GraphiteSender graphiteUDP = new GraphiteUDP(configuration.getGraphiteHost(), Integer.valueOf(configuration.getGraphitePort()));
         GraphiteReporter.forRegistry(environment.metrics())
                 .prefixedWith(SERVICE_METRICS_NODE)
                 .build(graphiteUDP)
                 .start(GRAPHITE_SENDING_PERIOD_SECONDS, TimeUnit.SECONDS);
-
     }
 
     public DBI getJdbi() {
