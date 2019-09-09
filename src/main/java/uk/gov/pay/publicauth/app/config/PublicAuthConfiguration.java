@@ -24,7 +24,7 @@ public class PublicAuthConfiguration extends Configuration {
     private String graphiteHost;
 
     @NotNull
-    private String graphitePort;
+    private Integer graphitePort;
 
     public DataSourceFactory getDataSourceFactory() {
         return dataSourceFactory;
@@ -38,7 +38,7 @@ public class PublicAuthConfiguration extends Configuration {
         return graphiteHost;
     }
 
-    public String getGraphitePort() {
+    public Integer getGraphitePort() {
         return graphitePort;
     }
 }
