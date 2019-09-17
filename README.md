@@ -41,7 +41,6 @@ API KEY validation algorithm:
 | NAME                    | DESCRIPTION                                                                    |
 | ----------------------- | ------------------------------------------------------------------------------ |
 | `ADMIN_PORT`            | The port number to listen for Dropwizard admin requests on. Defaults to `8081`. |
-| `CERTS_PATH`            | If set, add all certificates in this directory to the default Java truststore. |
 | `DB_HOST`               | The hostname of the database server. |
 | `DB_PASSWORD`           | The password for the `DB_USER` user. |
 | `DB_SSL_OPTION`         | To turn TLS on this value must be set as `ssl=true`. Otherwise must be empty. |
