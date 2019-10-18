@@ -19,6 +19,7 @@ import org.skife.jdbi.v2.DBI;
 import uk.gov.pay.commons.utils.healthchecks.DatabaseHealthCheck;
 import uk.gov.pay.commons.utils.logging.LoggingFilter;
 import uk.gov.pay.commons.utils.metrics.DatabaseMetricsService;
+import uk.gov.pay.logging.LogstashConsoleAppenderFactory;
 import uk.gov.pay.publicauth.app.config.PublicAuthConfiguration;
 import uk.gov.pay.publicauth.auth.Token;
 import uk.gov.pay.publicauth.auth.TokenAuthenticator;
@@ -60,6 +61,7 @@ public class PublicAuthApp extends Application<PublicAuthConfiguration> {
         });
 
         bootstrap.addCommand(new DependentResourceWaitCommand());
+        bootstrap.getObjectMapper().getSubtypeResolver().registerSubtypes(LogstashConsoleAppenderFactory.class);
     }
 
 
