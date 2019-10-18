@@ -24,6 +24,11 @@
     </repositories>
     <dependencies>
         <dependency>
+            <groupId>uk.gov.pay</groupId>
+            <artifactId>logging</artifactId>
+            <version>${pay-java-commons.version}</version>
+        </dependency>
+        <dependency>
             <groupId>io.dropwizard</groupId>
             <artifactId>dropwizard-core</artifactId>
             <version>${dropwizard.version}</version>
