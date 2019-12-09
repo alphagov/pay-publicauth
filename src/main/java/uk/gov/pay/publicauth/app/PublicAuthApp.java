@@ -27,6 +27,8 @@ import uk.gov.pay.publicauth.auth.TokenAuthenticator;
 import uk.gov.pay.publicauth.dao.AuthTokenDao;
 import uk.gov.pay.publicauth.exception.TokenNotFoundExceptionMapper;
 import uk.gov.pay.publicauth.exception.ValidationExceptionMapper;
+import uk.gov.pay.publicauth.filters.LoggingMDCRequestFilter;
+import uk.gov.pay.publicauth.filters.LoggingMDCResponseFilter;
 import uk.gov.pay.publicauth.resources.HealthCheckResource;
 import uk.gov.pay.publicauth.resources.PublicAuthResource;
 import uk.gov.pay.publicauth.service.TokenService;
@@ -89,6 +91,9 @@ public class PublicAuthApp extends Application<PublicAuthConfiguration> {
         environment.jersey().register(new TokenNotFoundExceptionMapper());
         environment.healthChecks().register("database", new DatabaseHealthCheck(conf.getDataSourceFactory()));
 
+        environment.jersey().register(new LoggingMDCRequestFilter());
+        environment.jersey().register(new LoggingMDCResponseFilter());
+        
         environment.servlets().addFilter("LoggingFilter", new LoggingFilter())
                 .addMappingForUrlPatterns(of(REQUEST), true, "/v1" + "/*");
     }
