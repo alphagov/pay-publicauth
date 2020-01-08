@@ -6,6 +6,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import uk.gov.pay.publicauth.model.CreateTokenRequest;
 import uk.gov.pay.publicauth.model.TokenHash;
 import uk.gov.pay.publicauth.model.TokenLink;
 import uk.gov.pay.publicauth.utils.DropwizardAppWithPostgresRule;
@@ -186,7 +187,8 @@ public class AuthTokenDaoIT {
 
     @Test
     public void shouldInsertNewToken() {
-        authTokenDao.storeToken(TokenHash.of("token-hash"), TokenLink.of("token-link"), API, "account-id", "description", "user", CARD);
+        var createTokenRequest = new CreateTokenRequest("account-id", "description", "user", CARD, API);
+        authTokenDao.storeToken(TokenHash.of("token-hash"), createTokenRequest);
         Map<String, Object> tokenByHash = app.getDatabaseHelper().getTokenByHash(TokenHash.of("token-hash"));
         ZonedDateTime now = app.getDatabaseHelper().getCurrentTime();
 
@@ -316,7 +318,8 @@ public class AuthTokenDaoIT {
     public void shouldErrorIfTriesToSaveTheSameTokenTwice() {
         app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, TEST_USER_NAME);
 
-        authTokenDao.storeToken(TOKEN_HASH, TOKEN_LINK, API, ACCOUNT_ID, TOKEN_DESCRIPTION, "test@email.com", CARD);
+        var createTokenRequest = new CreateTokenRequest(ACCOUNT_ID, TOKEN_DESCRIPTION, "test@email.com", CARD, API);
+        authTokenDao.storeToken(TOKEN_HASH, createTokenRequest);
     }
 
     private Matcher<ChronoZonedDateTime<?>> isCloseTo(ZonedDateTime now) {

@@ -4,6 +4,7 @@ import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.util.StringColumnMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import uk.gov.pay.publicauth.model.CreateTokenRequest;
 import uk.gov.pay.publicauth.model.TokenHash;
 import uk.gov.pay.publicauth.model.TokenLink;
 import uk.gov.pay.publicauth.model.TokenPaymentType;
@@ -68,14 +69,17 @@ public class AuthTokenDao {
         return rowsUpdated > 0;
     }
 
-    public void storeToken(TokenHash tokenHash, TokenLink randomTokenLink, TokenSource tokenSource, String accountId, String description, String createdBy, TokenPaymentType tokenPaymentType) {
+    public void storeToken(TokenHash tokenHash, CreateTokenRequest createTokenRequest) {
         Integer rowsUpdated = jdbi.withHandle(handle ->
                 handle.insert("INSERT INTO tokens(token_hash, token_link, type, description, account_id, created_by, token_type) VALUES (?,?,?,?,?,?,?)",
-                        tokenHash.getValue(), randomTokenLink.getValue(), tokenSource, description, accountId, createdBy, tokenPaymentType)
+                        tokenHash.getValue(), createTokenRequest.getTokenLink().getValue(),
+                        createTokenRequest.getTokenSource(), createTokenRequest.getDescription(),
+                        createTokenRequest.getAccountId(), createTokenRequest.getCreatedBy(),
+                        createTokenRequest.getTokenPaymentType())
         );
         if (rowsUpdated != 1) {
-            LOGGER.error("Unable to store new token for account '{}'. '{}' rows were updated", accountId, rowsUpdated);
-            throw new RuntimeException(String.format("Unable to store new token for account %s}", accountId));
+            LOGGER.error("Unable to store new token for account '{}'. '{}' rows were updated", createTokenRequest.getAccountId(), rowsUpdated);
+            throw new RuntimeException(String.format("Unable to store new token for account %s}", createTokenRequest.getAccountId()));
         }
     }
     
