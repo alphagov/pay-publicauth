@@ -88,13 +88,7 @@ public class PublicAuthResource {
     public Response createTokenForAccount(@NotNull @Valid CreateTokenRequest createTokenRequest) {
 
         Tokens token = tokenService.issueTokens();
-        authDao.storeToken(token.getHashedToken(),
-                createTokenRequest.getTokenLink(),
-                createTokenRequest.getTokenSource(),
-                createTokenRequest.getAccountId(),
-                createTokenRequest.getDescription(),
-                createTokenRequest.getCreatedBy(),
-                createTokenRequest.getTokenPaymentType());
+        authDao.storeToken(token.getHashedToken(), createTokenRequest);
         LOGGER.info("Created token with {}", createTokenRequest.getTokenLink());
         return ok(ImmutableMap.of("token", token.getApiKey())).build();
     }
