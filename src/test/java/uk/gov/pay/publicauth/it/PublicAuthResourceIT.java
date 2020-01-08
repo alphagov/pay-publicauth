@@ -23,10 +23,12 @@ import java.util.Map;
 import java.util.Optional;
 
 import static io.restassured.RestAssured.given;
+import static io.restassured.RestAssured.withArgs;
 import static io.restassured.http.ContentType.JSON;
 import static javax.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.both;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasSize;
@@ -164,31 +166,35 @@ public class PublicAuthResourceIT {
     }
     
     @Test
-    public void respondWith400_ifAccountAndDescriptionAreMissing() {
-        createTokenFor("{}")
-                .statusCode(400)
-                .body("message", is("Missing fields: [account_id, description, created_by]"));
+    public void respondWith422_ifAccountAndDescriptionAreMissing() {
+        ValidatableResponse response = createTokenFor("{}")
+                .statusCode(422)
+                .body("errors.size()", is(3))
+                .body("errors", containsInAnyOrder(
+                    "description may not be null",
+                    "createdBy may not be null",
+                    "accountId may not be null"));
     }
 
     @Test
-    public void respondWith400_ifAccountIsMissing() {
-        createTokenFor("{\"description\" : \"" + ACCOUNT_ID + "\", \"created_by\": \"some-user\"}")
-                .statusCode(400)
-                .body("message", is("Missing fields: [account_id]"));
+    public void respondWith422_ifAccountIsMissing() {
+        ValidatableResponse response = createTokenFor("{\"description\" : \"" + ACCOUNT_ID + "\", \"created_by\": \"some-user\"}")
+                .statusCode(422)
+                .body("errors", equalTo(List.of("accountId may not be null")));
     }
 
     @Test
-    public void respondWith400_ifDescriptionIsMissing() {
-        createTokenFor("{\"account_id\" : \"" + ACCOUNT_ID + "\", \"created_by\": \"some-user\"}")
-                .statusCode(400)
-                .body("message", is("Missing fields: [description]"));
+    public void respondWith422_ifDescriptionIsMissing() {
+        ValidatableResponse response = createTokenFor("{\"account_id\" : \"" + ACCOUNT_ID + "\", \"created_by\": \"some-user\"}")
+                .statusCode(422)
+                .body("errors", equalTo(List.of("description may not be null")));
     }
 
     @Test
-    public void respondWith400_ifBodyIsMissing() {
-        createTokenFor("")
-                .statusCode(400)
-                .body("message", is("Body cannot be empty"));
+    public void respondWith422_ifBodyIsMissing() {
+        ValidatableResponse response = createTokenFor("")
+                .statusCode(422)
+                .body("errors", equalTo(List.of("The request body may not be null")));
     }
 
     @Test
