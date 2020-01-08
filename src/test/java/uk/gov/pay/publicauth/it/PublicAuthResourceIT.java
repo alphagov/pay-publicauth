@@ -27,6 +27,7 @@ import static io.restassured.http.ContentType.JSON;
 import static javax.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.both;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasSize;
@@ -164,31 +165,35 @@ public class PublicAuthResourceIT {
     }
     
     @Test
-    public void respondWith400_ifAccountAndDescriptionAreMissing() {
+    public void respondWith422_ifAccountAndDescriptionAreMissing() {
         createTokenFor("{}")
-                .statusCode(400)
-                .body("message", is("Missing fields: [account_id, description, created_by]"));
+            .statusCode(422)
+            .body("errors.size()", is(3))
+            .body("errors", containsInAnyOrder(
+                "description must not be null",
+                "createdBy must not be null",
+                "accountId must not be null"));
     }
 
     @Test
-    public void respondWith400_ifAccountIsMissing() {
+    public void respondWith422_ifAccountIsMissing() {
         createTokenFor("{\"description\" : \"" + ACCOUNT_ID + "\", \"created_by\": \"some-user\"}")
-                .statusCode(400)
-                .body("message", is("Missing fields: [account_id]"));
+            .statusCode(422)
+            .body("errors", equalTo(List.of("accountId must not be null")));
     }
 
     @Test
-    public void respondWith400_ifDescriptionIsMissing() {
+    public void respondWith422_ifDescriptionIsMissing() {
         createTokenFor("{\"account_id\" : \"" + ACCOUNT_ID + "\", \"created_by\": \"some-user\"}")
-                .statusCode(400)
-                .body("message", is("Missing fields: [description]"));
+            .statusCode(422)
+            .body("errors", equalTo(List.of("description must not be null")));
     }
 
     @Test
-    public void respondWith400_ifBodyIsMissing() {
+    public void respondWith422_ifBodyIsMissing() {
         createTokenFor("")
-                .statusCode(400)
-                .body("message", is("Body cannot be empty"));
+            .statusCode(422)
+            .body("errors", equalTo(List.of("The request body must not be null")));
     }
 
     @Test

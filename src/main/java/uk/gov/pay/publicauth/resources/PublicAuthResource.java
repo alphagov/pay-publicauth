@@ -10,15 +10,17 @@ import uk.gov.pay.publicauth.auth.Token;
 import uk.gov.pay.publicauth.dao.AuthTokenDao;
 import uk.gov.pay.publicauth.exception.TokenNotFoundException;
 import uk.gov.pay.publicauth.exception.ValidationException;
+import uk.gov.pay.publicauth.model.CreateTokenRequest;
 import uk.gov.pay.publicauth.model.TokenHash;
 import uk.gov.pay.publicauth.model.TokenLink;
-import uk.gov.pay.publicauth.model.TokenPaymentType;
-import uk.gov.pay.publicauth.model.TokenState;
 import uk.gov.pay.publicauth.model.TokenSource;
+import uk.gov.pay.publicauth.model.TokenState;
 import uk.gov.pay.publicauth.model.Tokens;
 import uk.gov.pay.publicauth.service.TokenService;
 
 import javax.inject.Singleton;
+import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -36,13 +38,11 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static java.util.Arrays.asList;
-import static java.util.UUID.randomUUID;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.Response.Status.UNAUTHORIZED;
 import static javax.ws.rs.core.Response.ok;
-import static uk.gov.pay.publicauth.model.TokenPaymentType.CARD;
-import static uk.gov.pay.publicauth.model.TokenState.ACTIVE;
 import static uk.gov.pay.publicauth.model.TokenSource.API;
+import static uk.gov.pay.publicauth.model.TokenState.ACTIVE;
 
 @Singleton
 @Path("/")
@@ -85,28 +85,17 @@ public class PublicAuthResource {
     @Produces(APPLICATION_JSON)
     @Consumes(APPLICATION_JSON)
     @POST
-    public Response createTokenForAccount(JsonNode payload) throws ValidationException {
-
-        validatePayloadHasFields(payload, ACCOUNT_ID_FIELD, DESCRIPTION_FIELD, CREATED_BY_FIELD);
+    public Response createTokenForAccount(@NotNull @Valid CreateTokenRequest createTokenRequest) {
 
         Tokens token = tokenService.issueTokens();
-        TokenPaymentType tokenPaymentType =
-                Optional.ofNullable(payload.get(TOKEN_TYPE_FIELD))
-                        .map(paymentType -> TokenPaymentType.fromString(paymentType.asText()))
-                        .orElse(CARD);
-        TokenSource tokenSource =
-                Optional.ofNullable(payload.get(TYPE_FIELD))
-                        .map(source -> TokenSource.fromString(source.asText()))
-                        .orElse(API);
-        TokenLink tokenLink = TokenLink.of(randomUUID().toString());
         authDao.storeToken(token.getHashedToken(),
-                tokenLink,
-                tokenSource,
-                payload.get(ACCOUNT_ID_FIELD).asText(),
-                payload.get(DESCRIPTION_FIELD).asText(),
-                payload.get(CREATED_BY_FIELD).asText(),
-                tokenPaymentType);
-        LOGGER.info("Created token with {}", tokenLink);
+                createTokenRequest.getTokenLink(),
+                createTokenRequest.getTokenSource(),
+                createTokenRequest.getAccountId(),
+                createTokenRequest.getDescription(),
+                createTokenRequest.getCreatedBy(),
+                createTokenRequest.getTokenPaymentType());
+        LOGGER.info("Created token with {}", createTokenRequest.getTokenLink());
         return ok(ImmutableMap.of("token", token.getApiKey())).build();
     }
 
