@@ -3,6 +3,7 @@ package uk.gov.pay.publicauth.dao;
 import org.jdbi.v3.core.Jdbi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import uk.gov.pay.publicauth.model.CreateTokenRequest;
 import uk.gov.pay.publicauth.model.TokenHash;
 import uk.gov.pay.publicauth.model.TokenLink;
 import uk.gov.pay.publicauth.model.TokenPaymentType;
@@ -69,21 +70,21 @@ public class AuthTokenDao {
         return rowsUpdated > 0;
     }
 
-    public void storeToken(TokenHash tokenHash, TokenLink randomTokenLink, TokenSource tokenSource, String accountId, String description, String createdBy, TokenPaymentType tokenPaymentType) {
+    public void storeToken(TokenHash tokenHash, CreateTokenRequest createTokenRequest) {
         Integer rowsUpdated = jdbi.withHandle(handle ->
                 handle.createUpdate("INSERT INTO tokens(token_hash, token_link, type, description, account_id, created_by, token_type) " +
                         "VALUES (:token_hash,:token_link,:type,:description,:account_id,:created_by,:token_type)")
                         .bind("token_hash", tokenHash.getValue())
-                        .bind("token_link", randomTokenLink.getValue())
-                        .bind("type", tokenSource)
-                        .bind("description", description)
-                        .bind("account_id", accountId)
-                        .bind("created_by", createdBy)
-                        .bind("token_type", tokenPaymentType)
+                        .bind("token_link", createTokenRequest.getTokenLink().getValue())
+                        .bind("type", createTokenRequest.getTokenSource())
+                        .bind("description", createTokenRequest.getDescription())
+                        .bind("account_id", createTokenRequest.getAccountId())
+                        .bind("created_by", createTokenRequest.getCreatedBy())
+                        .bind("token_type", createTokenRequest.getTokenPaymentType())
                         .execute());
         if (rowsUpdated != 1) {
-            LOGGER.error("Unable to store new token for account '{}'. '{}' rows were updated", accountId, rowsUpdated);
-            throw new RuntimeException(String.format("Unable to store new token for account %s}", accountId));
+            LOGGER.error("Unable to store new token for account '{}'. '{}' rows were updated", createTokenRequest.getAccountId(), rowsUpdated);
+            throw new RuntimeException(String.format("Unable to store new token for account %s}", createTokenRequest.getAccountId()));
         }
     }
 
