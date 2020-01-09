@@ -1,14 +1,13 @@
 package uk.gov.pay.publicauth.dao;
 
-import org.skife.jdbi.v2.DBI;
-import org.skife.jdbi.v2.util.StringColumnMapper;
+import org.jdbi.v3.core.Jdbi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.gov.pay.publicauth.model.TokenHash;
 import uk.gov.pay.publicauth.model.TokenLink;
 import uk.gov.pay.publicauth.model.TokenPaymentType;
-import uk.gov.pay.publicauth.model.TokenState;
 import uk.gov.pay.publicauth.model.TokenSource;
+import uk.gov.pay.publicauth.model.TokenState;
 
 import java.util.List;
 import java.util.Map;
@@ -18,18 +17,17 @@ public class AuthTokenDao {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AuthTokenDao.class);
 
-    private final DBI jdbi;
+    private final Jdbi jdbi;
 
-    public AuthTokenDao(DBI jdbi) {
+    public AuthTokenDao(Jdbi jdbi) {
         this.jdbi = jdbi;
     }
 
-
     public Optional<Map<String, Object>> findUnRevokedAccount(TokenHash tokenHash) {
-        Optional<Map<String, Object>> storedTokenHash = Optional.ofNullable(jdbi.withHandle(handle ->
+        Optional<Map<String, Object>> storedTokenHash = jdbi.withHandle(handle ->
                 handle.createQuery("SELECT account_id, type, coalesce(token_type, 'CARD') as token_type FROM tokens WHERE token_hash = :token_hash AND revoked IS NULL")
                         .bind("token_hash", tokenHash.getValue())
-                        .first()));
+                        .mapToMap().findFirst());
         if (storedTokenHash.isPresent()) {
             updateLastUsedTime(tokenHash);
         }
@@ -38,8 +36,9 @@ public class AuthTokenDao {
 
     private void updateLastUsedTime(TokenHash tokenHash) {
         jdbi.withHandle(handle ->
-                handle.update("UPDATE tokens SET last_used=(now() at time zone 'utc') WHERE token_hash=?", tokenHash.getValue())
-        );
+                handle.createUpdate("UPDATE tokens SET last_used=(now() at time zone 'utc') WHERE token_hash=:token_hash")
+                        .bind("token_hash", tokenHash.getValue())
+                        .execute());
     }
 
     public List<Map<String, Object>> findTokensBy(String accountId, TokenState tokenState, TokenSource tokenSource) {
@@ -58,45 +57,56 @@ public class AuthTokenDao {
                         "ORDER BY issued DESC")
                         .bind("account_id", accountId)
                         .bind("type", tokenSource)
+                        .mapToMap()
                         .list());
     }
 
     public boolean updateTokenDescription(TokenLink tokenLink, String newDescription) {
         int rowsUpdated = jdbi.withHandle(handle ->
-                handle.update("UPDATE tokens SET description=? WHERE token_link=? AND revoked IS NULL", newDescription, tokenLink.getValue())
-        );
+                handle.createUpdate("UPDATE tokens SET description=:description WHERE token_link=:token_link AND revoked IS NULL")
+                        .bind("description", newDescription)
+                        .bind("token_link", tokenLink.getValue()).execute());
         return rowsUpdated > 0;
     }
 
     public void storeToken(TokenHash tokenHash, TokenLink randomTokenLink, TokenSource tokenSource, String accountId, String description, String createdBy, TokenPaymentType tokenPaymentType) {
         Integer rowsUpdated = jdbi.withHandle(handle ->
-                handle.insert("INSERT INTO tokens(token_hash, token_link, type, description, account_id, created_by, token_type) VALUES (?,?,?,?,?,?,?)",
-                        tokenHash.getValue(), randomTokenLink.getValue(), tokenSource, description, accountId, createdBy, tokenPaymentType)
-        );
+                handle.createUpdate("INSERT INTO tokens(token_hash, token_link, type, description, account_id, created_by, token_type) " +
+                        "VALUES (:token_hash,:token_link,:type,:description,:account_id,:created_by,:token_type)")
+                        .bind("token_hash", tokenHash.getValue())
+                        .bind("token_link", randomTokenLink.getValue())
+                        .bind("type", tokenSource)
+                        .bind("description", description)
+                        .bind("account_id", accountId)
+                        .bind("created_by", createdBy)
+                        .bind("token_type", tokenPaymentType)
+                        .execute());
         if (rowsUpdated != 1) {
             LOGGER.error("Unable to store new token for account '{}'. '{}' rows were updated", accountId, rowsUpdated);
             throw new RuntimeException(String.format("Unable to store new token for account %s}", accountId));
         }
     }
-    
+
     public Optional<String> revokeSingleToken(String accountId, TokenHash tokenHash) {
         return Optional.ofNullable(jdbi.withHandle(handle ->
-                handle.createQuery("UPDATE tokens SET revoked=(now() at time zone 'utc') WHERE account_id=:accountId AND token_hash=:tokenHash AND revoked IS NULL RETURNING to_char(revoked,'DD Mon YYYY')")
-                        .bind("accountId", accountId)
-                        .bind("tokenHash", tokenHash.getValue())
-                        .map(StringColumnMapper.INSTANCE)
+                handle.createQuery("UPDATE tokens SET revoked=(now() at time zone 'utc') WHERE account_id=:account_id AND token_hash=:token_hash AND revoked IS NULL RETURNING to_char(revoked,'DD Mon YYYY')")
+                        .bind("account_id", accountId)
+                        .bind("token_hash", tokenHash.getValue())
+                        .mapTo(String.class)
                         .first()));
     }
+
     public Optional<String> revokeSingleToken(String accountId, TokenLink tokenLink) {
-        return Optional.ofNullable(jdbi.withHandle(handle ->
-                handle.createQuery("UPDATE tokens SET revoked=(now() at time zone 'utc') WHERE account_id=:accountId AND token_link=:tokenLink AND revoked IS NULL RETURNING to_char(revoked,'DD Mon YYYY')")
-                        .bind("accountId", accountId)
-                        .bind("tokenLink", tokenLink.getValue())
-                        .map(StringColumnMapper.INSTANCE)
-                        .first()));
+        return jdbi.withHandle(handle ->
+                handle.createQuery("UPDATE tokens SET revoked=(now() at time zone 'utc') WHERE account_id=:account_id AND token_link=:token_link AND revoked IS NULL RETURNING to_char(revoked,'DD Mon YYYY')")
+                        .bind("account_id", accountId)
+                        .bind("token_link", tokenLink.getValue())
+                        .mapTo(String.class)
+                        .findFirst());
     }
+
     public Optional<Map<String, Object>> findTokenByTokenLink(TokenLink tokenLink) {
-        return Optional.ofNullable(jdbi.withHandle(handle ->
+        return jdbi.withHandle(handle ->
                 handle.createQuery("SELECT token_link, type, description, coalesce(token_type, 'CARD') as token_type, " +
                         "to_char(revoked,'DD Mon YYYY - HH24:MI') as revoked, " +
                         "to_char(issued,'DD Mon YYYY - HH24:MI') as issued_date, " +
@@ -104,6 +114,6 @@ public class AuthTokenDao {
                         "to_char(last_used,'DD Mon YYYY - HH24:MI') as last_used " +
                         "FROM tokens WHERE token_link = :token_link")
                         .bind("token_link", tokenLink.getValue())
-                        .first()));
+                        .mapToMap().findFirst());
     }
 }
