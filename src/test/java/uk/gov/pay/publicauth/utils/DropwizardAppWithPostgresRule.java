@@ -1,11 +1,11 @@
 package uk.gov.pay.publicauth.utils;
 
 import io.dropwizard.testing.junit.DropwizardAppRule;
+import org.jdbi.v3.core.Jdbi;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
-import org.skife.jdbi.v2.DBI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.gov.pay.commons.testing.db.PostgresDockerRule;
@@ -51,7 +51,7 @@ public class DropwizardAppWithPostgresRule implements TestRule {
         }, description);
     }
 
-    public DBI getJdbi() {
+    public Jdbi getJdbi() {
         return app.<PublicAuthApp>getApplication().getJdbi();
     }
 

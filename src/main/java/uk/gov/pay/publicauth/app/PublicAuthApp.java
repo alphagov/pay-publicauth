@@ -10,12 +10,12 @@ import io.dropwizard.auth.oauth.OAuthCredentialAuthFilter;
 import io.dropwizard.configuration.EnvironmentVariableSubstitutor;
 import io.dropwizard.configuration.SubstitutingSourceProvider;
 import io.dropwizard.db.DataSourceFactory;
-import io.dropwizard.jdbi.DBIFactory;
-import io.dropwizard.jdbi.bundles.DBIExceptionsBundle;
+import io.dropwizard.jdbi3.JdbiFactory;
+import io.dropwizard.jdbi3.bundles.JdbiExceptionsBundle;
 import io.dropwizard.migrations.MigrationsBundle;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
-import org.skife.jdbi.v2.DBI;
+import org.jdbi.v3.core.Jdbi;
 import uk.gov.pay.commons.utils.healthchecks.DatabaseHealthCheck;
 import uk.gov.pay.commons.utils.metrics.DatabaseMetricsService;
 import uk.gov.pay.logging.GovUkPayDropwizardRequestJsonLogLayoutFactory;
@@ -44,7 +44,7 @@ public class PublicAuthApp extends Application<PublicAuthConfiguration> {
     private static final String SERVICE_METRICS_NODE = "publicauth";
     private static final int GRAPHITE_SENDING_PERIOD_SECONDS = 10;
 
-    private DBI jdbi;
+    private Jdbi jdbi;
 
     @Override
     public void initialize(Bootstrap<PublicAuthConfiguration> bootstrap) {
@@ -54,7 +54,7 @@ public class PublicAuthApp extends Application<PublicAuthConfiguration> {
                 )
         );
 
-        bootstrap.addBundle(new DBIExceptionsBundle());
+        bootstrap.addBundle(new JdbiExceptionsBundle());
 
         bootstrap.addBundle(new MigrationsBundle<PublicAuthConfiguration>() {
             @Override
@@ -73,7 +73,7 @@ public class PublicAuthApp extends Application<PublicAuthConfiguration> {
     public void run(PublicAuthConfiguration conf, Environment environment) {
         DataSourceFactory dataSourceFactory = conf.getDataSourceFactory();
 
-        jdbi = new DBIFactory().build(environment, dataSourceFactory, "postgresql");
+        jdbi = new JdbiFactory().build(environment, dataSourceFactory, "postgresql");
         initialiseMetrics(conf, environment);
 
         TokenService tokenService = new TokenService(conf.getTokensConfiguration());
@@ -115,7 +115,7 @@ public class PublicAuthApp extends Application<PublicAuthConfiguration> {
                 .start(GRAPHITE_SENDING_PERIOD_SECONDS, TimeUnit.SECONDS);
     }
 
-    public DBI getJdbi() {
+    public Jdbi getJdbi() {
         return jdbi;
     }
 

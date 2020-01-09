@@ -1,8 +1,6 @@
 package uk.gov.pay.publicauth.utils;
 
-import io.dropwizard.jdbi.args.ZonedDateTimeMapper;
-import org.skife.jdbi.v2.DBI;
-import org.skife.jdbi.v2.util.StringColumnMapper;
+import org.jdbi.v3.core.Jdbi;
 import uk.gov.pay.publicauth.model.TokenHash;
 import uk.gov.pay.publicauth.model.TokenLink;
 import uk.gov.pay.publicauth.model.TokenPaymentType;
@@ -11,17 +9,16 @@ import uk.gov.pay.publicauth.model.TokenSource;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Map;
-import java.util.Optional;
-import java.util.TimeZone;
 
+import static java.sql.Timestamp.from;
 import static uk.gov.pay.publicauth.model.TokenPaymentType.CARD;
 import static uk.gov.pay.publicauth.model.TokenSource.API;
 
 public class DatabaseTestHelper {
 
-    private final DBI jdbi;
+    private final Jdbi jdbi;
 
-    DatabaseTestHelper(DBI jdbi) {
+    DatabaseTestHelper(Jdbi jdbi) {
         this.jdbi = jdbi;
     }
 
@@ -43,9 +40,18 @@ public class DatabaseTestHelper {
 
     public void insertAccount(TokenHash tokenHash, TokenLink randomTokenLink, TokenSource tokenSource, String accountId, String description, ZonedDateTime revoked, String createdBy, ZonedDateTime lastUsed, TokenPaymentType tokenPaymentType) {
         jdbi.withHandle(handle ->
-        handle.insert("INSERT INTO tokens(token_hash, token_link, type, account_id, description, token_type, revoked, created_by, last_used) VALUES (?,?,?,?,?,?,(? at time zone 'utc'),?,(? at time zone 'utc'))",
-                tokenHash.getValue(), randomTokenLink.getValue(), tokenSource, accountId, description, tokenPaymentType,
-                revoked, createdBy, lastUsed));
+                handle.createUpdate("INSERT INTO tokens(token_hash, token_link, type, account_id, description, token_type, revoked, created_by, last_used) " +
+                        "VALUES (:token_hash,:token_link,:type,:account_id,:description,:token_type,(:revoked at time zone 'utc'), :created_by, (:last_used at time zone 'utc'))")
+                        .bind("token_hash", tokenHash.getValue())
+                        .bind("token_link", randomTokenLink.getValue())
+                        .bind("type", tokenSource)
+                        .bind("account_id", accountId)
+                        .bind("description", description)
+                        .bind("token_type", tokenPaymentType)
+                        .bind("revoked", revoked == null ? null : from(revoked.toInstant()))
+                        .bind("created_by", createdBy)
+                        .bind("last_used", lastUsed == null ? null : from(lastUsed.toInstant()))
+                        .execute());
     }
 
     public ZonedDateTime issueTimestampForAccount(String accountId) {
@@ -53,12 +59,11 @@ public class DatabaseTestHelper {
     }
 
     public java.util.Optional<String> lookupColumnForTokenTable(String column, String idKey, String idValue) {
-        return java.util.Optional.ofNullable(jdbi.withHandle(handle ->
+        return jdbi.withHandle(handle ->
                 handle.createQuery("SELECT " + column + " FROM tokens WHERE " + idKey + "=:placeholder")
                         .bind("placeholder", idValue)
-                        .map(StringColumnMapper.INSTANCE)
-                        .first()));
-
+                        .mapTo(String.class)
+                        .findFirst());
     }
 
     public Map<String, Object> getTokenByHash(TokenHash tokenHash) {
@@ -67,6 +72,7 @@ public class DatabaseTestHelper {
                         "FROM tokens t " +
                         "WHERE token_hash = :token_hash")
                         .bind("token_hash", tokenHash.getValue())
+                        .mapToMap()
                         .first());
     }
 
@@ -74,14 +80,14 @@ public class DatabaseTestHelper {
         return jdbi.withHandle(handle ->
                 handle.createQuery("SELECT " + column + " FROM tokens WHERE account_id=:accountId")
                         .bind("accountId", accountId)
-                        .map(new ZonedDateTimeMapper(Optional.of(TimeZone.getTimeZone("UTC"))))
+                        .mapTo(ZonedDateTime.class)
                         .first());
     }
 
     public ZonedDateTime getCurrentTime() {
         return jdbi.withHandle(handle ->
                 handle.createQuery("SELECT (now() at time zone 'utc')")
-                        .map(new ZonedDateTimeMapper(Optional.of(TimeZone.getTimeZone("UTC"))))
+                        .mapTo(ZonedDateTime.class)
                         .first());
     }
 }
