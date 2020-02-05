@@ -4,7 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public enum TokenSource {
-    API, PRODUCTS;
+    API, PRODUCTS, DEMO;
     private static final Logger LOGGER = LoggerFactory.getLogger(TokenSource.class);
 
     public static TokenSource fromString(final String source) {

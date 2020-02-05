@@ -6,7 +6,6 @@ import org.slf4j.LoggerFactory;
 import uk.gov.pay.publicauth.model.CreateTokenRequest;
 import uk.gov.pay.publicauth.model.TokenHash;
 import uk.gov.pay.publicauth.model.TokenLink;
-import uk.gov.pay.publicauth.model.TokenPaymentType;
 import uk.gov.pay.publicauth.model.TokenSource;
 import uk.gov.pay.publicauth.model.TokenState;
 

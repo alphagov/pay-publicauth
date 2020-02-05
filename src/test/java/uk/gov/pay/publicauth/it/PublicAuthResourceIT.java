@@ -38,6 +38,7 @@ import static org.hamcrest.core.Is.is;
 import static uk.gov.pay.publicauth.model.TokenPaymentType.CARD;
 import static uk.gov.pay.publicauth.model.TokenPaymentType.DIRECT_DEBIT;
 import static uk.gov.pay.publicauth.model.TokenSource.API;
+import static uk.gov.pay.publicauth.model.TokenSource.DEMO;
 import static uk.gov.pay.publicauth.model.TokenSource.PRODUCTS;
 
 @SuppressWarnings("OptionalGetWithoutIsPresent")
@@ -211,6 +212,7 @@ public class PublicAuthResourceIT {
         app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, null, CREATED_USER_NAME, lastUsed);
         app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, API, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed, DIRECT_DEBIT);
         app.getDatabaseHelper().insertAccount(TokenHash.of("TOKEN-3"), TokenLink.of("123456789101112131415161718192021224"), PRODUCTS, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed, CARD);
+        app.getDatabaseHelper().insertAccount(TokenHash.of("TOKEN-4"), TokenLink.of("012345678910111213141516171819202122"), DEMO, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed, CARD);
 
         List<Map<String, String>> retrievedTokens = getTokensFor(ACCOUNT_ID)
                 .statusCode(200)

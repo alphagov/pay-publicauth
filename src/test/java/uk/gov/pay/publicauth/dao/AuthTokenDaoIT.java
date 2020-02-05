@@ -29,6 +29,7 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertNull;
 import static uk.gov.pay.publicauth.model.TokenPaymentType.CARD;
 import static uk.gov.pay.publicauth.model.TokenPaymentType.DIRECT_DEBIT;
+import static uk.gov.pay.publicauth.model.TokenSource.DEMO;
 import static uk.gov.pay.publicauth.model.TokenState.ACTIVE;
 import static uk.gov.pay.publicauth.model.TokenState.REVOKED;
 import static uk.gov.pay.publicauth.model.TokenSource.API;
@@ -104,6 +105,14 @@ public class AuthTokenDaoIT {
         Optional<Map<String, Object>> tokenInfo = authTokenDao.findUnRevokedAccount(TOKEN_HASH);
         assertThat(tokenInfo.get().get("account_id"), is(ACCOUNT_ID));
         assertThat(tokenInfo.get().get("type"), is(PRODUCTS.toString()));
+    }
+
+    @Test
+    public void shouldfindAToken_ifTypeIsDemo() {
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, DEMO, ACCOUNT_ID, TOKEN_DESCRIPTION, null, TEST_USER_NAME, null, CARD);
+        Optional<Map<String, Object>> tokenInfo = authTokenDao.findUnRevokedAccount(TOKEN_HASH);
+        assertThat(tokenInfo.get().get("account_id"), is(ACCOUNT_ID));
+        assertThat(tokenInfo.get().get("type"), is(DEMO.toString()));
     }
 
     @Test
