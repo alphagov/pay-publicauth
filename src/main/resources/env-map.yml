@@ -1,0 +1,6 @@
+env_vars:
+  DB_HOST:         '.[][] | select(.name == "publicauth-db") | .credentials.host                    '
+  DB_NAME:         '.[][] | select(.name == "publicauth-db") | .credentials.name                    '
+  DB_PASSWORD:     '.[][] | select(.name == "publicauth-db") | .credentials.password                '
+  DB_USER:         '.[][] | select(.name == "publicauth-db") | .credentials.username                '
+  DB_SSL_OPTION:   '.[][] | select(.name == "publicauth-db") | .credentials.ssl_option // "ssl=true"'

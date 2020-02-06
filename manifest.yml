@@ -2,6 +2,7 @@
 applications:
   - name: publicauth
     buildpacks:
+      - https://github.com/alphagov/env-map-buildpack.git#v2
       - java_buildpack
     path: target/pay-publicauth-0.1-SNAPSHOT-allinone.jar
     health-check-type: http
@@ -9,7 +10,10 @@ applications:
     health-check-invocation-timeout: 5
     memory: ((memory))
     disk_quota: ((disk_quota))
+    services:
+      - publicauth-db
     env:
+      ENV_MAP_BP_USE_APP_PROFILE_DIR: true
       ADMIN_PORT: '9601'
       DISABLE_INTERNAL_HTTPS: ((disable_internal_https))
       ENVIRONMENT: ((space))
@@ -22,19 +26,15 @@ applications:
       TOKEN_DB_BCYPT_SALT: ((token_db_bcrypt_salt))
       TOKEN_API_HMAC_SECRET: ((token_api_hmac_secret))
 
-      # Provide via publicauth-db service
-      DB_HOST: postgres-((space)).apps.internal
-      DB_NAME: ((db_name))
-      DB_PASSWORD: ((db_password))
-      DB_USER: ((db_user))
-      DB_SSL_OPTION: ((db_ssl_option))
-
       AWS_XRAY_CONTEXT_MISSING: LOG_ERROR
-
-      # Provide via Sentry service
       SENTRY_DSN: noop://localhost
 
       RUN_APP: 'true'
       RUN_MIGRATION: ((run_migration))
-    routes:
-      - route: ((publicauth_route))
+
+      # Provide via publicauth-db service, see env-map.yml
+      DB_HOST: ""
+      DB_NAME: ""
+      DB_PASSWORD: ""
+      DB_USER: ""
+      DB_SSL_OPTION: ""
