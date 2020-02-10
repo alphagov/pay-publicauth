@@ -23,7 +23,7 @@ applications:
       JPA_LOG_LEVEL: 'INFO'
       JPA_SQL_LOG_LEVEL: 'INFO'
 
-      TOKEN_DB_BCYPT_SALT: ((token_db_bcrypt_salt))
+      TOKEN_DB_BCRYPT_SALT: ((token_db_bcrypt_salt))
       TOKEN_API_HMAC_SECRET: ((token_api_hmac_secret))
 
       AWS_XRAY_CONTEXT_MISSING: LOG_ERROR
