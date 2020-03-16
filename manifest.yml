@@ -13,6 +13,7 @@ applications:
     services:
       - publicauth-db
       - publicauth-secret-service
+      - app-catalog
     env:
       ENV_MAP_BP_USE_APP_PROFILE_DIR: true
       ADMIN_PORT: '9601'
@@ -39,3 +40,7 @@ applications:
       DB_PASSWORD: ""
       DB_USER: ""
       DB_SSL_OPTION: ""
+
+      # Provided via the app-catalog service, see env-map.yml
+      METRICS_HOST: ""
+      METRICS_PORT: ""
