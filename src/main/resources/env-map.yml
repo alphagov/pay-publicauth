@@ -7,3 +7,5 @@ env_vars:
   TOKEN_DB_BCRYPT_SALT:  '.[][] | select(.name == "publicauth-secret-service") | .credentials.token_db_bcrypt_salt'
   TOKEN_API_HMAC_SECRET: '.[][] | select(.name == "publicauth-secret-service") | .credentials.token_api_hmac_secret'
   SENTRY_DSN:            '.[][] | select(.name == "publicauth-secret-service") | .credentials.sentry_dsn'
+  METRICS_HOST:          '.[][] | select(.name == "app-catalog")               | .credentials.carbon_relay_route'
+  METRICS_PORT:          '.[][] | select(.name == "app-catalog")               | .credentials.carbon_relay_port'
