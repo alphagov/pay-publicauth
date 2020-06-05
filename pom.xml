@@ -7,10 +7,10 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <dropwizard.version>2.0.8</dropwizard.version>
         <jackson.version>2.10.3</jackson.version>
+        <dropwizard.version>2.0.10</dropwizard.version>
         <guava.version>29.0-jre</guava.version>
-        <pay-java-commons.version>1.0.20200420080241</pay-java-commons.version>
+        <pay-java-commons.version>1.0.20200601131959</pay-java-commons.version>
     </properties>
     <repositories>
         <repository>
@@ -52,7 +52,7 @@
         <dependency>
             <groupId>org.liquibase</groupId>
             <artifactId>liquibase-core</artifactId>
-            <version>3.7.0</version>
+            <version>3.9.0</version>
             <exclusions>
                 <exclusion>
                     <groupId>javax.servlet</groupId>
@@ -100,7 +100,7 @@
         <dependency>
             <groupId>io.dropwizard.metrics</groupId>
             <artifactId>metrics-graphite</artifactId>
-            <version>4.1.6</version>
+            <version>4.1.9</version>
         </dependency>
         <dependency>
             <groupId>uk.gov.pay</groupId>
@@ -231,7 +231,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.2.3</version>
+                <version>3.2.4</version>
                 <configuration>
                     <outputFile>target/${project.artifactId}-${project.version}-allinone.jar</outputFile>
                     <filters>
@@ -265,7 +265,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
-                <version>1.6.0</version>
+                <version>3.0.0</version>
                 <configuration>
                     <mainClass>uk.gov.pay.publicauth.app.PublicAuthApp</mainClass>
                     <arguments>
