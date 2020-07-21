@@ -99,10 +99,6 @@ pipeline {
          when { branch 'master' }
          steps { runCardSmokeTest() }
        }
-       stage('Direct Debit Smoke Test') {
-         when { branch 'master' }
-         steps { runDirectDebitSmokeTest() }
-       }
      }
    }
    stage('Complete') {
