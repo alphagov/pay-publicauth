@@ -6,7 +6,6 @@ import org.slf4j.LoggerFactory;
 import uk.gov.pay.publicauth.model.CreateTokenRequest;
 import uk.gov.pay.publicauth.model.TokenHash;
 import uk.gov.pay.publicauth.model.TokenLink;
-import uk.gov.pay.publicauth.model.TokenPaymentType;
 import uk.gov.pay.publicauth.model.TokenSource;
 import uk.gov.pay.publicauth.model.TokenState;
 
@@ -66,7 +65,7 @@ public class AuthTokenDao {
         int rowsUpdated = jdbi.withHandle(handle ->
                 handle.createUpdate("UPDATE tokens SET description=:description WHERE token_link=:token_link AND revoked IS NULL")
                         .bind("description", newDescription)
-                        .bind("token_link", tokenLink.getValue()).execute());
+                        .bind("token_link", tokenLink.toString()).execute());
         return rowsUpdated > 0;
     }
 
@@ -75,7 +74,7 @@ public class AuthTokenDao {
                 handle.createUpdate("INSERT INTO tokens(token_hash, token_link, type, description, account_id, created_by, token_type) " +
                         "VALUES (:token_hash,:token_link,:type,:description,:account_id,:created_by,:token_type)")
                         .bind("token_hash", tokenHash.getValue())
-                        .bind("token_link", createTokenRequest.getTokenLink().getValue())
+                        .bind("token_link", createTokenRequest.getTokenLink().toString())
                         .bind("type", createTokenRequest.getTokenSource())
                         .bind("description", createTokenRequest.getDescription())
                         .bind("account_id", createTokenRequest.getAccountId())
@@ -101,7 +100,7 @@ public class AuthTokenDao {
         return jdbi.withHandle(handle ->
                 handle.createQuery("UPDATE tokens SET revoked=(now() at time zone 'utc') WHERE account_id=:account_id AND token_link=:token_link AND revoked IS NULL RETURNING to_char(revoked,'DD Mon YYYY')")
                         .bind("account_id", accountId)
-                        .bind("token_link", tokenLink.getValue())
+                        .bind("token_link", tokenLink.toString())
                         .mapTo(String.class)
                         .findFirst());
     }
@@ -114,7 +113,7 @@ public class AuthTokenDao {
                         "created_by, " +
                         "to_char(last_used,'DD Mon YYYY - HH24:MI') as last_used " +
                         "FROM tokens WHERE token_link = :token_link")
-                        .bind("token_link", tokenLink.getValue())
+                        .bind("token_link", tokenLink.toString())
                         .mapToMap().findFirst());
     }
 }
