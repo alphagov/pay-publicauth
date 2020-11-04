@@ -4,18 +4,21 @@ import org.jdbi.v3.core.Jdbi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.gov.pay.publicauth.model.CreateTokenRequest;
+import uk.gov.pay.publicauth.model.TokenEntity;
 import uk.gov.pay.publicauth.model.TokenHash;
 import uk.gov.pay.publicauth.model.TokenLink;
 import uk.gov.pay.publicauth.model.TokenSource;
 import uk.gov.pay.publicauth.model.TokenState;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 public class AuthTokenDao {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AuthTokenDao.class);
+
+    private static final String TOKEN_SELECT =
+            "SELECT token_link, description, account_id, token_type, type, issued, revoked, last_used, created_by FROM tokens ";
 
     private final Jdbi jdbi;
 
@@ -23,11 +26,13 @@ public class AuthTokenDao {
         this.jdbi = jdbi;
     }
 
-    public Optional<Map<String, Object>> findUnRevokedAccount(TokenHash tokenHash) {
-        Optional<Map<String, Object>> storedTokenHash = jdbi.withHandle(handle ->
-                handle.createQuery("SELECT account_id, type, coalesce(token_type, 'CARD') as token_type FROM tokens WHERE token_hash = :token_hash AND revoked IS NULL")
+    public Optional<TokenEntity> findUnRevokedAccount(TokenHash tokenHash) {
+        Optional<TokenEntity> storedTokenHash = jdbi.withHandle(handle ->
+                handle.createQuery(TOKEN_SELECT +
+                        "WHERE token_hash = :token_hash AND revoked IS NULL")
                         .bind("token_hash", tokenHash.getValue())
-                        .mapToMap().findFirst());
+                        .map(new TokenMapper())
+                        .findFirst());
         if (storedTokenHash.isPresent()) {
             updateLastUsedTime(tokenHash);
         }
@@ -41,23 +46,18 @@ public class AuthTokenDao {
                         .execute());
     }
 
-    public List<Map<String, Object>> findTokensBy(String accountId, TokenState tokenState, TokenSource tokenSource) {
-        String revoked = (tokenState.equals(TokenState.REVOKED)) ? "AND revoked IS NOT NULL " : "AND revoked IS NULL ";
-        String revokedDate = (tokenState.equals(TokenState.REVOKED)) ? "to_char(revoked,'DD Mon YYYY - HH24:MI') as revoked, " : "";
+    public List<TokenEntity> findTokensBy(String accountId, TokenState tokenState, TokenSource tokenSource) {
+        String revokedClause = (tokenState.equals(TokenState.REVOKED)) ? "AND revoked IS NOT NULL " : "AND revoked IS NULL ";
 
         return jdbi.withHandle(handle ->
-                handle.createQuery("SELECT token_link, description, coalesce(token_type, 'CARD') as token_type, type, " +
-                        "to_char(issued,'DD Mon YYYY - HH24:MI') as issued_date, " +
-                        revokedDate +
-                        "created_by, " +
-                        "to_char(last_used,'DD Mon YYYY - HH24:MI') as last_used " +
-                        "FROM tokens WHERE account_id = :account_id " +
+                handle.createQuery(TOKEN_SELECT +
+                        "WHERE account_id = :account_id " +
                         "AND type = :type " +
-                        revoked +
+                        revokedClause +
                         "ORDER BY issued DESC")
                         .bind("account_id", accountId)
                         .bind("type", tokenSource)
-                        .mapToMap()
+                        .map(new TokenMapper())
                         .list());
     }
 
@@ -105,15 +105,11 @@ public class AuthTokenDao {
                         .findFirst());
     }
 
-    public Optional<Map<String, Object>> findTokenByTokenLink(TokenLink tokenLink) {
+    public Optional<TokenEntity> findTokenByTokenLink(TokenLink tokenLink) {
         return jdbi.withHandle(handle ->
-                handle.createQuery("SELECT token_link, type, description, coalesce(token_type, 'CARD') as token_type, " +
-                        "to_char(revoked,'DD Mon YYYY - HH24:MI') as revoked, " +
-                        "to_char(issued,'DD Mon YYYY - HH24:MI') as issued_date, " +
-                        "created_by, " +
-                        "to_char(last_used,'DD Mon YYYY - HH24:MI') as last_used " +
-                        "FROM tokens WHERE token_link = :token_link")
+                handle.createQuery(TOKEN_SELECT + "WHERE token_link = :token_link")
                         .bind("token_link", tokenLink.toString())
-                        .mapToMap().findFirst());
+                        .map(new TokenMapper())
+                        .findFirst());
     }
 }

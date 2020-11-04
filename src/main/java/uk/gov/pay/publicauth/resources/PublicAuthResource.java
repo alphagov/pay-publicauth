@@ -13,6 +13,7 @@ import uk.gov.pay.publicauth.exception.ValidationException;
 import uk.gov.pay.publicauth.model.CreateTokenRequest;
 import uk.gov.pay.publicauth.model.TokenHash;
 import uk.gov.pay.publicauth.model.TokenLink;
+import uk.gov.pay.publicauth.model.TokenResponse;
 import uk.gov.pay.publicauth.model.TokenSource;
 import uk.gov.pay.publicauth.model.TokenState;
 import uk.gov.pay.publicauth.model.Tokens;
@@ -33,7 +34,6 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -52,11 +52,9 @@ public class PublicAuthResource {
 
     private static final String ACCOUNT_ID_FIELD = "account_id";
     private static final String TOKEN_TYPE_FIELD = "token_type";
-    private static final String TYPE_FIELD = "type";
     private static final String TOKEN_LINK_FIELD = "token_link";
     private static final String TOKEN_FIELD = "token";
     private static final String DESCRIPTION_FIELD = "description";
-    private static final String CREATED_BY_FIELD = "created_by";
 
     private final AuthTokenDao authDao;
     private final TokenService tokenService;
@@ -73,9 +71,9 @@ public class PublicAuthResource {
     @GET
     public Response authenticate(@Auth Token token) {
         return authDao.findUnRevokedAccount(TokenHash.of(token.getName()))
-                .map(tokenInfo -> ok(ImmutableMap.of(
-                        ACCOUNT_ID_FIELD, tokenInfo.get(ACCOUNT_ID_FIELD),
-                        TOKEN_TYPE_FIELD, tokenInfo.get(TOKEN_TYPE_FIELD).toString())))
+                .map(tokenEntity -> ok(ImmutableMap.of(
+                        ACCOUNT_ID_FIELD, tokenEntity.getAccountId(),
+                        TOKEN_TYPE_FIELD, tokenEntity.getTokenPaymentType().toString())))
                 .orElse(Response.status(UNAUTHORIZED))
                 .build();
     }
@@ -102,8 +100,11 @@ public class PublicAuthResource {
                                               @QueryParam("type") TokenSource type) {
         state = Optional.ofNullable(state).orElse(ACTIVE);
         type = Optional.ofNullable(type).orElse(API);
-        List<Map<String, Object>> tokensWithoutNullRevoked = authDao.findTokensBy(accountId, state, type);
-        return ok(ImmutableMap.of("tokens", tokensWithoutNullRevoked)).build();
+        List<TokenResponse> tokenResponses = authDao.findTokensBy(accountId, state, type)
+                .stream()
+                .map(TokenResponse::fromEntity)
+                .collect(Collectors.toList());
+        return ok(ImmutableMap.of("tokens", tokenResponses)).build();
     }
 
     @Path("/v1/frontend/auth")
@@ -121,7 +122,7 @@ public class PublicAuthResource {
         if (authDao.updateTokenDescription(tokenLink, description)) {
             LOGGER.info("Updated description of token with token_link {}", tokenLink);
             return authDao.findTokenByTokenLink(tokenLink)
-                    .map(token -> ok(token).build())
+                    .map(token -> ok(TokenResponse.fromEntity(token)).build())
                     .orElseThrow(() -> new TokenNotFoundException("Could not update description of token with token_link " + tokenLink));
         }
 
