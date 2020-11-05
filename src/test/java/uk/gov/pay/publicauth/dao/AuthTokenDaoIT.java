@@ -132,7 +132,7 @@ public class AuthTokenDaoIT {
         assertThat(tokens.size(), is(1));
 
         Map<String, Object> firstToken = tokens.get(0);
-        assertThat(firstToken.get("token_link"), is(TOKEN_LINK_2.getValue()));
+        assertThat(firstToken.get("token_link"), is(TOKEN_LINK_2.toString()));
         assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION_2));
         assertThat(firstToken.containsKey("revoked"), is(false));
         assertThat(firstToken.get("created_by"), is(TEST_USER_NAME_2));
@@ -152,7 +152,7 @@ public class AuthTokenDaoIT {
         assertThat(tokens.size(), is(1));
 
         Map<String, Object> firstToken = tokens.get(0);
-        assertThat(firstToken.get("token_link"), is(TOKEN_LINK_2.getValue()));
+        assertThat(firstToken.get("token_link"), is(TOKEN_LINK_2.toString()));
         assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION_2));
         assertThat(firstToken.get("type"), is(API.toString()));
         assertThat(firstToken.containsKey("revoked"), is(false));
@@ -175,7 +175,7 @@ public class AuthTokenDaoIT {
 
         assertThat(tokens.size(), is(1));
         Map<String, Object> firstToken = tokens.get(0);
-        assertThat(firstToken.get("token_link"), is(TOKEN_LINK.getValue()));
+        assertThat(firstToken.get("token_link"), is(TOKEN_LINK.toString()));
         assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION));
         assertThat(firstToken.get("type"), is(API.toString()));
         assertThat(firstToken.containsKey("revoked"), is(true));
@@ -209,7 +209,7 @@ public class AuthTokenDaoIT {
         boolean updateResult = authTokenDao.updateTokenDescription(TOKEN_LINK, TOKEN_DESCRIPTION_2);
 
         assertThat(updateResult, is(true));
-        Optional<String> descriptionInDb = app.getDatabaseHelper().lookupColumnForTokenTable("description", "token_link", TOKEN_LINK.getValue());
+        Optional<String> descriptionInDb = app.getDatabaseHelper().lookupColumnForTokenTable("description", "token_link", TOKEN_LINK.toString());
         assertThat(descriptionInDb.get(), equalTo(TOKEN_DESCRIPTION_2));
     }
 
@@ -220,7 +220,7 @@ public class AuthTokenDaoIT {
         Optional<Map<String, Object>> tokenMayBe = authTokenDao.findTokenByTokenLink(TOKEN_LINK);
         Map<String, Object> token = tokenMayBe.get();
 
-        assertThat(TOKEN_LINK.getValue(), is(token.get("token_link")));
+        assertThat(TOKEN_LINK.toString(), is(token.get("token_link")));
         assertThat(TOKEN_DESCRIPTION, is(token.get("description")));
         assertThat(TEST_USER_NAME, is(token.get("created_by")));
         assertThat(token.get("token_type"), is(DIRECT_DEBIT.toString()));
@@ -236,7 +236,7 @@ public class AuthTokenDaoIT {
         app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, API, ACCOUNT_ID, TOKEN_DESCRIPTION, null, TEST_USER_NAME, now, null);
         Optional<Map<String, Object>> tokenMayBe = authTokenDao.findTokenByTokenLink(TOKEN_LINK);
         Map<String, Object> token = tokenMayBe.get();
-        assertThat(TOKEN_LINK.getValue(), is(token.get("token_link")));
+        assertThat(TOKEN_LINK.toString(), is(token.get("token_link")));
         assertThat(TOKEN_DESCRIPTION, is(token.get("description")));
         assertThat(TEST_USER_NAME, is(token.get("created_by")));
         assertThat(token.get("token_type"), is(CARD.toString()));
@@ -250,7 +250,7 @@ public class AuthTokenDaoIT {
         boolean updateResult = authTokenDao.updateTokenDescription(TOKEN_LINK, TOKEN_DESCRIPTION_2);
 
         assertThat(updateResult, is(false));
-        Optional<String> descriptionInDb = app.getDatabaseHelper().lookupColumnForTokenTable("description", "token_link", TOKEN_LINK.getValue());
+        Optional<String> descriptionInDb = app.getDatabaseHelper().lookupColumnForTokenTable("description", "token_link", TOKEN_LINK.toString());
         assertThat(descriptionInDb.isPresent(), is(false));
     }
 
@@ -261,7 +261,7 @@ public class AuthTokenDaoIT {
         boolean updateResult = authTokenDao.updateTokenDescription(TOKEN_LINK, TOKEN_DESCRIPTION_2);
 
         assertThat(updateResult, is(false));
-        Optional<String> descriptionInDb = app.getDatabaseHelper().lookupColumnForTokenTable("description", "token_link", TOKEN_LINK.getValue());
+        Optional<String> descriptionInDb = app.getDatabaseHelper().lookupColumnForTokenTable("description", "token_link", TOKEN_LINK.toString());
         assertThat(descriptionInDb.get(), equalTo(TOKEN_DESCRIPTION));
     }
 
@@ -273,7 +273,7 @@ public class AuthTokenDaoIT {
 
         assertThat(revokedDate.get(), is(ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ofPattern("dd MMM YYYY"))));
 
-        Optional<String> revokedInDb = app.getDatabaseHelper().lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.getValue());
+        Optional<String> revokedInDb = app.getDatabaseHelper().lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.toString());
         assertThat(revokedInDb.isPresent(), is(true));
     }
 
@@ -285,7 +285,7 @@ public class AuthTokenDaoIT {
 
         assertThat(revokedDate.get(), is(ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ofPattern("dd MMM YYYY"))));
 
-        Optional<String> revokedInDb = app.getDatabaseHelper().lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.getValue());
+        Optional<String> revokedInDb = app.getDatabaseHelper().lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.toString());
         assertThat(revokedInDb.isPresent(), is(true));
     }
     
@@ -298,7 +298,7 @@ public class AuthTokenDaoIT {
 
         assertThat(revokedDate.isPresent(), is(false));
 
-        Optional<String> revokedInDb = app.getDatabaseHelper().lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.getValue());
+        Optional<String> revokedInDb = app.getDatabaseHelper().lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.toString());
         assertThat(revokedInDb.isPresent(), is(false));
     }
 
@@ -310,7 +310,7 @@ public class AuthTokenDaoIT {
 
         assertThat(revokedDate.isPresent(), is(false));
 
-        Optional<String> revokedInDb = app.getDatabaseHelper().lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.getValue());
+        Optional<String> revokedInDb = app.getDatabaseHelper().lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.toString());
         assertThat(revokedInDb.isPresent(), is(true));
     }
 

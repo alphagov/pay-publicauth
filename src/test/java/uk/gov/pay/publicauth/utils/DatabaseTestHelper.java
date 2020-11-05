@@ -43,7 +43,7 @@ public class DatabaseTestHelper {
                 handle.createUpdate("INSERT INTO tokens(token_hash, token_link, type, account_id, description, token_type, revoked, created_by, last_used) " +
                         "VALUES (:token_hash,:token_link,:type,:account_id,:description,:token_type,(:revoked at time zone 'utc'), :created_by, (:last_used at time zone 'utc'))")
                         .bind("token_hash", tokenHash.getValue())
-                        .bind("token_link", randomTokenLink.getValue())
+                        .bind("token_link", randomTokenLink.toString())
                         .bind("type", tokenSource)
                         .bind("account_id", accountId)
                         .bind("description", description)

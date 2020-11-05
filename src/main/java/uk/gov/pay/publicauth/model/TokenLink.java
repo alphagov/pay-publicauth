@@ -29,10 +29,6 @@ public class TokenLink {
 
     @Override
     public String toString() {
-        return "token_link " + tokenLink;
-    }
-
-    public String getValue() {
         return tokenLink;
     }
 }

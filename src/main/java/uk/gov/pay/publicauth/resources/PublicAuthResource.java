@@ -89,7 +89,7 @@ public class PublicAuthResource {
 
         Tokens token = tokenService.issueTokens();
         authDao.storeToken(token.getHashedToken(), createTokenRequest);
-        LOGGER.info("Created token with {}", createTokenRequest.getTokenLink());
+        LOGGER.info("Created token with token_link {}", createTokenRequest.getTokenLink());
         return ok(ImmutableMap.of("token", token.getApiKey())).build();
     }
 
@@ -119,10 +119,10 @@ public class PublicAuthResource {
         String description = payload.get(DESCRIPTION_FIELD).asText();
 
         if (authDao.updateTokenDescription(tokenLink, description)) {
-            LOGGER.info("Updated description of token with {}", tokenLink);
+            LOGGER.info("Updated description of token with token_link {}", tokenLink);
             return authDao.findTokenByTokenLink(tokenLink)
                     .map(token -> ok(token).build())
-                    .orElseThrow(() -> new TokenNotFoundException("Could not update description of token with " + tokenLink));
+                    .orElseThrow(() -> new TokenNotFoundException("Could not update description of token with token_link " + tokenLink));
         }
 
         LOGGER.error("Could not update description of token with token_link " + tokenLink);
@@ -148,7 +148,7 @@ public class PublicAuthResource {
             TokenLink tokenLink = TokenLink.of(payload.get(TOKEN_LINK_FIELD).asText());
             return authDao.revokeSingleToken(accountId, tokenLink)
                     .map(this::buildRevokedTokenResponse)
-                    .orElseThrow(() -> new TokenNotFoundException("Could not revoke token with " + tokenLink));
+                    .orElseThrow(() -> new TokenNotFoundException("Could not revoke token with token_link " + tokenLink));
         }
 
     }
