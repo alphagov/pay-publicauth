@@ -16,7 +16,6 @@ import uk.gov.pay.publicauth.model.TokenLink;
 import uk.gov.pay.publicauth.model.TokenResponse;
 import uk.gov.pay.publicauth.model.TokenSource;
 import uk.gov.pay.publicauth.model.TokenState;
-import uk.gov.pay.publicauth.model.Tokens;
 import uk.gov.pay.publicauth.service.TokenService;
 
 import javax.inject.Singleton;
@@ -32,6 +31,8 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Response;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -55,6 +56,7 @@ public class PublicAuthResource {
     private static final String TOKEN_LINK_FIELD = "token_link";
     private static final String TOKEN_FIELD = "token";
     private static final String DESCRIPTION_FIELD = "description";
+    private static final String REVOKED_DATE_FORMAT_PATTERN = "dd MMM YYYY";
 
     private final AuthTokenDao authDao;
     private final TokenService tokenService;
@@ -84,26 +86,20 @@ public class PublicAuthResource {
     @Consumes(APPLICATION_JSON)
     @POST
     public Response createTokenForAccount(@NotNull @Valid CreateTokenRequest createTokenRequest) {
-
-        Tokens token = tokenService.issueTokens();
-        authDao.storeToken(token.getHashedToken(), createTokenRequest);
-        LOGGER.info("Created token with token_link {}", createTokenRequest.getTokenLink());
-        return ok(ImmutableMap.of("token", token.getApiKey())).build();
+        String apiKey = tokenService.createTokenForAccount(createTokenRequest);
+        return ok(ImmutableMap.of("token", apiKey)).build();
     }
 
     @Path("/v1/frontend/auth/{accountId}")
     @Timed
     @Produces(APPLICATION_JSON)
     @GET
-    public Response getIssuedTokensForAccount(@PathParam("accountId") String accountId, 
+    public Response getIssuedTokensForAccount(@PathParam("accountId") String accountId,
                                               @QueryParam("state") TokenState state,
                                               @QueryParam("type") TokenSource type) {
         state = Optional.ofNullable(state).orElse(ACTIVE);
         type = Optional.ofNullable(type).orElse(API);
-        List<TokenResponse> tokenResponses = authDao.findTokensBy(accountId, state, type)
-                .stream()
-                .map(TokenResponse::fromEntity)
-                .collect(Collectors.toList());
+        List<TokenResponse> tokenResponses = tokenService.findTokensBy(accountId, state, type);
         return ok(ImmutableMap.of("tokens", tokenResponses)).build();
     }
 
@@ -112,22 +108,14 @@ public class PublicAuthResource {
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @PUT
-    public Response updateTokenDescription(JsonNode payload) throws ValidationException, TokenNotFoundException {
+    public TokenResponse updateTokenDescription(JsonNode payload) throws ValidationException, TokenNotFoundException {
 
         validatePayloadHasFields(payload, TOKEN_LINK_FIELD, DESCRIPTION_FIELD);
 
         TokenLink tokenLink = TokenLink.of(payload.get(TOKEN_LINK_FIELD).asText());
         String description = payload.get(DESCRIPTION_FIELD).asText();
 
-        if (authDao.updateTokenDescription(tokenLink, description)) {
-            LOGGER.info("Updated description of token with token_link {}", tokenLink);
-            return authDao.findTokenByTokenLink(tokenLink)
-                    .map(token -> ok(TokenResponse.fromEntity(token)).build())
-                    .orElseThrow(() -> new TokenNotFoundException("Could not update description of token with token_link " + tokenLink));
-        }
-
-        LOGGER.error("Could not update description of token with token_link " + tokenLink);
-        throw new TokenNotFoundException("Could not update description of token with token_link " + tokenLink);
+        return tokenService.updateTokenDescription(tokenLink, description);
     }
 
     @Path("/v1/frontend/auth/{accountId}")
@@ -140,23 +128,22 @@ public class PublicAuthResource {
         validatePayloadHasFields(payload, Collections.emptyList(), asList(TOKEN_LINK_FIELD, TOKEN_FIELD));
 
         if (payload.hasNonNull(TOKEN_FIELD)) {
-             return tokenService.extractEncryptedTokenFrom(payload.get(TOKEN_FIELD).asText())
-            .map(token -> authDao.revokeSingleToken(accountId, TokenHash.of(token.getName()))
-                    .map(this::buildRevokedTokenResponse))
-                     .orElseThrow(() -> new TokenNotFoundException("Could not revoke token"))
-                     .orElseThrow(() -> new TokenNotFoundException("Could not extract encrypted token while revoking token"));
+            return tokenService.extractEncryptedTokenFrom(payload.get(TOKEN_FIELD).asText())
+                    .map(token -> tokenService.revokeToken(accountId, TokenHash.of(token.getName())))
+                    .map(this::buildRevokedTokenResponse)
+                    .orElseThrow(() -> new TokenNotFoundException("Could not extract encrypted token while revoking token"));
         } else {
             TokenLink tokenLink = TokenLink.of(payload.get(TOKEN_LINK_FIELD).asText());
-            return authDao.revokeSingleToken(accountId, tokenLink)
-                    .map(this::buildRevokedTokenResponse)
-                    .orElseThrow(() -> new TokenNotFoundException("Could not revoke token with token_link " + tokenLink));
+            ZonedDateTime revokedDate = tokenService.revokeToken(accountId, tokenLink);
+            return buildRevokedTokenResponse(revokedDate);
         }
 
     }
 
-    private Response buildRevokedTokenResponse(String revokedDate) {
+    private Response buildRevokedTokenResponse(ZonedDateTime revokedDate) {
         LOGGER.info("revoked token on date {}", revokedDate);
-        return ok(ImmutableMap.of("revoked", revokedDate)).build();
+        String formattedDate = DateTimeFormatter.ofPattern(REVOKED_DATE_FORMAT_PATTERN).format(revokedDate);
+        return ok(ImmutableMap.of("revoked", formattedDate)).build();
     }
 
     private void validatePayloadHasFields(JsonNode payload, String... expectedFields) throws ValidationException {
