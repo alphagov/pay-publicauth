@@ -6,11 +6,11 @@ import uk.gov.pay.publicauth.model.TokenLink;
 import uk.gov.pay.publicauth.model.TokenPaymentType;
 import uk.gov.pay.publicauth.model.TokenSource;
 
-import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Map;
 
 import static java.sql.Timestamp.from;
+import static java.time.ZoneOffset.UTC;
 import static uk.gov.pay.publicauth.model.TokenPaymentType.CARD;
 import static uk.gov.pay.publicauth.model.TokenSource.API;
 
@@ -23,11 +23,11 @@ public class DatabaseTestHelper {
     }
 
     public void insertAccount(TokenHash tokenHash, TokenLink randomTokenLink, String accountId, String description, String createdBy) {
-        insertAccount(tokenHash, randomTokenLink, accountId, description, null, createdBy, ZonedDateTime.now(ZoneOffset.UTC));
+        insertAccount(tokenHash, randomTokenLink, accountId, description, null, createdBy, ZonedDateTime.now(UTC));
     }
 
     public void insertAccount(TokenHash tokenHash, TokenLink randomTokenLink, String accountId, String description, ZonedDateTime revoked, String createdBy) {
-        insertAccount(tokenHash, randomTokenLink, accountId, description, revoked, createdBy, ZonedDateTime.now(ZoneOffset.UTC));
+        insertAccount(tokenHash, randomTokenLink, accountId, description, revoked, createdBy, ZonedDateTime.now(UTC));
     }
 
     public void insertAccount(TokenHash tokenHash, TokenLink randomTokenLink, String accountId, String description, ZonedDateTime revoked, String createdBy, ZonedDateTime lastUsed) {
@@ -88,6 +88,7 @@ public class DatabaseTestHelper {
         return jdbi.withHandle(handle ->
                 handle.createQuery("SELECT (now() at time zone 'utc')")
                         .mapTo(ZonedDateTime.class)
-                        .first());
+                        .first())
+                        .withZoneSameInstant(UTC);
     }
 }
