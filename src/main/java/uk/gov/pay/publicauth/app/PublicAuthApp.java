@@ -76,7 +76,8 @@ public class PublicAuthApp extends Application<PublicAuthConfiguration> {
         jdbi = new JdbiFactory().build(environment, dataSourceFactory, "postgresql");
         initialiseMetrics(conf, environment);
 
-        TokenService tokenService = new TokenService(conf.getTokensConfiguration());
+        AuthTokenDao authTokenDao = new AuthTokenDao(jdbi);
+        TokenService tokenService = new TokenService(conf.getTokensConfiguration(), authTokenDao);
 
         environment.jersey().register(new AuthDynamicFeature(
                 new OAuthCredentialAuthFilter.Builder<Token>()

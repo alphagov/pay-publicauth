@@ -7,23 +7,30 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mindrot.jbcrypt.BCrypt;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import uk.gov.pay.publicauth.app.config.TokensConfiguration;
 import uk.gov.pay.publicauth.auth.Token;
+import uk.gov.pay.publicauth.dao.AuthTokenDao;
+import uk.gov.pay.publicauth.model.CreateTokenRequest;
 import uk.gov.pay.publicauth.model.TokenHash;
-import uk.gov.pay.publicauth.model.Tokens;
 
 import java.util.List;
 import java.util.Optional;
 
 import static com.google.common.primitives.Chars.asList;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.core.Is.is;
-import static org.hamcrest.core.IsNull.notNullValue;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static uk.gov.pay.publicauth.model.TokenPaymentType.CARD;
+import static uk.gov.pay.publicauth.model.TokenSource.API;
 
 @RunWith(MockitoJUnitRunner.class)
 public class TokenServiceTest {
@@ -34,79 +41,59 @@ public class TokenServiceTest {
 
     private TokenService tokenService;
 
+    @Mock
+    TokensConfiguration mockConfig;
+
+    @Mock
+    AuthTokenDao mockAuthTokenDao;
+
+    @Captor
+    ArgumentCaptor<TokenHash> tokenHashArgumentCaptor;
+
     @Before
     public void setup() {
-        TokensConfiguration mockConfig = mock(TokensConfiguration.class);
         when(mockConfig.getEncryptDBSalt()).thenReturn(EXPECTED_SALT);
         when(mockConfig.getApiKeyHmacSecret()).thenReturn(EXPECTED_SECRET_KEY);
-        tokenService = new TokenService(mockConfig);
+        tokenService = new TokenService(mockConfig, mockAuthTokenDao);
     }
 
     @Test
-    public void issueTokens_shouldIssueValidHashedToken() {
-
-        Tokens tokens = tokenService.issueTokens();
-
-        TokenHash hashedToken = tokens.getHashedToken();
-
-        assertThat(hashedToken, is(notNullValue()));
-        assertThat(hashedToken.getValue().length(), is(60));
-        assertThat(hashedToken.getValue(), startsWith(EXPECTED_SALT));
-    }
-
-    @Test
-    public void issueTokens_shouldIssueValidAPIKey() {
-
-        Tokens tokens = tokenService.issueTokens();
-
-        String apiKey = tokens.getApiKey();
+    public void shouldCreateValidToken() {
+        CreateTokenRequest createTokenRequest = new CreateTokenRequest("42", "A token description", "a-user-id", CARD, API);
+        String apiKey = tokenService.createTokenForAccount(createTokenRequest);
 
         // Minimum length guarantee is 32 for Hmac and an extremely very unlikely
         // minimum value of 1 length for the random Token this value is more likely to be 24~26 chars length
         assertThat(apiKey.length(), is(greaterThan(33)));
         assertThat(BASE32_HEX_DICTIONARY.containsAll(asList(apiKey.toCharArray())), is(true));
-    }
 
-    @Test
-    public void issueTokens_shouldIssueDifferentValuesWhenCallingTwice() {
+        verify(mockAuthTokenDao).storeToken(tokenHashArgumentCaptor.capture(), eq(createTokenRequest));
 
-        Tokens tokens1 = tokenService.issueTokens();
-        Tokens tokens2 = tokenService.issueTokens();
+        TokenHash hashedToken = tokenHashArgumentCaptor.getValue();
+        assertThat(hashedToken, is(notNullValue()));
+        assertThat(hashedToken.getValue().length(), is(60));
+        assertThat(hashedToken.getValue(), startsWith(EXPECTED_SALT));
 
-        assertThat(tokens1.equals(tokens2), is(false));
-    }
-
-    @Test
-    public void issueTokens_shouldIssueTokensThatMatchesWhenHashed() {
-
-        Tokens tokens = tokenService.issueTokens();
-
-        String apiKey = tokens.getApiKey();
         int hmacLength = 32;
-
         int tokenEnd = apiKey.length() - hmacLength;
-
-        String plainToken = apiKey.substring(0, tokenEnd);
-
-        assertThat(BCrypt.hashpw(plainToken, EXPECTED_SALT), is(tokens.getHashedToken().getValue()));
-    }
-
-    @Test
-    public void issueTokens_shouldIssueApiKeyTokenWithHmacThatMatches() {
-
-        Tokens tokens = tokenService.issueTokens();
-
-        String apiKey = tokens.getApiKey();
-        int hmacLength = 32;
-
-        int tokenEnd = apiKey.length() - hmacLength;
-
         String plainToken = apiKey.substring(0, tokenEnd);
         String hmacApiKey = apiKey.substring(tokenEnd);
 
-        String hmacFromExtractedPlainToken = BaseEncoding.base32Hex().omitPadding().lowerCase().encode(new HmacUtils(HmacAlgorithms.HMAC_SHA_1, EXPECTED_SECRET_KEY).hmac(plainToken));
+        // check API key matched hashed token
+        assertThat(BCrypt.hashpw(plainToken, EXPECTED_SALT), is(hashedToken.getValue()));
 
+        // check Hmac matches token
+        String hmacFromExtractedPlainToken = BaseEncoding.base32Hex().omitPadding().lowerCase().encode(new HmacUtils(HmacAlgorithms.HMAC_SHA_1, EXPECTED_SECRET_KEY).hmac(plainToken));
         assertThat(hmacFromExtractedPlainToken, is(hmacApiKey));
+    }
+
+    @Test
+    public void shouldCreateDifferentTokensWhenCalledTwice() {
+        CreateTokenRequest createTokenRequest = new CreateTokenRequest("42", "A token description", "a-user-id", CARD, API);
+        String apiKey1 = tokenService.createTokenForAccount(createTokenRequest);
+        String apiKey2 = tokenService.createTokenForAccount(createTokenRequest);
+
+        assertThat(apiKey1.equals(apiKey2), is(false));
     }
 
     @Test
