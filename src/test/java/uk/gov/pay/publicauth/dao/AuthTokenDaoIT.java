@@ -62,51 +62,39 @@ public class AuthTokenDaoIT {
     }
 
     @Test
-    public void shouldfindAToken_ifTokenPaymentTypeIsDirectDebit() {
+    public void shouldfindATokenByHash() {
         app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, API, ACCOUNT_ID, TOKEN_DESCRIPTION, null, TEST_USER_NAME, null, DIRECT_DEBIT);
-        Optional<TokenEntity> tokenInfo = authTokenDao.findUnRevokedAccount(TOKEN_HASH);
+        Optional<TokenEntity> tokenInfo = authTokenDao.findTokenByHash(TOKEN_HASH);
         assertThat(tokenInfo.get().getAccountId(), is(ACCOUNT_ID));
         assertThat(tokenInfo.get().getTokenPaymentType(), is(DIRECT_DEBIT));
     }
 
-
     @Test
-    public void shouldfindAToken_ifTokenPaymentTypeIsCard() {
-        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, API, ACCOUNT_ID, TOKEN_DESCRIPTION, null, TEST_USER_NAME, null, CARD);
-        Optional<TokenEntity> tokenInfo = authTokenDao.findUnRevokedAccount(TOKEN_HASH);
-        assertThat(tokenInfo.get().getAccountId(), is(ACCOUNT_ID));
-        assertThat(tokenInfo.get().getTokenPaymentType(), is(CARD));
-    }
-
-    @Test
-    public void shouldfindAToken_ifTokenPaymentTypeIsNull() {
+    public void shouldfindATokenByHash_returnsCardWhenPaymentTypeIsNull() {
         app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, API, ACCOUNT_ID, TOKEN_DESCRIPTION, null, TEST_USER_NAME, null, null);
-        Optional<TokenEntity> tokenInfo = authTokenDao.findUnRevokedAccount(TOKEN_HASH);
+        Optional<TokenEntity> tokenInfo = authTokenDao.findTokenByHash(TOKEN_HASH);
         assertThat(tokenInfo.get().getAccountId(), is(ACCOUNT_ID));
         assertThat(tokenInfo.get().getTokenPaymentType(), is(CARD));
     }
 
     @Test
-    public void shouldfindAToken_ifTypeIsApi() {
-        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, API, ACCOUNT_ID, TOKEN_DESCRIPTION, null, TEST_USER_NAME, null, DIRECT_DEBIT);
-        Optional<TokenEntity> tokenInfo = authTokenDao.findUnRevokedAccount(TOKEN_HASH);
-        assertThat(tokenInfo.get().getAccountId(), is(ACCOUNT_ID));
-        assertThat(tokenInfo.get().getTokenSource(), is(API));
-    }
-
-
-    @Test
-    public void shouldfindAToken_ifTypeIsProducts() {
-        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, PRODUCTS, ACCOUNT_ID, TOKEN_DESCRIPTION, null, TEST_USER_NAME, null, CARD);
-        Optional<TokenEntity> tokenInfo = authTokenDao.findUnRevokedAccount(TOKEN_HASH);
-        assertThat(tokenInfo.get().getAccountId(), is(ACCOUNT_ID));
-        assertThat(tokenInfo.get().getTokenSource(), is(PRODUCTS));
-    }
-
-    @Test
-    public void missingTokenHasNoInfo() {
-        Optional<TokenEntity> tokenInfo = authTokenDao.findUnRevokedAccount(TOKEN_HASH);
+    public void shouldReturnEmptyOptionalIfTokenWithHashIsNotFound() {
+        Optional<TokenEntity> tokenInfo = authTokenDao.findTokenByHash(TOKEN_HASH);
         assertThat(tokenInfo, is(Optional.empty()));
+    }
+
+    @Test
+    public void shouldUpdateLastUsedTime() {
+        app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, API, ACCOUNT_ID, TOKEN_DESCRIPTION, null, TEST_USER_NAME, null, CARD);
+        ZonedDateTime now = app.getDatabaseHelper().getCurrentTime();
+
+        Optional<TokenEntity> beforeUpdate = authTokenDao.findTokenByHash(TOKEN_HASH);
+        assertThat(beforeUpdate.get().getLastUsedDate(), is(nullValue()));
+        
+        authTokenDao.updateLastUsedTime(TOKEN_HASH);
+
+        Optional<TokenEntity> afterUpdate = authTokenDao.findTokenByHash(TOKEN_HASH);
+        assertThat(afterUpdate.get().getLastUsedDate(), isCloseTo(now));
     }
 
     @Test

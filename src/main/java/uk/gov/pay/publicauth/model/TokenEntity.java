@@ -3,7 +3,7 @@ package uk.gov.pay.publicauth.model;
 import java.time.ZonedDateTime;
 
 public class TokenEntity {
-    
+
     private TokenLink tokenLink;
     private String description;
     private String accountId;
@@ -13,7 +13,27 @@ public class TokenEntity {
     private ZonedDateTime issuedDate;
     private ZonedDateTime lastUsedDate;
     private String createdBy;
-    
+
+    public TokenEntity(TokenLink tokenLink,
+                       String description,
+                       String accountId,
+                       TokenPaymentType tokenPaymentType,
+                       TokenSource tokenSource,
+                       ZonedDateTime revokedDate,
+                       ZonedDateTime issuedDate,
+                       ZonedDateTime lastUsedDate,
+                       String createdBy) {
+        this.tokenLink = tokenLink;
+        this.description = description;
+        this.accountId = accountId;
+        this.tokenPaymentType = tokenPaymentType;
+        this.tokenSource = tokenSource;
+        this.revokedDate = revokedDate;
+        this.issuedDate = issuedDate;
+        this.lastUsedDate = lastUsedDate;
+        this.createdBy = createdBy;
+    }
+
     public TokenEntity(Builder builder) {
         this.tokenLink = builder.tokenLink;
         this.description = builder.description;
@@ -85,7 +105,7 @@ public class TokenEntity {
             this.description = description;
             return this;
         }
-        
+
         public Builder withAccountId(String accountId) {
             this.accountId = accountId;
             return this;
@@ -115,7 +135,7 @@ public class TokenEntity {
             this.lastUsedDate = lastUsedDate;
             return this;
         }
-        
+
         public Builder withCreatedBy(String createdBy) {
             this.createdBy = createdBy;
             return this;
