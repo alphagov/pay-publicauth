@@ -9,7 +9,10 @@ import org.slf4j.LoggerFactory;
 import uk.gov.pay.publicauth.app.config.TokensConfiguration;
 import uk.gov.pay.publicauth.auth.Token;
 import uk.gov.pay.publicauth.dao.AuthTokenDao;
+import uk.gov.pay.publicauth.exception.TokenInvalidException;
 import uk.gov.pay.publicauth.exception.TokenNotFoundException;
+import uk.gov.pay.publicauth.exception.TokenRevokedException;
+import uk.gov.pay.publicauth.model.AuthResponse;
 import uk.gov.pay.publicauth.model.CreateTokenRequest;
 import uk.gov.pay.publicauth.model.TokenHash;
 import uk.gov.pay.publicauth.model.TokenLink;
@@ -51,15 +54,17 @@ public class TokenService {
         LOGGER.info("Created token with token_link {}", createTokenRequest.getTokenLink());
         return tokens.getApiKey();
     }
-    
-    /**
-     * Tokens includes:
-     * - Salted BCrypt Hash. Intended to be used as encrypted value when storing in DB
-     * - Token + Hmac(Token + SecretKey). To be used as API key
-     */
-    private Tokens issueTokens() {
-        final String newId = newId();
-        return new Tokens(encrypt(newId), createApiKey(newId));
+
+    public AuthResponse authenticate(TokenHash tokenHash) {
+        return authTokenDao.findTokenByHash(tokenHash)
+                .map(tokenEntity -> {
+                    if (tokenEntity.getRevokedDate() != null) {
+                        throw new TokenRevokedException(tokenEntity.getTokenLink());
+                    }
+                    authTokenDao.updateLastUsedTime(tokenHash);
+                    return new AuthResponse(tokenEntity.getAccountId(), tokenEntity.getTokenLink(), tokenEntity.getTokenPaymentType());
+                })
+                .orElseThrow(() -> new TokenInvalidException("Token does not exist"));
     }
 
     /**
@@ -110,6 +115,16 @@ public class TokenService {
                 .orElseThrow(() -> new TokenNotFoundException("Could not revoke token with token_link " + tokenLink));
     }
 
+    /**
+     * Tokens includes:
+     * - Salted BCrypt Hash. Intended to be used as encrypted value when storing in DB
+     * - Token + Hmac(Token + SecretKey). To be used as API key
+     */
+    private Tokens issueTokens() {
+        final String newId = newId();
+        return new Tokens(encrypt(newId), createApiKey(newId));
+    }
+    
     private TokenHash encrypt(String token) {
         return TokenHash.of(BCrypt.hashpw(token, encryptDBSalt));
     }

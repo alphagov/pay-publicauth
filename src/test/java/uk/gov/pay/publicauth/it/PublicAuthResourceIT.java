@@ -24,6 +24,7 @@ import java.util.Optional;
 
 import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
+import static java.lang.String.format;
 import static javax.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.both;
@@ -35,6 +36,8 @@ import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.core.Is.is;
+import static uk.gov.pay.commons.model.ErrorIdentifier.AUTH_TOKEN_INVALID;
+import static uk.gov.pay.commons.model.ErrorIdentifier.AUTH_TOKEN_REVOKED;
 import static uk.gov.pay.publicauth.model.TokenPaymentType.CARD;
 import static uk.gov.pay.publicauth.model.TokenPaymentType.DIRECT_DEBIT;
 import static uk.gov.pay.publicauth.model.TokenSource.API;
@@ -78,13 +81,16 @@ public class PublicAuthResourceIT {
                     "description", TOKEN_DESCRIPTION,
                     "type", PRODUCTS.toString(),
                     "created_by", USER_EMAIL));
+
     @Test
     public void respondWith200_whenAuthWithValidToken() {
         app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
         String apiKey = BEARER_TOKEN + encodedHmacValueOf(BEARER_TOKEN);
         tokenResponse(apiKey)
                 .statusCode(200)
-                .body("account_id", is(ACCOUNT_ID));
+                .body("account_id", is(ACCOUNT_ID))
+                .body("token_type", is(CARD.toString()))
+                .body("token_link", is(TOKEN_LINK.toString()));
         ZonedDateTime lastUsed = app.getDatabaseHelper().getDateTimeColumn("last_used", ACCOUNT_ID);
         assertThat(lastUsed, isCloseTo(ZonedDateTime.now(ZoneOffset.UTC)));
     }
@@ -96,7 +102,10 @@ public class PublicAuthResourceIT {
         String apiKey = BEARER_TOKEN + encodedHmacValueOf(BEARER_TOKEN);
         ZonedDateTime lastUsedPreAuth = app.getDatabaseHelper().getDateTimeColumn("last_used", ACCOUNT_ID);
         tokenResponse(apiKey)
-                .statusCode(401);
+                .statusCode(401)
+                .body("message", is(format("Token with token_link %s has been revoked", TOKEN_LINK)))
+                .body("error_identifier", is(AUTH_TOKEN_REVOKED.toString()))
+                .body("token_link", is(TOKEN_LINK.toString()));
         ZonedDateTime lastUsedPostAuth = app.getDatabaseHelper().getDateTimeColumn("last_used", ACCOUNT_ID);
 
         assertThat(lastUsedPreAuth, is(lastUsedPostAuth));
@@ -106,7 +115,8 @@ public class PublicAuthResourceIT {
     public void respondWith401_whenAuthWithNonExistentToken() {
         String apiKey = BEARER_TOKEN + encodedHmacValueOf(BEARER_TOKEN);
         tokenResponse(apiKey)
-                .statusCode(401);
+                .statusCode(401)
+                .body("error_identifier", is(AUTH_TOKEN_INVALID.toString()));
     }
 
     @Test
@@ -163,37 +173,37 @@ public class PublicAuthResourceIT {
         Optional<String> newType = app.getDatabaseHelper().lookupColumnForTokenTable("type", TOKEN_HASH_COLUMN, hashedToken);
         assertThat(newType.get(), equalTo(PRODUCTS.toString()));
     }
-    
+
     @Test
     public void respondWith422_ifAccountAndDescriptionAreMissing() {
         createTokenFor("{}")
-            .statusCode(422)
-            .body("errors.size()", is(3))
-            .body("errors", containsInAnyOrder(
-                "description must not be null",
-                "createdBy must not be null",
-                "accountId must not be null"));
+                .statusCode(422)
+                .body("errors.size()", is(3))
+                .body("errors", containsInAnyOrder(
+                        "description must not be null",
+                        "createdBy must not be null",
+                        "accountId must not be null"));
     }
 
     @Test
     public void respondWith422_ifAccountIsMissing() {
         createTokenFor("{\"description\" : \"" + ACCOUNT_ID + "\", \"created_by\": \"some-user\"}")
-            .statusCode(422)
-            .body("errors", equalTo(List.of("accountId must not be null")));
+                .statusCode(422)
+                .body("errors", equalTo(List.of("accountId must not be null")));
     }
 
     @Test
     public void respondWith422_ifDescriptionIsMissing() {
         createTokenFor("{\"account_id\" : \"" + ACCOUNT_ID + "\", \"created_by\": \"some-user\"}")
-            .statusCode(422)
-            .body("errors", equalTo(List.of("description must not be null")));
+                .statusCode(422)
+                .body("errors", equalTo(List.of("description must not be null")));
     }
 
     @Test
     public void respondWith422_ifBodyIsMissing() {
         createTokenFor("")
-            .statusCode(422)
-            .body("errors", equalTo(List.of("The request body must not be null")));
+                .statusCode(422)
+                .body("errors", equalTo(List.of("The request body must not be null")));
     }
 
     @Test
@@ -538,7 +548,7 @@ public class PublicAuthResourceIT {
 
         revokeSingleToken(ACCOUNT_ID, "{\"token_link\" : \"" + TOKEN_LINK.toString() + "\"}")
                 .statusCode(404)
-                .body("message", is("Could not revoke token with token_link " + TOKEN_LINK ));
+                .body("message", is("Could not revoke token with token_link " + TOKEN_LINK));
 
         Optional<String> token1RevokedInDb = app.getDatabaseHelper().lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.toString());
         assertThat(token1RevokedInDb.isPresent(), is(true));

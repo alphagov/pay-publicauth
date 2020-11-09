@@ -25,7 +25,10 @@ import uk.gov.pay.publicauth.app.config.PublicAuthConfiguration;
 import uk.gov.pay.publicauth.auth.Token;
 import uk.gov.pay.publicauth.auth.TokenAuthenticator;
 import uk.gov.pay.publicauth.dao.AuthTokenDao;
+import uk.gov.pay.publicauth.exception.TokenInvalidException;
+import uk.gov.pay.publicauth.exception.TokenInvalidExceptionMapper;
 import uk.gov.pay.publicauth.exception.TokenNotFoundExceptionMapper;
+import uk.gov.pay.publicauth.exception.TokenRevokedExceptionMapper;
 import uk.gov.pay.publicauth.exception.ValidationExceptionMapper;
 import uk.gov.pay.publicauth.filters.LoggingMDCRequestFilter;
 import uk.gov.pay.publicauth.filters.LoggingMDCResponseFilter;
@@ -85,11 +88,12 @@ public class PublicAuthApp extends Application<PublicAuthConfiguration> {
                         .setPrefix("Bearer")
                         .buildAuthFilter()));
         environment.jersey().register(new AuthValueFactoryProvider.Binder<>(Token.class));
-
-        environment.jersey().register(new PublicAuthResource(new AuthTokenDao(jdbi), tokenService));
+        environment.jersey().register(new PublicAuthResource(tokenService));
         environment.jersey().register(new HealthCheckResource(environment));
         environment.jersey().register(new ValidationExceptionMapper());
         environment.jersey().register(new TokenNotFoundExceptionMapper());
+        environment.jersey().register(new TokenInvalidExceptionMapper());
+        environment.jersey().register(new TokenRevokedExceptionMapper());
         environment.healthChecks().register("database", new DatabaseHealthCheck(conf.getDataSourceFactory()));
 
         environment.jersey().register(new LoggingMDCRequestFilter());

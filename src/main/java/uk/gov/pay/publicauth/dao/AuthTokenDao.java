@@ -27,20 +27,16 @@ public class AuthTokenDao {
         this.jdbi = jdbi;
     }
 
-    public Optional<TokenEntity> findUnRevokedAccount(TokenHash tokenHash) {
-        Optional<TokenEntity> storedTokenHash = jdbi.withHandle(handle ->
-                handle.createQuery(TOKEN_SELECT +
-                        "WHERE token_hash = :token_hash AND revoked IS NULL")
-                        .bind("token_hash", tokenHash.getValue())
-                        .map(new TokenMapper())
-                        .findFirst());
-        if (storedTokenHash.isPresent()) {
-            updateLastUsedTime(tokenHash);
-        }
-        return storedTokenHash;
+    public Optional<TokenEntity> findTokenByHash(TokenHash tokenHash) {
+        return jdbi.withHandle(handle ->
+                    handle.createQuery(TOKEN_SELECT +
+                            "WHERE token_hash = :token_hash")
+                            .bind("token_hash", tokenHash.getValue())
+                            .map(new TokenMapper())
+                            .findFirst());
     }
 
-    private void updateLastUsedTime(TokenHash tokenHash) {
+    public void updateLastUsedTime(TokenHash tokenHash) {
         jdbi.withHandle(handle ->
                 handle.createUpdate("UPDATE tokens SET last_used=(now() at time zone 'utc') WHERE token_hash=:token_hash")
                         .bind("token_hash", tokenHash.getValue())

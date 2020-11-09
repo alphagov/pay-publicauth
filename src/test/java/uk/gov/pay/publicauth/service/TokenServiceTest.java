@@ -14,21 +14,31 @@ import org.mockito.junit.MockitoJUnitRunner;
 import uk.gov.pay.publicauth.app.config.TokensConfiguration;
 import uk.gov.pay.publicauth.auth.Token;
 import uk.gov.pay.publicauth.dao.AuthTokenDao;
+import uk.gov.pay.publicauth.exception.TokenInvalidException;
+import uk.gov.pay.publicauth.exception.TokenRevokedException;
+import uk.gov.pay.publicauth.model.AuthResponse;
 import uk.gov.pay.publicauth.model.CreateTokenRequest;
+import uk.gov.pay.publicauth.model.TokenEntity;
 import uk.gov.pay.publicauth.model.TokenHash;
+import uk.gov.pay.publicauth.model.TokenLink;
 
 import java.util.List;
 import java.util.Optional;
 
 import static com.google.common.primitives.Chars.asList;
+import static java.time.ZoneOffset.UTC;
+import static java.time.ZonedDateTime.now;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.core.Is.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static uk.gov.pay.publicauth.fixture.TokenEntityFixture.aTokenEntity;
 import static uk.gov.pay.publicauth.model.TokenPaymentType.CARD;
 import static uk.gov.pay.publicauth.model.TokenSource.API;
 
@@ -38,6 +48,7 @@ public class TokenServiceTest {
     private static final String EXPECTED_SALT = "$2a$10$IhaXo6LIBhKIWOiGpbtPOu";
     private static final String EXPECTED_SECRET_KEY = "qwer9yuhgf";
     private static final List<Character> BASE32_HEX_DICTIONARY = asList("0123456789abcdefghijklmnopqrstuv".toCharArray());
+    private static final TokenHash TOKEN_HASH = TokenHash.of("TOKEN");
 
     private TokenService tokenService;
 
@@ -55,6 +66,40 @@ public class TokenServiceTest {
         when(mockConfig.getEncryptDBSalt()).thenReturn(EXPECTED_SALT);
         when(mockConfig.getApiKeyHmacSecret()).thenReturn(EXPECTED_SECRET_KEY);
         tokenService = new TokenService(mockConfig, mockAuthTokenDao);
+    }
+
+    @Test
+    public void shouldSuccessfullyAuthenticateIfValidNotRevokedToken() {
+        TokenEntity token = aTokenEntity().build();
+        when(mockAuthTokenDao.findTokenByHash(TOKEN_HASH)).thenReturn(Optional.of(token));
+
+        AuthResponse authResponse = tokenService.authenticate(TOKEN_HASH);
+
+        verify(mockAuthTokenDao).updateLastUsedTime(TOKEN_HASH);
+
+        assertThat(authResponse.getAccountId(), is(token.getAccountId()));
+        assertThat(authResponse.getTokenLink(), is(token.getTokenLink()));
+        assertThat(authResponse.getTokenPaymentType(), is(token.getTokenPaymentType()));
+    }
+
+    @Test
+    public void shouldThrowExceptionIfTokenNotFound() {
+        when(mockAuthTokenDao.findTokenByHash(TOKEN_HASH)).thenReturn(Optional.empty());
+
+        assertThrows(TokenInvalidException.class, () -> tokenService.authenticate(TOKEN_HASH));
+        verify(mockAuthTokenDao, never()).updateLastUsedTime(TOKEN_HASH);
+    }
+
+    @Test
+    public void shouldThrowExceptionIfTokenRevoked() {
+        TokenEntity token = aTokenEntity()
+                .withRevokedDate(now(UTC))
+                .withTokenLink(TokenLink.of("a-token-link"))
+                .build();
+        when(mockAuthTokenDao.findTokenByHash(TOKEN_HASH)).thenReturn(Optional.of(token));
+
+        assertThrows(TokenRevokedException.class, () -> tokenService.authenticate(TOKEN_HASH), "Token with token_link a-token-link has been revoked");
+        verify(mockAuthTokenDao, never()).updateLastUsedTime(TOKEN_HASH);
     }
 
     @Test

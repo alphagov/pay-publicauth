@@ -7,9 +7,9 @@ import io.dropwizard.auth.Auth;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.gov.pay.publicauth.auth.Token;
-import uk.gov.pay.publicauth.dao.AuthTokenDao;
 import uk.gov.pay.publicauth.exception.TokenNotFoundException;
 import uk.gov.pay.publicauth.exception.ValidationException;
+import uk.gov.pay.publicauth.model.AuthResponse;
 import uk.gov.pay.publicauth.model.CreateTokenRequest;
 import uk.gov.pay.publicauth.model.TokenHash;
 import uk.gov.pay.publicauth.model.TokenLink;
@@ -40,7 +40,6 @@ import java.util.stream.Collectors;
 
 import static java.util.Arrays.asList;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static javax.ws.rs.core.Response.Status.UNAUTHORIZED;
 import static javax.ws.rs.core.Response.ok;
 import static uk.gov.pay.publicauth.model.TokenSource.API;
 import static uk.gov.pay.publicauth.model.TokenState.ACTIVE;
@@ -51,19 +50,14 @@ public class PublicAuthResource {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PublicAuthResource.class);
 
-    private static final String ACCOUNT_ID_FIELD = "account_id";
-    private static final String TOKEN_TYPE_FIELD = "token_type";
     private static final String TOKEN_LINK_FIELD = "token_link";
     private static final String TOKEN_FIELD = "token";
     private static final String DESCRIPTION_FIELD = "description";
     private static final String REVOKED_DATE_FORMAT_PATTERN = "dd MMM YYYY";
-
-    private final AuthTokenDao authDao;
+    
     private final TokenService tokenService;
 
-    public PublicAuthResource(AuthTokenDao authDao,
-                              TokenService tokenService) {
-        this.authDao = authDao;
+    public PublicAuthResource(TokenService tokenService) {
         this.tokenService = tokenService;
     }
 
@@ -71,13 +65,8 @@ public class PublicAuthResource {
     @Timed
     @Produces(APPLICATION_JSON)
     @GET
-    public Response authenticate(@Auth Token token) {
-        return authDao.findUnRevokedAccount(TokenHash.of(token.getName()))
-                .map(tokenEntity -> ok(ImmutableMap.of(
-                        ACCOUNT_ID_FIELD, tokenEntity.getAccountId(),
-                        TOKEN_TYPE_FIELD, tokenEntity.getTokenPaymentType().toString())))
-                .orElse(Response.status(UNAUTHORIZED))
-                .build();
+    public AuthResponse authenticate(@Auth Token token) {
+        return tokenService.authenticate(TokenHash.of(token.getName()));
     }
 
     @Path("/v1/frontend/auth")
