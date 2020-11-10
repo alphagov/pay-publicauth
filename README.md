@@ -14,7 +14,7 @@ govukpay_live_u3tl8gajo9paj0xki31jm1psr3v21m5urh50zoa7a262w4ntzoo6cqhu82
 ```
 
 | Item | Definition |
-|------|------------|"
+|------|------------|
 | `TOKEN` | randomly generated base 32 string, 130 bits entropy, variable length, optionally includes a human readable prefix |
 | `CHECKSUM` | `hmacSha1(TOKEN + TOKEN_API_HMAC_SECRET)`, base32 encoded. Always 32 characters long |
 | `TOKEN_API_HMAC_SECRET` | secret provided via application environment |

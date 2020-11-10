@@ -61,7 +61,6 @@ public class PublicAuthResourceIT {
     private static final String ACCOUNT_ID_2 = "ACCOUNT-ID-2";
     private static final String TOKEN_DESCRIPTION = "TOKEN DESCRIPTION";
     private static final String TOKEN_DESCRIPTION_2 = "Token description 2";
-    private static final String TOKEN_ACCOUNT_TYPE = "live";
     private static final String USER_EMAIL = "user@email.com";
     private static final String TOKEN_HASH_COLUMN = "token_hash";
     private static final String CREATED_USER_NAME = "user-name";
@@ -72,6 +71,7 @@ public class PublicAuthResourceIT {
     private final String validTokenPayload = new Gson().toJson(
             ImmutableMap.of("account_id", ACCOUNT_ID,
                     "description", TOKEN_DESCRIPTION,
+                    "token_account_type", "live",
                     "created_by", USER_EMAIL));
     private final String validDirectDebitTokenPayload = new Gson().toJson(
             ImmutableMap.of("account_id", ACCOUNT_ID,
@@ -85,7 +85,7 @@ public class PublicAuthResourceIT {
                     "created_by", USER_EMAIL));
     private final String validTokenPayloadWithTokenAccountType = new Gson().toJson(
             ImmutableMap.of("account_id", ACCOUNT_ID,
-                    "token_account_type", "LIVE",
+                    "token_account_type", "test",
                     "description", TOKEN_DESCRIPTION,
                     "created_by", USER_EMAIL));
 
@@ -157,6 +157,7 @@ public class PublicAuthResourceIT {
                 .statusCode(200)
                 .body("token", is(notNullValue()))
                 .extract().path("token");
+        assertThat(newToken.contains("govukpay_test_"), is(true));
     }
 
     @Test
