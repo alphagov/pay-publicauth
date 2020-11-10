@@ -21,6 +21,7 @@ import uk.gov.pay.publicauth.model.CreateTokenRequest;
 import uk.gov.pay.publicauth.model.TokenEntity;
 import uk.gov.pay.publicauth.model.TokenHash;
 import uk.gov.pay.publicauth.model.TokenLink;
+import uk.gov.pay.publicauth.model.TokenAccountType;
 
 import java.util.List;
 import java.util.Optional;
@@ -104,7 +105,7 @@ public class TokenServiceTest {
 
     @Test
     public void shouldCreateValidToken() {
-        CreateTokenRequest createTokenRequest = new CreateTokenRequest("42", "A token description", "a-user-id", CARD, API);
+        CreateTokenRequest createTokenRequest = new CreateTokenRequest("42", "A token description", "a-user-id", CARD, API, null);
         String apiKey = tokenService.createTokenForAccount(createTokenRequest);
 
         // Minimum length guarantee is 32 for Hmac and an extremely very unlikely
@@ -134,7 +135,7 @@ public class TokenServiceTest {
 
     @Test
     public void shouldCreateDifferentTokensWhenCalledTwice() {
-        CreateTokenRequest createTokenRequest = new CreateTokenRequest("42", "A token description", "a-user-id", CARD, API);
+        CreateTokenRequest createTokenRequest = new CreateTokenRequest("42", "A token description", "a-user-id", CARD, API, TokenAccountType.LIVE);
         String apiKey1 = tokenService.createTokenForAccount(createTokenRequest);
         String apiKey2 = tokenService.createTokenForAccount(createTokenRequest);
 

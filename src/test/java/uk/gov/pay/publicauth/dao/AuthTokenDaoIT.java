@@ -10,6 +10,7 @@ import uk.gov.pay.publicauth.model.CreateTokenRequest;
 import uk.gov.pay.publicauth.model.TokenEntity;
 import uk.gov.pay.publicauth.model.TokenHash;
 import uk.gov.pay.publicauth.model.TokenLink;
+import uk.gov.pay.publicauth.model.TokenAccountType;
 import uk.gov.pay.publicauth.utils.DropwizardAppWithPostgresRule;
 
 import java.time.ZonedDateTime;
@@ -171,7 +172,7 @@ public class AuthTokenDaoIT {
 
     @Test
     public void shouldInsertNewToken() {
-        var createTokenRequest = new CreateTokenRequest("account-id", "description", "user", CARD, API);
+        var createTokenRequest = new CreateTokenRequest("account-id", "description", "user", CARD, API, TokenAccountType.LIVE);
         authTokenDao.storeToken(TokenHash.of("token-hash"), createTokenRequest);
         Map<String, Object> tokenByHash = app.getDatabaseHelper().getTokenByHash(TokenHash.of("token-hash"));
         ZonedDateTime now = app.getDatabaseHelper().getCurrentTime();
@@ -302,7 +303,7 @@ public class AuthTokenDaoIT {
     public void shouldErrorIfTriesToSaveTheSameTokenTwice() {
         app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, TEST_USER_NAME);
 
-        var createTokenRequest = new CreateTokenRequest(ACCOUNT_ID, TOKEN_DESCRIPTION, "test@email.com", CARD, API);
+        var createTokenRequest = new CreateTokenRequest(ACCOUNT_ID, TOKEN_DESCRIPTION, "test@email.com", CARD, API, TokenAccountType.LIVE);
         authTokenDao.storeToken(TOKEN_HASH, createTokenRequest);
     }
 
