@@ -17,18 +17,21 @@ public class CreateTokenRequest {
     private final TokenPaymentType tokenPaymentType;
     private final TokenSource tokenSource;
     private final TokenLink tokenLink = TokenLink.of(randomUUID().toString());
+    private final TokenAccountType tokenAccountType;
 
     @JsonCreator
     public CreateTokenRequest(@JsonProperty("account_id") String accountId,
                               @JsonProperty("description") String description,
                               @JsonProperty("created_by") String createdBy,
                               @JsonProperty("token_type") TokenPaymentType tokenPaymentType,
-                              @JsonProperty("type") TokenSource tokenSource) {
+                              @JsonProperty("type") TokenSource tokenSource,
+                              @JsonProperty("token_account_type") TokenAccountType tokenAccountType) {
         this.accountId = accountId;
         this.description = description;
         this.createdBy = createdBy;
         this.tokenPaymentType = tokenPaymentType == null ? CARD : tokenPaymentType;
         this.tokenSource = tokenSource == null ? API : tokenSource;
+        this.tokenAccountType = tokenAccountType;
     }
 
     public String getAccountId() {
@@ -53,5 +56,9 @@ public class CreateTokenRequest {
 
     public TokenLink getTokenLink() {
         return tokenLink;
+    }
+
+    public TokenAccountType getTokenAccountType() {
+        return tokenAccountType;
     }
 }

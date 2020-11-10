@@ -10,6 +10,7 @@ import org.hamcrest.Matcher;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mindrot.jbcrypt.BCrypt;
+import uk.gov.pay.publicauth.model.TokenAccountType;
 import uk.gov.pay.publicauth.model.TokenHash;
 import uk.gov.pay.publicauth.model.TokenLink;
 import uk.gov.pay.publicauth.utils.DropwizardAppWithPostgresRule;
@@ -60,6 +61,7 @@ public class PublicAuthResourceIT {
     private static final String ACCOUNT_ID_2 = "ACCOUNT-ID-2";
     private static final String TOKEN_DESCRIPTION = "TOKEN DESCRIPTION";
     private static final String TOKEN_DESCRIPTION_2 = "Token description 2";
+    private static final String TOKEN_ACCOUNT_TYPE = "live";
     private static final String USER_EMAIL = "user@email.com";
     private static final String TOKEN_HASH_COLUMN = "token_hash";
     private static final String CREATED_USER_NAME = "user-name";
@@ -80,6 +82,11 @@ public class PublicAuthResourceIT {
             ImmutableMap.of("account_id", ACCOUNT_ID,
                     "description", TOKEN_DESCRIPTION,
                     "type", PRODUCTS.toString(),
+                    "created_by", USER_EMAIL));
+    private final String validTokenPayloadWithTokenAccountType = new Gson().toJson(
+            ImmutableMap.of("account_id", ACCOUNT_ID,
+                    "token_account_type", "LIVE",
+                    "description", TOKEN_DESCRIPTION,
                     "created_by", USER_EMAIL));
 
     @Test
@@ -142,6 +149,25 @@ public class PublicAuthResourceIT {
 
         Optional<String> newTokenType = app.getDatabaseHelper().lookupColumnForTokenTable("token_type", TOKEN_HASH_COLUMN, hashedToken);
         assertThat(newTokenType.get(), equalTo(CARD.toString()));
+    }
+
+    @Test
+    public void respondWith200_whenCreateAToken_ifValidTokenAccountTypeProvided() {
+        String newToken = createTokenFor(validTokenPayloadWithTokenAccountType)
+                .statusCode(200)
+                .body("token", is(notNullValue()))
+                .extract().path("token");
+    }
+
+    @Test
+    public void respondWith400_whenCreateAToken_ifInvalidTokenTypeProvided() {
+        String invalidTypeBody = new Gson().toJson(
+                ImmutableMap.of("account_id", ACCOUNT_ID,
+                        "token_account_type", "not-an-account-type",
+                        "description", TOKEN_DESCRIPTION,
+                        "created_by", USER_EMAIL));
+        createTokenFor(invalidTypeBody)
+                .statusCode(400);
     }
 
     @Test
