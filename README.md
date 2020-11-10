@@ -6,14 +6,16 @@ Payments Public API Authentication Service
 Anatomy of an api key:
 
 ```
-u3tl8gajo9paj0xki31jm1psr3v21m5urh50zoa7a262w4ntzoo6cqhu82
-`------------------------------'`------------------------'
-       TOKEN                          CHECKSUM
+govukpay_live_u3tl8gajo9paj0xki31jm1psr3v21m5urh50zoa7a262w4ntzoo6cqhu82
+`------------`'------------------------------'
+   PREFIX           RANDOM BASE32 STRING
+`--------------------------------------------'`------------------------'
+                   TOKEN                        CHECKSUM
 ```
 
 | Item | Definition |
-|------|------------|
-| `TOKEN` | randomly generated base 32 string, 130 bits entropy, variable length |
+|------|------------|"
+| `TOKEN` | randomly generated base 32 string, 130 bits entropy, variable length, optionally includes a human readable prefix |
 | `CHECKSUM` | `hmacSha1(TOKEN + TOKEN_API_HMAC_SECRET)`, base32 encoded. Always 32 characters long |
 | `TOKEN_API_HMAC_SECRET` | secret provided via application environment |
 | `TOKEN_DB_BCRYPT_SALT` | bcrypt salt provided via application environment |
@@ -21,7 +23,7 @@ u3tl8gajo9paj0xki31jm1psr3v21m5urh50zoa7a262w4ntzoo6cqhu82
 
 API KEY generation algorithm:
 
-1. `TOKEN` := 130 bit random number and encode to base32
+1. `TOKEN` := 130 bit random number and encode to base32, optionally prefixed with a human readable string based on the token account type
 2. `CHECKSUM` := `hmacSha1(concat(TOKEN, TOKEN_API_HMAC_SECRET))`
 3. `API_KEY` := `concat(TOKEN, CHECKSUM)`
 4. `TOKEN_HASH` := `bcrypt(TOKEN, TOKEN_DB_BCRYPT_SALT)`
