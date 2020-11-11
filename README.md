@@ -6,9 +6,9 @@ Payments Public API Authentication Service
 Anatomy of an api key:
 
 ```
-govukpay_live_u3tl8gajo9paj0xki31jm1psr3v21m5urh50zoa7a262w4ntzoo6cqhu82
-`------------`'------------------------------'
-   PREFIX           RANDOM BASE32 STRING
+api_live_u3tl8gajo9paj0xki31jm1psr3v21m5urh50zoa7a262w4ntzoo6cqhu82
+`-------`'-----------------------------------'
+ PREFIX           RANDOM BASE32 STRING
 `--------------------------------------------'`------------------------'
                    TOKEN                        CHECKSUM
 ```

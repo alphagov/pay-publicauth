@@ -157,7 +157,7 @@ public class PublicAuthResourceIT {
                 .statusCode(200)
                 .body("token", is(notNullValue()))
                 .extract().path("token");
-        assertThat(newToken.contains("govukpay_test_"), is(true));
+        assertThat(newToken.contains("api_test_"), is(true));
     }
 
     @Test

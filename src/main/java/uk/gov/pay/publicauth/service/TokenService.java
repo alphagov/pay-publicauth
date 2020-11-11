@@ -35,8 +35,8 @@ public class TokenService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TokenService.class);
 
-    private static final String PREFIX_TEST = "govukpay_test_";
-    private static final String PREFIX_LIVE = "govukpay_live_";
+    private static final String PREFIX_TEST = "api_test_";
+    private static final String PREFIX_LIVE = "api_live_";
 
     private static final int HMAC_SHA1_LENGTH = 32;
     private static final int PREFIX_MAX_LENGTH = Math.max(PREFIX_LIVE.length(), PREFIX_TEST.length());
