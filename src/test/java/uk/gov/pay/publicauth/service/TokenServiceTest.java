@@ -111,6 +111,8 @@ public class TokenServiceTest {
         // Minimum length guarantee is 32 for Hmac and an extremely very unlikely
         // minimum value of 1 length for the random Token this value is more likely to be 24~26 chars length
         assertThat(apiKey.length(), is(greaterThan(33)));
+
+        // this additionally asserts that no prefix is added if no token account type is provided (as the prefix includes the _ character)
         assertThat(BASE32_HEX_DICTIONARY.containsAll(asList(apiKey.toCharArray())), is(true));
 
         verify(mockAuthTokenDao).storeToken(tokenHashArgumentCaptor.capture(), eq(createTokenRequest));
@@ -131,6 +133,20 @@ public class TokenServiceTest {
         // check Hmac matches token
         String hmacFromExtractedPlainToken = BaseEncoding.base32Hex().omitPadding().lowerCase().encode(new HmacUtils(HmacAlgorithms.HMAC_SHA_1, EXPECTED_SECRET_KEY).hmac(plainToken));
         assertThat(hmacFromExtractedPlainToken, is(hmacApiKey));
+    }
+
+    @Test
+    public void shouldCreateValidToken_withPrefixForLiveAccountType() {
+        CreateTokenRequest createTokenRequest = new CreateTokenRequest("42", "A token description", "a-user-id", CARD, API, TokenAccountType.LIVE);
+        String apiKey = tokenService.createTokenForAccount(createTokenRequest);
+        assertThat(apiKey.contains("api_live_"), is(true));
+    }
+
+    @Test
+    public void shouldCreateValidToken_withPrefixForTestAccountType() {
+        CreateTokenRequest createTokenRequest = new CreateTokenRequest("42", "A token description", "a-user-id", CARD, API, TokenAccountType.TEST);
+        String apiKey = tokenService.createTokenForAccount(createTokenRequest);
+        assertThat(apiKey.contains("api_test_"), is(true));
     }
 
     @Test
@@ -166,11 +182,10 @@ public class TokenServiceTest {
 
     @Test
     public void extractEncryptedTokenFromApiKey_shouldNotBePresent_whenLengthIsGreaterThanExpected() {
+        String tokenGreaterThan35Characters = "morethan35chartokenisnotvalincprefix";
+        String hmac = BaseEncoding.base32Hex().omitPadding().lowerCase().encode(new HmacUtils(HmacAlgorithms.HMAC_SHA_1, EXPECTED_SECRET_KEY).hmac(tokenGreaterThan35Characters));
 
-        String tokenGreaterThan26Characters = "morethan26chartokenisnotval";
-        String hmac = BaseEncoding.base32Hex().omitPadding().lowerCase().encode(new HmacUtils(HmacAlgorithms.HMAC_SHA_1, EXPECTED_SECRET_KEY).hmac(tokenGreaterThan26Characters));
-
-        Optional<Token> expectedValidTokenOptional = tokenService.extractEncryptedTokenFrom(tokenGreaterThan26Characters + hmac);
+        Optional<Token> expectedValidTokenOptional = tokenService.extractEncryptedTokenFrom(tokenGreaterThan35Characters + hmac);
         assertThat(expectedValidTokenOptional.isPresent(), is(false));
     }
 

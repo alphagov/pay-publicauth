@@ -20,6 +20,7 @@ import uk.gov.pay.publicauth.model.TokenResponse;
 import uk.gov.pay.publicauth.model.TokenSource;
 import uk.gov.pay.publicauth.model.TokenState;
 import uk.gov.pay.publicauth.model.Tokens;
+import uk.gov.pay.publicauth.model.TokenAccountType;
 
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -34,9 +35,13 @@ public class TokenService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TokenService.class);
 
+    private static final String PREFIX_TEST = "api_test_";
+    private static final String PREFIX_LIVE = "api_live_";
+
     private static final int HMAC_SHA1_LENGTH = 32;
+    private static final int PREFIX_MAX_LENGTH = Math.max(PREFIX_LIVE.length(), PREFIX_TEST.length());
     private static final int API_KEY_MIN_LENGTH = HMAC_SHA1_LENGTH + RANDOM_ID_MIN_LENGTH;
-    private static final int API_KEY_MAX_LENGTH = HMAC_SHA1_LENGTH + RANDOM_ID_MAX_LENGTH;
+    private static final int API_KEY_MAX_LENGTH = PREFIX_MAX_LENGTH + HMAC_SHA1_LENGTH + RANDOM_ID_MAX_LENGTH;
 
     private final String encryptDBSalt;
     private final String apiKeyHmacSecret;
@@ -49,7 +54,7 @@ public class TokenService {
     }
 
     public String createTokenForAccount(CreateTokenRequest createTokenRequest) {
-        Tokens tokens = issueTokens();
+        Tokens tokens = issueTokens(createTokenRequest);
         authTokenDao.storeToken(tokens.getHashedToken(), createTokenRequest);
         LOGGER.info("Created token with token_link {}", createTokenRequest.getTokenLink());
         return tokens.getApiKey();
@@ -120,8 +125,9 @@ public class TokenService {
      * - Salted BCrypt Hash. Intended to be used as encrypted value when storing in DB
      * - Token + Hmac(Token + SecretKey). To be used as API key
      */
-    private Tokens issueTokens() {
-        final String newId = newId();
+    private Tokens issueTokens(CreateTokenRequest createTokenRequest) {
+        final String prefix = generateTokenPrefix(createTokenRequest);
+        final String newId = prefix + newId();
         return new Tokens(encrypt(newId), createApiKey(newId));
     }
     
@@ -147,5 +153,18 @@ public class TokenService {
         int apiKeyLength = apiKey.length();
         return (apiKeyLength >= API_KEY_MIN_LENGTH)
                 && (apiKeyLength <= API_KEY_MAX_LENGTH);
+    }
+
+    private String generateTokenPrefix(CreateTokenRequest createTokenRequest) {
+        TokenAccountType tokenAccountType = createTokenRequest.getTokenAccountType();
+        if (tokenAccountType != null) {
+            if (tokenAccountType == TokenAccountType.LIVE) {
+                return PREFIX_LIVE;
+            }
+            if (tokenAccountType == TokenAccountType.TEST) {
+                return PREFIX_TEST;
+            }
+        }
+        return "";
     }
 }
