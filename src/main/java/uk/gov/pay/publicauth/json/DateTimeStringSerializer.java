@@ -20,6 +20,6 @@ public class DateTimeStringSerializer extends StdSerializer<ZonedDateTime> {
     
     @Override
     public void serialize(ZonedDateTime zonedDateTime, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
-        jsonGenerator.writeString(DateTimeFormatter.ofPattern("dd MMM YYYY - HH:mm").format(zonedDateTime));
+        jsonGenerator.writeString(DateTimeFormatter.ofPattern("dd MMM yyyy - HH:mm").format(zonedDateTime));
     }
 }
