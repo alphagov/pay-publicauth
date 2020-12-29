@@ -47,7 +47,7 @@ import static uk.gov.pay.publicauth.model.TokenSource.PRODUCTS;
 @SuppressWarnings("OptionalGetWithoutIsPresent")
 public class PublicAuthResourceIT {
 
-    private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("dd MMM YYYY - HH:mm");
+    private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("dd MMM yyyy - HH:mm");
 
     private static final String SALT = "$2a$10$IhaXo6LIBhKIWOiGpbtPOu";
     private static final String BEARER_TOKEN = "testbearertoken";
@@ -536,7 +536,7 @@ public class PublicAuthResourceIT {
 
         revokeSingleToken(ACCOUNT_ID, "{\"token_link\" : \"" + TOKEN_LINK.toString() + "\"}")
                 .statusCode(200)
-                .body("revoked", is(ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ofPattern("dd MMM YYYY"))));
+                .body("revoked", is(ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ofPattern("dd MMM yyyy"))));
 
         Optional<String> revokedInDb = app.getDatabaseHelper().lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.toString());
         assertThat(revokedInDb.isPresent(), is(true));
@@ -548,7 +548,7 @@ public class PublicAuthResourceIT {
         String fullBearerToken = BEARER_TOKEN + "qgs2ot3itqer7ag9mvvbs8snqb5jfas3";
         revokeSingleToken(ACCOUNT_ID, "{\"token\" : \"" + fullBearerToken + "\"}")
                 .statusCode(200)
-                .body("revoked", is(ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ofPattern("dd MMM YYYY"))));
+                .body("revoked", is(ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ofPattern("dd MMM yyyy"))));
 
         Optional<String> revokedInDb = app.getDatabaseHelper().lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.toString());
         assertThat(revokedInDb.isPresent(), is(true));

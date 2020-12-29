@@ -53,7 +53,7 @@ public class PublicAuthResource {
     private static final String TOKEN_LINK_FIELD = "token_link";
     private static final String TOKEN_FIELD = "token";
     private static final String DESCRIPTION_FIELD = "description";
-    private static final String REVOKED_DATE_FORMAT_PATTERN = "dd MMM YYYY";
+    private static final String REVOKED_DATE_FORMAT_PATTERN = "dd MMM yyyy";
     
     private final TokenService tokenService;
 
