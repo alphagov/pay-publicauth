@@ -10,7 +10,6 @@ import org.hamcrest.Matcher;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mindrot.jbcrypt.BCrypt;
-import uk.gov.pay.publicauth.model.TokenAccountType;
 import uk.gov.pay.publicauth.model.TokenHash;
 import uk.gov.pay.publicauth.model.TokenLink;
 import uk.gov.pay.publicauth.utils.DropwizardAppWithPostgresRule;
