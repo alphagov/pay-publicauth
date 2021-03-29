@@ -8,7 +8,7 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import uk.gov.pay.commons.testing.db.PostgresDockerRule;
+import uk.gov.service.payments.commons.testing.db.PostgresDockerRule;
 import uk.gov.pay.publicauth.app.PublicAuthApp;
 import uk.gov.pay.publicauth.app.config.PublicAuthConfiguration;
 
