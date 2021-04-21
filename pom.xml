@@ -8,7 +8,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jackson.version>2.11.0</jackson.version>
-        <dropwizard.version>2.0.20</dropwizard.version>
+        <dropwizard.version>2.0.21</dropwizard.version>
         <guava.version>29.0-jre</guava.version>
         <pay-java-commons.version>1.0.20210420141754</pay-java-commons.version>
         <junit5.version>5.7.1</junit5.version>
