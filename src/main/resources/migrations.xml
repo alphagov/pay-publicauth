@@ -108,5 +108,9 @@
             </column>
         </createTable>
     </changeSet>
+
+    <changeSet id="remove empty table to test concourse db migration" author="">
+        <dropTable cascadeConstraints="true" tableName="test_concourse_db_migration" />
+    </changeSet>
     
 </databaseChangeLog>
