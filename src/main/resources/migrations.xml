@@ -100,5 +100,13 @@
             UPDATE tokens SET type = 'API';
         </sql>
     </changeSet>
+
+    <changeSet id="create empty table to test concourse db migration" author="">
+        <createTable tableName="test_concourse_db_migration">
+            <column name="id" type="bigserial" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
     
 </databaseChangeLog>
