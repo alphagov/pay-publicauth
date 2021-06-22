@@ -10,7 +10,7 @@
         <jackson.version>2.12.3</jackson.version>
         <dropwizard.version>2.0.22</dropwizard.version>
         <guava.version>30.1.1-jre</guava.version>
-        <pay-java-commons.version>1.0.20210614135811</pay-java-commons.version>
+        <pay-java-commons.version>1.0.20210621090456</pay-java-commons.version>
         <junit5.version>5.7.2</junit5.version>
     </properties>
     <dependencies>
