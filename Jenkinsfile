@@ -84,14 +84,6 @@ pipeline {
         }
       }
     }
-    stage('Deploy') {
-     when {
-       branch 'master'
-     }
-     steps {
-       deployEcs("publicauth")
-     }
-   }
    stage('Smoke Tests') {
      when { branch 'master' }
      steps { runCardSmokeTest() }
