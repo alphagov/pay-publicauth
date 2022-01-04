@@ -84,10 +84,6 @@ pipeline {
         }
       }
     }
-   stage('Smoke Tests') {
-     when { branch 'master' }
-     steps { runCardSmokeTest() }
-     }
    stage('Complete') {
      failFast true
      parallel {
@@ -97,14 +93,6 @@ pipeline {
          }
          steps {
            tagDeployment("publicauth")
-         }
-       }
-       stage('Trigger Deploy Notification') {
-         when {
-           branch 'master'
-         }
-         steps {
-           triggerGraphiteDeployEvent("publicauth")
          }
        }
      }
