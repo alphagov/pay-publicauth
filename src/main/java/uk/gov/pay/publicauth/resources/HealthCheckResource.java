@@ -3,6 +3,10 @@ package uk.gov.pay.publicauth.resources;
 import com.codahale.metrics.health.HealthCheck;
 import com.google.common.collect.ImmutableMap;
 import io.dropwizard.setup.Environment;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -26,6 +30,23 @@ public class HealthCheckResource {
     @GET
     @Path("healthcheck")
     @Produces(APPLICATION_JSON)
+    @Operation(
+            tags = "Other",
+            summary = "Healthcheck endpoint for webhooks. Check database, and deadlocks",
+            responses = {
+                    @ApiResponse(responseCode = "200", content = @Content(schema = @Schema(example = "{" +
+                            "    \"postgres\": {" +
+                            "        \"healthy\": true," +
+                            "        \"message\": \"Healthy\"" +
+                            "    }," +
+                            "    \"deadlocks\": {" +
+                            "        \"healthy\": true," +
+                            "        \"message\": \"Healthy\"" +
+                            "    }" +
+                            "}")), description = "OK"),
+                    @ApiResponse(responseCode = "503", description = "Service unavailable. If any healthchecks fail")
+            }
+    )
     public Response healthCheck() {
         SortedMap<String, HealthCheck.Result> results = environment.healthChecks().runHealthChecks();
 

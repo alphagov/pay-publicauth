@@ -12,6 +12,7 @@
         <guava.version>31.1-jre</guava.version>
         <pay-java-commons.version>1.0.20220404091145</pay-java-commons.version>
         <junit5.version>5.8.2</junit5.version>
+        <swaggger-version>2.2.0</swaggger-version>
     </properties>
     <dependencies>
         <dependency>
@@ -185,6 +186,11 @@
             <version>${junit5.version}</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-annotations</artifactId>
+            <version>${swaggger-version}</version>
+        </dependency>
     </dependencies>
     <build>
         <plugins>
@@ -318,6 +324,25 @@
                         <goals>
                             <goal>integration-test</goal>
                             <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>io.swagger.core.v3</groupId>
+                <artifactId>swagger-maven-plugin</artifactId>
+                <version>${swaggger-version}</version>
+                <configuration>
+                    <outputPath>openapi</outputPath>
+                    <outputFileName>publicauth_spec</outputFileName>
+                    <outputFormat>YAML</outputFormat>
+                    <configurationFilePath>${basedir}/src/main/resources/openapi-config.yaml</configurationFilePath>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>resolve</goal>
                         </goals>
                     </execution>
                 </executions>

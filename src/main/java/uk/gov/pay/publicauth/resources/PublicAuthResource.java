@@ -4,6 +4,16 @@ import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableMap;
 import io.dropwizard.auth.Auth;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.media.SchemaProperty;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.gov.pay.publicauth.auth.Token;
@@ -46,6 +56,7 @@ import static uk.gov.pay.publicauth.model.TokenState.ACTIVE;
 
 @Singleton
 @Path("/")
+@Tag(name = "Auth")
 public class PublicAuthResource {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PublicAuthResource.class);
@@ -54,7 +65,7 @@ public class PublicAuthResource {
     private static final String TOKEN_FIELD = "token";
     private static final String DESCRIPTION_FIELD = "description";
     private static final String REVOKED_DATE_FORMAT_PATTERN = "dd MMM yyyy";
-    
+
     private final TokenService tokenService;
 
     public PublicAuthResource(TokenService tokenService) {
@@ -65,7 +76,15 @@ public class PublicAuthResource {
     @Timed
     @Produces(APPLICATION_JSON)
     @GET
-    public AuthResponse authenticate(@Auth Token token) {
+    @Operation(
+            summary = "Look up the account ID for a token.",
+            security = {@SecurityRequirement(name = "BearerAuth")},
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = AuthResponse.class))),
+                    @ApiResponse(responseCode = "401", description = "Unauthorized")
+            }
+    )
+    public AuthResponse authenticate(@Parameter(hidden = true) @Auth Token token) {
         return tokenService.authenticate(TokenHash.of(token.getName()));
     }
 
@@ -74,6 +93,15 @@ public class PublicAuthResource {
     @Produces(APPLICATION_JSON)
     @Consumes(APPLICATION_JSON)
     @POST
+    @Operation(
+            summary = "Generate and return a new token for the given gateway account ID.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(example = "{" +
+                            "    \"token\": \"api_live_6vra8l8mdtsikncr00etcg4ks3lktu88r8fa7k2re3f211cj8t3m1aeug5\"" +
+                            "}"))),
+                    @ApiResponse(responseCode = "422", description = "Invalid or missing required parameters")
+            }
+    )
     public Response createTokenForAccount(@NotNull @Valid CreateTokenRequest createTokenRequest) {
         String apiKey = tokenService.createTokenForAccount(createTokenRequest);
         return ok(ImmutableMap.of("token", apiKey)).build();
@@ -83,9 +111,19 @@ public class PublicAuthResource {
     @Timed
     @Produces(APPLICATION_JSON)
     @GET
-    public Response getIssuedTokensForAccount(@PathParam("accountId") String accountId,
-                                              @QueryParam("state") TokenState state,
-                                              @QueryParam("type") TokenSource type) {
+    @Operation(
+            summary = "Retrieves generated tokens for gateway account.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "OK",
+                            content = @Content(schemaProperties = @SchemaProperty(name = "tokens",
+                                    array = @ArraySchema(schema = @Schema(name = "tokens",
+                                            implementation = TokenResponse.class, type = "array"))))),
+                    @ApiResponse(responseCode = "422", description = "Invalid or missing required parameters")
+            }
+    )
+    public Response getIssuedTokensForAccount(@Parameter(example = "1") @PathParam("accountId") String accountId,
+                                              @Parameter(example = "REVOKED") @QueryParam("state") TokenState state,
+                                              @Parameter(example = "API") @QueryParam("type") TokenSource type) {
         state = Optional.ofNullable(state).orElse(ACTIVE);
         type = Optional.ofNullable(type).orElse(API);
         List<TokenResponse> tokenResponses = tokenService.findTokensBy(accountId, state, type);
@@ -97,7 +135,21 @@ public class PublicAuthResource {
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @PUT
-    public TokenResponse updateTokenDescription(JsonNode payload) throws ValidationException, TokenNotFoundException {
+    @Operation(
+            summary = "Updates the description of an existing dev token.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "OK",
+                            content = @Content(schema = @Schema(implementation = TokenResponse.class))),
+                    @ApiResponse(responseCode = "404", description = "Token not found"),
+                    @ApiResponse(responseCode = "422", description = "Invalid or missing missing parameters")
+            }
+    )
+    public TokenResponse updateTokenDescription(
+            @RequestBody(content = @Content(schema = @Schema(example = "{" +
+                    "    \"token_link\": \"550e8400-e29b-41d4-a716-446655440000\"," +
+                    "    \"description\": \"Description of the token\"" +
+                    "}")))
+                    JsonNode payload) throws ValidationException, TokenNotFoundException {
 
         validatePayloadHasFields(payload, TOKEN_LINK_FIELD, DESCRIPTION_FIELD);
 
@@ -112,7 +164,21 @@ public class PublicAuthResource {
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @DELETE
-    public Response revokeSingleToken(@PathParam("accountId") String accountId, JsonNode payload) throws ValidationException, TokenNotFoundException {
+    @Operation(
+            summary = "Revokes the supplied token for this account",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "OK",
+                            content = @Content(schema = @Schema(example = "{" +
+                                    "    \"revoked\": \"4 Apr 2022\"" +
+                                    "}"))),
+                    @ApiResponse(responseCode = "404", description = "Token not found")
+            }
+    )
+    public Response revokeSingleToken(@Parameter(example = "1") @PathParam("accountId") String accountId,
+                                      @RequestBody(content = @Content(schema = @Schema(example = "{" +
+                                              "    \"token_link\": \"74813ca7-1829-4cad-bc0e-684a0288a308\"" +
+                                              "}")))
+                                              JsonNode payload) throws ValidationException, TokenNotFoundException {
 
         validatePayloadHasFields(payload, Collections.emptyList(), asList(TOKEN_LINK_FIELD, TOKEN_FIELD));
 
