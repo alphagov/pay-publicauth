@@ -75,15 +75,7 @@ The command to run the integration tests is:
 
 ## API Specification
 
-The [API Specification](docs/api_specification.md) provides more detail on the paths and operations including examples.
-
-| Path                          | Supported Methods | Description                        |
-| ----------------------------- | ----------------- | ---------------------------------- |
-|[```/v1/api/auth```](docs/api_specification.md#get-v1apiauth)              | GET    |  Look up the account ID for a token.            |
-|[```/v1/frontend/auth```](docs/api_specification.md#post-v1frontendauth)             | POST   |  Generates a new dev token for a given account. |
-|[```/v1/frontend/auth```](docs/api_specification.md#put-v1frontendauth)             | PUT   |  Updates the description of an existing dev token. |
-|[```/v1/frontend/auth/{account_id}```](docs/api_specification.md#get-v1frontendauthaccount_id)             | GET   |  Retrieves all generated tokens for this account that are not revoked. |
-|[```/v1/frontend/auth/{account_id}```](docs/api_specification.md#delete-v1frontendauthaccount_id)             | DELETE   |  Revokes the supplied dev token for this account. |
+The [API Specification](openapi/publicauth_spec.yaml) provides more detail on the paths and operations including examples.
 
 ## Licence
 
