@@ -15,6 +15,9 @@ updates:
     versions:
     - ">= 3.8.a"
     - "< 3.9"
+  - dependency-name: io.dropwizard/*
+    versions:
+      - ">= 2.1.0"
 - package-ecosystem: docker
   directory: "/"
   schedule:
