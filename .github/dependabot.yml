@@ -10,11 +10,6 @@ updates:
   - dependencies
   - govuk-pay
   - java
-  ignore:
-  - dependency-name: org.liquibase:liquibase-core
-    versions:
-    - ">= 3.8.a"
-    - "< 3.9"
 - package-ecosystem: docker
   directory: "/"
   schedule:
