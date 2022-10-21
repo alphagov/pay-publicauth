@@ -22,6 +22,8 @@ import uk.gov.pay.publicauth.model.TokenState;
 import uk.gov.pay.publicauth.model.Tokens;
 import uk.gov.pay.publicauth.model.TokenAccountType;
 
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -111,12 +113,12 @@ public class TokenService {
     }
 
     public ZonedDateTime revokeToken(String accountId, TokenHash tokenHash) {
-        return authTokenDao.revokeSingleToken(accountId, tokenHash)
+        return authTokenDao.revokeSingleToken(accountId, tokenHash).map(localDateTime -> ZonedDateTime.ofInstant(localDateTime.toInstant(ZoneOffset.UTC), ZoneId.of("UTC")))
                 .orElseThrow(() -> new TokenNotFoundException("Could not revoke token"));
     }
     
     public ZonedDateTime revokeToken(String accountId, TokenLink tokenLink) {
-        return authTokenDao.revokeSingleToken(accountId, tokenLink)
+        return authTokenDao.revokeSingleToken(accountId, tokenLink).map(localDateTime -> ZonedDateTime.ofInstant(localDateTime.toInstant(ZoneOffset.UTC), ZoneId.of("UTC")))
                 .orElseThrow(() -> new TokenNotFoundException("Could not revoke token with token_link " + tokenLink));
     }
 

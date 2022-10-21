@@ -1,6 +1,10 @@
 package uk.gov.pay.publicauth.utils;
 
 import io.dropwizard.testing.junit.DropwizardAppRule;
+import liquibase.Liquibase;
+import liquibase.database.jvm.JdbcConnection;
+import liquibase.exception.LiquibaseException;
+import liquibase.resource.ClassLoaderResourceAccessor;
 import org.jdbi.v3.core.Jdbi;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
@@ -11,9 +15,15 @@ import org.slf4j.LoggerFactory;
 import uk.gov.service.payments.commons.testing.db.PostgresDockerRule;
 import uk.gov.pay.publicauth.app.PublicAuthApp;
 import uk.gov.pay.publicauth.app.config.PublicAuthConfiguration;
+import uk.gov.service.payments.commons.testing.db.PostgresTestHelper;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 
 import static io.dropwizard.testing.ConfigOverride.config;
 import static io.dropwizard.testing.ResourceHelpers.resourceFilePath;
+import static uk.gov.pay.publicauth.utils.PostgresTestContainersBase.VERSION;
 
 public class DropwizardAppWithPostgresRule implements TestRule {
 
@@ -21,7 +31,7 @@ public class DropwizardAppWithPostgresRule implements TestRule {
 
     private final String configFilePath = resourceFilePath("config/test-it-config.yaml");
 
-    private final PostgresDockerRule postgres = new PostgresDockerRule();
+    private final PostgresDockerRule postgres = new PostgresDockerRule(VERSION);
 
     private final DropwizardAppRule<PublicAuthConfiguration> app = new DropwizardAppRule<>(
             PublicAuthApp.class,
@@ -40,8 +50,7 @@ public class DropwizardAppWithPostgresRule implements TestRule {
             public void evaluate() throws Throwable {
                 logger.info("Clearing database.");
                 app.getApplication().run("db", "drop-all", "--confirm-delete-everything", configFilePath);
-                app.getApplication().run("db", "migrate", configFilePath);
-
+                doMigration();
                 databaseHelper = new DatabaseTestHelper(getJdbi());
 
                 restoreDropwizardsLogging();
@@ -49,6 +58,14 @@ public class DropwizardAppWithPostgresRule implements TestRule {
                 base.evaluate();
             }
         }, description);
+    }
+
+    private void doMigration() throws SQLException, LiquibaseException {
+        try (Connection connection = DriverManager.getConnection(postgres.getConnectionUrl(), postgres.getUsername(), postgres.getPassword())) {
+            logger.info("Running migrations.");
+            Liquibase migrator = new Liquibase("it-migrations.xml", new ClassLoaderResourceAccessor(), new JdbcConnection(connection));
+            migrator.update("");
+        }
     }
 
     public Jdbi getJdbi() {
@@ -60,7 +77,7 @@ public class DropwizardAppWithPostgresRule implements TestRule {
     }
 
     public void stopPostgres() {
-        postgres.stop();
+        PostgresTestHelper.stop();
     }
 
     private void restoreDropwizardsLogging() {

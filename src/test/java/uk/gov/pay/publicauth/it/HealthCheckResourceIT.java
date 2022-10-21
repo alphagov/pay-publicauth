@@ -1,20 +1,27 @@
 package uk.gov.pay.publicauth.it;
 
+import io.dropwizard.testing.junit.DropwizardAppRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.junit.MockitoJUnitRunner;
-import uk.gov.pay.publicauth.utils.DropwizardAppWithPostgresRule;
+import uk.gov.pay.publicauth.app.PublicAuthApp;
+import uk.gov.pay.publicauth.app.config.PublicAuthConfiguration;
+import uk.gov.pay.publicauth.utils.PostgresTestContainersBase;
 
+
+import static io.dropwizard.testing.ConfigOverride.config;
+import static io.dropwizard.testing.ResourceHelpers.resourceFilePath;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.is;
 
-@RunWith(MockitoJUnitRunner.class)
-public class HealthCheckResourceIT {
+public class HealthCheckResourceIT extends PostgresTestContainersBase {
 
     @Rule
-    public final DropwizardAppWithPostgresRule app = new DropwizardAppWithPostgresRule();
-
+    public DropwizardAppRule<PublicAuthConfiguration> app = new DropwizardAppRule<>(
+            PublicAuthApp.class, resourceFilePath("config/test-it-config.yaml"), 
+                config("database.url", POSTGRES_CONTAINER.getJdbcUrl()),
+                config("database.user", POSTGRES_CONTAINER.getUsername()),
+                config("database.password", POSTGRES_CONTAINER.getPassword()));
+    
     @Test
     public void checkHealthcheck_allIsHealthy() {
         given().port(app.getLocalPort())
@@ -27,7 +34,7 @@ public class HealthCheckResourceIT {
 
     @Test
     public void checkHealthCheck_isUnHealthy() {
-        app.stopPostgres();
+        POSTGRES_CONTAINER.stop();
         given().port(app.getLocalPort())
                 .get("healthcheck")
                 .then()

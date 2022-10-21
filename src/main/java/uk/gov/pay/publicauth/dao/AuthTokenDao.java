@@ -10,7 +10,7 @@ import uk.gov.pay.publicauth.model.TokenLink;
 import uk.gov.pay.publicauth.model.TokenSource;
 import uk.gov.pay.publicauth.model.TokenState;
 
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -84,21 +84,21 @@ public class AuthTokenDao {
         }
     }
 
-    public Optional<ZonedDateTime> revokeSingleToken(String accountId, TokenHash tokenHash) {
+    public Optional<LocalDateTime> revokeSingleToken(String accountId, TokenHash tokenHash) {
         return Optional.ofNullable(jdbi.withHandle(handle ->
                 handle.createQuery("UPDATE tokens SET revoked=(now() at time zone 'utc') WHERE account_id=:account_id AND token_hash=:token_hash AND revoked IS NULL RETURNING revoked")
                         .bind("account_id", accountId)
                         .bind("token_hash", tokenHash.getValue())
-                        .mapTo(ZonedDateTime.class)
+                        .mapTo(LocalDateTime.class)
                         .first()));
     }
 
-    public Optional<ZonedDateTime> revokeSingleToken(String accountId, TokenLink tokenLink) {
+    public Optional<LocalDateTime> revokeSingleToken(String accountId, TokenLink tokenLink) {
         return jdbi.withHandle(handle ->
                 handle.createQuery("UPDATE tokens SET revoked=(now() at time zone 'utc') WHERE account_id=:account_id AND token_link=:token_link AND revoked IS NULL RETURNING revoked")
                         .bind("account_id", accountId)
                         .bind("token_link", tokenLink.toString())
-                        .mapTo(ZonedDateTime.class)
+                        .mapTo(LocalDateTime.class)
                         .findFirst());
     }
 

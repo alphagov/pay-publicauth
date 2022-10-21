@@ -14,7 +14,7 @@ import uk.gov.pay.publicauth.model.TokenHash;
 import uk.gov.pay.publicauth.model.TokenLink;
 import uk.gov.pay.publicauth.utils.DropwizardAppWithPostgresRule;
 
-import java.time.ZoneOffset;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.chrono.ChronoZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -25,6 +25,7 @@ import java.util.Optional;
 import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
 import static java.lang.String.format;
+import static java.time.ZoneOffset.UTC;
 import static javax.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.both;
@@ -98,13 +99,13 @@ public class PublicAuthResourceIT {
                 .body("token_type", is(CARD.toString()))
                 .body("token_link", is(TOKEN_LINK.toString()));
         ZonedDateTime lastUsed = app.getDatabaseHelper().getDateTimeColumn("last_used", ACCOUNT_ID);
-        assertThat(lastUsed, isCloseTo(ZonedDateTime.now(ZoneOffset.UTC)));
+        assertThat(lastUsed, isCloseTo(ZonedDateTime.now(UTC)));
     }
 
     @Test
     public void respondWith401_whenAuthWithRevokedToken() {
         app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION,
-                ZonedDateTime.now(ZoneOffset.UTC), CREATED_USER_NAME);
+                ZonedDateTime.now(UTC), CREATED_USER_NAME);
         String apiKey = BEARER_TOKEN + encodedHmacValueOf(BEARER_TOKEN);
         ZonedDateTime lastUsedPreAuth = app.getDatabaseHelper().getDateTimeColumn("last_used", ACCOUNT_ID);
         tokenResponse(apiKey)
@@ -241,7 +242,7 @@ public class PublicAuthResourceIT {
 
     @Test
     public void respondWith200_ifTokensHaveBeenIssuedForTheAccount() {
-        ZonedDateTime inserted = ZonedDateTime.now(ZoneOffset.UTC);
+        ZonedDateTime inserted = ZonedDateTime.now(UTC);
         ZonedDateTime lastUsed = inserted.plusHours(1);
 
         app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, null, CREATED_USER_NAME, lastUsed);
@@ -280,7 +281,7 @@ public class PublicAuthResourceIT {
 
     @Test
     public void respondWith200_andRetrieveRevokedTokens() {
-        ZonedDateTime inserted = ZonedDateTime.now(ZoneOffset.UTC);
+        ZonedDateTime inserted = ZonedDateTime.now(UTC);
         ZonedDateTime lastUsed = inserted.plusHours(1);
         ZonedDateTime revoked = inserted.plusHours(2);
 
@@ -306,7 +307,7 @@ public class PublicAuthResourceIT {
 
     @Test
     public void respondWith200_andRetrieveProductsTokens() {
-        ZonedDateTime inserted = ZonedDateTime.now(ZoneOffset.UTC);
+        ZonedDateTime inserted = ZonedDateTime.now(UTC);
         ZonedDateTime lastUsed = inserted.plusHours(1);
 
         app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, PRODUCTS, ACCOUNT_ID, TOKEN_DESCRIPTION, null, CREATED_USER_NAME, lastUsed, DIRECT_DEBIT);
@@ -340,7 +341,7 @@ public class PublicAuthResourceIT {
 
     @Test
     public void respondWith200_andRetrieveActiveTokens() {
-        ZonedDateTime inserted = ZonedDateTime.now(ZoneOffset.UTC);
+        ZonedDateTime inserted = ZonedDateTime.now(UTC);
         ZonedDateTime lastUsed = inserted.plusHours(1);
         ZonedDateTime revoked = inserted.plusHours(2);
         app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, CREATED_USER_NAME, lastUsed);
@@ -364,7 +365,7 @@ public class PublicAuthResourceIT {
 
     @Test
     public void respondWith200_andRetrieveActiveTokensIfNoQueryParamIsSpecified() {
-        ZonedDateTime inserted = ZonedDateTime.now(ZoneOffset.UTC);
+        ZonedDateTime inserted = ZonedDateTime.now(UTC);
         ZonedDateTime lastUsed = inserted.plusHours(1);
         ZonedDateTime revoked = inserted.plusHours(2);
         app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, CREATED_USER_NAME, lastUsed);
@@ -388,7 +389,7 @@ public class PublicAuthResourceIT {
 
     @Test
     public void respondWith200_andRetrieveActiveTokensIfUnknownQueryParamIsSpecified() {
-        ZonedDateTime inserted = ZonedDateTime.now(ZoneOffset.UTC);
+        ZonedDateTime inserted = ZonedDateTime.now(UTC);
         ZonedDateTime lastUsed = inserted.plusHours(1);
         ZonedDateTime revoked = inserted.plusHours(2);
         app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, CREATED_USER_NAME, lastUsed);
@@ -468,7 +469,7 @@ public class PublicAuthResourceIT {
     @Test
     public void respondWith200_ifUpdatingDescriptionOfExistingToken() {
         app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
-        ZonedDateTime nowFromDB = ZonedDateTime.now(ZoneOffset.UTC);
+        ZonedDateTime nowFromDB = ZonedDateTime.now(UTC);
 
         updateTokenDescription("{\"token_link\" : \"" + TOKEN_LINK.toString() + "\", \"description\" : \"" + TOKEN_DESCRIPTION_2 + "\"}")
                 .statusCode(200)
@@ -535,7 +536,7 @@ public class PublicAuthResourceIT {
 
         revokeSingleToken(ACCOUNT_ID, "{\"token_link\" : \"" + TOKEN_LINK.toString() + "\"}")
                 .statusCode(200)
-                .body("revoked", is(ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ofPattern("dd MMM yyyy"))));
+                .body("revoked", is(ZonedDateTime.now(UTC).format(DateTimeFormatter.ofPattern("dd MMM yyyy"))));
 
         Optional<String> revokedInDb = app.getDatabaseHelper().lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.toString());
         assertThat(revokedInDb.isPresent(), is(true));
@@ -547,7 +548,7 @@ public class PublicAuthResourceIT {
         String fullBearerToken = BEARER_TOKEN + "qgs2ot3itqer7ag9mvvbs8snqb5jfas3";
         revokeSingleToken(ACCOUNT_ID, "{\"token\" : \"" + fullBearerToken + "\"}")
                 .statusCode(200)
-                .body("revoked", is(ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ofPattern("dd MMM yyyy"))));
+                .body("revoked", is(ZonedDateTime.now(UTC).format(DateTimeFormatter.ofPattern("dd MMM yyyy"))));
 
         Optional<String> revokedInDb = app.getDatabaseHelper().lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.toString());
         assertThat(revokedInDb.isPresent(), is(true));
