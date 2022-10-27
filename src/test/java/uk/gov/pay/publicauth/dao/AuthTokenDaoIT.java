@@ -260,7 +260,7 @@ public class AuthTokenDaoIT {
 
         Optional<LocalDateTime> revokedDate = authTokenDao.revokeSingleToken(ACCOUNT_ID, TOKEN_LINK);
 
-        var actual = ZonedDateTime.ofInstant(revokedDate.get().toInstant(ZoneOffset.UTC), ZoneId.of("UTC"));
+        var actual = revokedDate.get().atZone(UTC);
 
         assertThat(actual, isCloseTo(ZonedDateTime.now(UTC)));
 
@@ -273,8 +273,8 @@ public class AuthTokenDaoIT {
         app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, TEST_USER_NAME);
 
         Optional<LocalDateTime> revokedDate = authTokenDao.revokeSingleToken(ACCOUNT_ID, TOKEN_HASH);
-        
-        var actual = ZonedDateTime.ofInstant(revokedDate.get().toInstant(ZoneOffset.UTC), ZoneId.of("UTC"));
+
+        var actual = revokedDate.get().atZone(UTC);
         
         assertThat(actual, isCloseTo(ZonedDateTime.now(UTC)));
 
