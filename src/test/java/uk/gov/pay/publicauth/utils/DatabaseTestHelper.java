@@ -6,6 +6,8 @@ import uk.gov.pay.publicauth.model.TokenLink;
 import uk.gov.pay.publicauth.model.TokenPaymentType;
 import uk.gov.pay.publicauth.model.TokenSource;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Map;
 
@@ -80,15 +82,17 @@ public class DatabaseTestHelper {
         return jdbi.withHandle(handle ->
                 handle.createQuery("SELECT " + column + " FROM tokens WHERE account_id=:accountId")
                         .bind("accountId", accountId)
-                        .mapTo(ZonedDateTime.class)
-                        .first());
+                        .mapTo(LocalDateTime.class)
+                        .first())
+                        .atZone(ZoneId.of("UTC"));
     }
 
     public ZonedDateTime getCurrentTime() {
         return jdbi.withHandle(handle ->
                 handle.createQuery("SELECT (now() at time zone 'utc')")
-                        .mapTo(ZonedDateTime.class)
+                        .mapTo(LocalDateTime.class)
                         .first())
-                        .withZoneSameInstant(UTC);
+                        .atZone(ZoneId.of("UTC"));
+                        
     }
 }

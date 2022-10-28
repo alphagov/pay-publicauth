@@ -13,6 +13,10 @@ import uk.gov.pay.publicauth.model.TokenLink;
 import uk.gov.pay.publicauth.model.TokenAccountType;
 import uk.gov.pay.publicauth.utils.DropwizardAppWithPostgresRule;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.chrono.ChronoZonedDateTime;
 import java.util.List;
@@ -254,9 +258,11 @@ public class AuthTokenDaoIT {
     public void shouldRevokeASingleTokenByTokenLink() {
         app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, TEST_USER_NAME);
 
-        Optional<ZonedDateTime> revokedDate = authTokenDao.revokeSingleToken(ACCOUNT_ID, TOKEN_LINK);
+        Optional<LocalDateTime> revokedDate = authTokenDao.revokeSingleToken(ACCOUNT_ID, TOKEN_LINK);
 
-        assertThat(revokedDate.get(), isCloseTo(ZonedDateTime.now(UTC)));
+        var actual = revokedDate.get().atZone(UTC);
+
+        assertThat(actual, isCloseTo(ZonedDateTime.now(UTC)));
 
         Optional<String> revokedInDb = app.getDatabaseHelper().lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.toString());
         assertThat(revokedInDb.isPresent(), is(true));
@@ -266,9 +272,11 @@ public class AuthTokenDaoIT {
     public void shouldRevokeASingleTokenByTokenHash() {
         app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, TEST_USER_NAME);
 
-        Optional<ZonedDateTime> revokedDate = authTokenDao.revokeSingleToken(ACCOUNT_ID, TOKEN_HASH);
+        Optional<LocalDateTime> revokedDate = authTokenDao.revokeSingleToken(ACCOUNT_ID, TOKEN_HASH);
 
-        assertThat(revokedDate.get(), isCloseTo(ZonedDateTime.now(UTC)));
+        var actual = revokedDate.get().atZone(UTC);
+        
+        assertThat(actual, isCloseTo(ZonedDateTime.now(UTC)));
 
         Optional<String> revokedInDb = app.getDatabaseHelper().lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.toString());
         assertThat(revokedInDb.isPresent(), is(true));
@@ -279,7 +287,7 @@ public class AuthTokenDaoIT {
         app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, TEST_USER_NAME);
         app.getDatabaseHelper().insertAccount(TOKEN_HASH_2, TOKEN_LINK_2, ACCOUNT_ID_2, TOKEN_DESCRIPTION_2, TEST_USER_NAME);
 
-        Optional<ZonedDateTime> revokedDate  = authTokenDao.revokeSingleToken(ACCOUNT_ID, TOKEN_LINK_2);
+        Optional<LocalDateTime> revokedDate  = authTokenDao.revokeSingleToken(ACCOUNT_ID, TOKEN_LINK_2);
 
         assertThat(revokedDate.isPresent(), is(false));
 
@@ -291,7 +299,7 @@ public class AuthTokenDaoIT {
     public void shouldNotRevokeATokenAlreadyRevoked() {
         app.getDatabaseHelper().insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION,  ZonedDateTime.now(UTC), TEST_USER_NAME);
 
-        Optional<ZonedDateTime> revokedDate = authTokenDao.revokeSingleToken(ACCOUNT_ID, TOKEN_LINK);
+        Optional<LocalDateTime> revokedDate = authTokenDao.revokeSingleToken(ACCOUNT_ID, TOKEN_LINK);
 
         assertThat(revokedDate.isPresent(), is(false));
 

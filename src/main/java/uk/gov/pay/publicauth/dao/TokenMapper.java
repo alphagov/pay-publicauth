@@ -9,7 +9,8 @@ import uk.gov.pay.publicauth.model.TokenSource;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Optional;
@@ -37,9 +38,9 @@ public class TokenMapper implements RowMapper<TokenEntity> {
     }
 
     private Optional<ZonedDateTime> getZonedDateTime(ResultSet rs, String columnLabel) throws SQLException {
-        Timestamp timestamp = rs.getTimestamp(columnLabel);
+        LocalDateTime dateTime = rs.getObject(columnLabel, LocalDateTime.class);
 
-        return Optional.ofNullable(timestamp)
-                .map(t -> ZonedDateTime.ofInstant(t.toInstant(), ZoneOffset.UTC));
+        return Optional.ofNullable(dateTime)
+                .map(t -> ZonedDateTime.ofInstant(dateTime.toInstant(ZoneOffset.UTC), ZoneId.of("UTC")));
     }
 }
