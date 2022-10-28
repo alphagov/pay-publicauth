@@ -1,6 +1,12 @@
 # pay-publicauth
 Payments Public API Authentication Service
 
+## API Specification
+
+The [API Specification](openapi/publicauth_spec.yaml) provides more detail on the paths and operations including examples.
+
+[View the API specification for publicauth in Swagger Editor](https://editor.swagger.io/?url=https://raw.githubusercontent.com/alphagov/pay-publicauth/master/openapi/publicauth_spec.yaml).
+
 ## API Keys
 
 Anatomy of an api key:
@@ -72,10 +78,6 @@ The command to run the integration tests is:
 ```
     mvn test
 ```
-
-## API Specification
-
-The [API Specification](openapi/publicauth_spec.yaml) provides more detail on the paths and operations including examples.
 
 ## Licence
 
