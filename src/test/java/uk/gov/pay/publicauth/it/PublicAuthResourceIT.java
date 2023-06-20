@@ -14,7 +14,6 @@ import uk.gov.pay.publicauth.model.TokenHash;
 import uk.gov.pay.publicauth.model.TokenLink;
 import uk.gov.pay.publicauth.utils.DropwizardAppWithPostgresRule;
 
-import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.chrono.ChronoZonedDateTime;
 import java.time.format.DateTimeFormatter;
