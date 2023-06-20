@@ -12,7 +12,7 @@
         <guava.version>32.0.1-jre</guava.version>
         <pay-java-commons.version>1.0.20230601160155</pay-java-commons.version>
         <junit5.version>5.9.3</junit5.version>
-        <swaggger-version>2.2.11</swaggger-version>
+        <swaggger-version>2.2.12</swaggger-version>
     </properties>
     <dependencies>
         <dependency>
