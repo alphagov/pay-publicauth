@@ -3,14 +3,14 @@ package uk.gov.pay.publicauth.service;
 import com.google.common.io.BaseEncoding;
 import org.apache.commons.codec.digest.HmacAlgorithms;
 import org.apache.commons.codec.digest.HmacUtils;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mindrot.jbcrypt.BCrypt;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import uk.gov.pay.publicauth.app.config.TokensConfiguration;
 import uk.gov.pay.publicauth.auth.Token;
 import uk.gov.pay.publicauth.dao.AuthTokenDao;
@@ -43,8 +43,8 @@ import static uk.gov.pay.publicauth.fixture.TokenEntityFixture.aTokenEntity;
 import static uk.gov.pay.publicauth.model.TokenPaymentType.CARD;
 import static uk.gov.pay.publicauth.model.TokenSource.API;
 
-@RunWith(MockitoJUnitRunner.class)
-public class TokenServiceTest {
+@ExtendWith(MockitoExtension.class)
+class TokenServiceTest {
 
     private static final String EXPECTED_SALT = "$2a$10$IhaXo6LIBhKIWOiGpbtPOu";
     private static final String EXPECTED_SECRET_KEY = "qwer9yuhgf";
@@ -62,7 +62,7 @@ public class TokenServiceTest {
     @Captor
     ArgumentCaptor<TokenHash> tokenHashArgumentCaptor;
 
-    @Before
+    @BeforeEach
     public void setup() {
         when(mockConfig.getEncryptDBSalt()).thenReturn(EXPECTED_SALT);
         when(mockConfig.getApiKeyHmacSecret()).thenReturn(EXPECTED_SECRET_KEY);
@@ -70,7 +70,7 @@ public class TokenServiceTest {
     }
 
     @Test
-    public void shouldSuccessfullyAuthenticateIfValidNotRevokedToken() {
+    void shouldSuccessfullyAuthenticateIfValidNotRevokedToken() {
         TokenEntity token = aTokenEntity().build();
         when(mockAuthTokenDao.findTokenByHash(TOKEN_HASH)).thenReturn(Optional.of(token));
 
@@ -84,7 +84,7 @@ public class TokenServiceTest {
     }
 
     @Test
-    public void shouldThrowExceptionIfTokenNotFound() {
+    void shouldThrowExceptionIfTokenNotFound() {
         when(mockAuthTokenDao.findTokenByHash(TOKEN_HASH)).thenReturn(Optional.empty());
 
         assertThrows(TokenInvalidException.class, () -> tokenService.authenticate(TOKEN_HASH));
@@ -92,7 +92,7 @@ public class TokenServiceTest {
     }
 
     @Test
-    public void shouldThrowExceptionIfTokenRevoked() {
+    void shouldThrowExceptionIfTokenRevoked() {
         TokenEntity token = aTokenEntity()
                 .withRevokedDate(now(UTC))
                 .withTokenLink(TokenLink.of("a-token-link"))
@@ -104,7 +104,7 @@ public class TokenServiceTest {
     }
 
     @Test
-    public void shouldCreateValidToken() {
+    void shouldCreateValidToken() {
         CreateTokenRequest createTokenRequest = new CreateTokenRequest("42", "A token description", "a-user-id", CARD, API, null);
         String apiKey = tokenService.createTokenForAccount(createTokenRequest);
 
@@ -136,21 +136,21 @@ public class TokenServiceTest {
     }
 
     @Test
-    public void shouldCreateValidToken_withPrefixForLiveAccountType() {
+    void shouldCreateValidToken_withPrefixForLiveAccountType() {
         CreateTokenRequest createTokenRequest = new CreateTokenRequest("42", "A token description", "a-user-id", CARD, API, TokenAccountType.LIVE);
         String apiKey = tokenService.createTokenForAccount(createTokenRequest);
         assertThat(apiKey.contains("api_live_"), is(true));
     }
 
     @Test
-    public void shouldCreateValidToken_withPrefixForTestAccountType() {
+    void shouldCreateValidToken_withPrefixForTestAccountType() {
         CreateTokenRequest createTokenRequest = new CreateTokenRequest("42", "A token description", "a-user-id", CARD, API, TokenAccountType.TEST);
         String apiKey = tokenService.createTokenForAccount(createTokenRequest);
         assertThat(apiKey.contains("api_test_"), is(true));
     }
 
     @Test
-    public void shouldCreateDifferentTokensWhenCalledTwice() {
+    void shouldCreateDifferentTokensWhenCalledTwice() {
         CreateTokenRequest createTokenRequest = new CreateTokenRequest("42", "A token description", "a-user-id", CARD, API, TokenAccountType.LIVE);
         String apiKey1 = tokenService.createTokenForAccount(createTokenRequest);
         String apiKey2 = tokenService.createTokenForAccount(createTokenRequest);
@@ -159,14 +159,14 @@ public class TokenServiceTest {
     }
 
     @Test
-    public void extractEncryptedTokenFromApiKey_shouldNotBePresent_whenFormatIsNotValid() {
+    void extractEncryptedTokenFromApiKey_shouldNotBePresent_whenFormatIsNotValid() {
 
         Optional<Token> tokenOptional = tokenService.extractEncryptedTokenFrom("a");
         assertThat(tokenOptional.isPresent(), is(false));
     }
 
     @Test
-    public void extractEncryptedTokenFromApiKey_shouldNotBePresent_whenTokenDoesNotMatchHmac() {
+    void extractEncryptedTokenFromApiKey_shouldNotBePresent_whenTokenDoesNotMatchHmac() {
 
         String token = "thisismvplaintoken";
         String hmac = BaseEncoding.base32Hex().omitPadding().lowerCase().encode(new HmacUtils(HmacAlgorithms.HMAC_SHA_1, EXPECTED_SECRET_KEY).hmac(token));
@@ -181,7 +181,7 @@ public class TokenServiceTest {
     }
 
     @Test
-    public void extractEncryptedTokenFromApiKey_shouldNotBePresent_whenLengthIsGreaterThanExpected() {
+    void extractEncryptedTokenFromApiKey_shouldNotBePresent_whenLengthIsGreaterThanExpected() {
         String tokenGreaterThan35Characters = "morethan35chartokenisnotvalincprefix";
         String hmac = BaseEncoding.base32Hex().omitPadding().lowerCase().encode(new HmacUtils(HmacAlgorithms.HMAC_SHA_1, EXPECTED_SECRET_KEY).hmac(tokenGreaterThan35Characters));
 
@@ -190,7 +190,7 @@ public class TokenServiceTest {
     }
 
     @Test
-    public void extractEncryptedTokenFromApiKey_shouldBePresent_evenWhenCharacterSetIsNotExpectedBase32HexLowercase_asLongTheHmacIsValid() {
+    void extractEncryptedTokenFromApiKey_shouldBePresent_evenWhenCharacterSetIsNotExpectedBase32HexLowercase_asLongTheHmacIsValid() {
 
         // Is more computationally expensive checking for character set validation than validating against the Hmac.
         // Enough to be a lightweight mechanism to check the token is genuine.
@@ -203,7 +203,7 @@ public class TokenServiceTest {
     }
 
     @Test
-    public void extractEncryptedTokenFromApiKey_shouldBePresent_evenWhenCharacterSetIsInBase32HexButUppercase_asLongTheHmacIsValid() {
+    void extractEncryptedTokenFromApiKey_shouldBePresent_evenWhenCharacterSetIsInBase32HexButUppercase_asLongTheHmacIsValid() {
 
         // Is more computationally expensive checking for character set validation than validating against the Hmac.
         // Enough to be a lightweight mechanism to check the token is genuine.

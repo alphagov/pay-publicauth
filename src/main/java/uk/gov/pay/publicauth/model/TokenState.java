@@ -11,7 +11,7 @@ public enum TokenState {
         try {
             return TokenState.valueOf(state.toUpperCase());
         } catch (Exception e) {
-            LOGGER.error("Unknown token state: " + state);
+            LOGGER.error("Unknown token state: {}", state);
             return ACTIVE;
         }
     }

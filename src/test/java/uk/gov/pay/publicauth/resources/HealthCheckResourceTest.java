@@ -6,13 +6,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.jayway.jsonassert.JsonAssert;
-import io.dropwizard.setup.Environment;
+import io.dropwizard.core.setup.Environment;
 import org.hamcrest.core.Is;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import javax.ws.rs.core.Response;
 import java.util.SortedMap;
@@ -23,8 +23,8 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.Is.is;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public class HealthCheckResourceTest {
+@ExtendWith(MockitoExtension.class)
+class HealthCheckResourceTest {
 
     @Mock
     private Environment environment;
@@ -34,14 +34,14 @@ public class HealthCheckResourceTest {
 
     private HealthCheckResource resource;
 
-    @Before
-    public void setup() {
+    @BeforeEach
+    void setup() {
         when(environment.healthChecks()).thenReturn(healthCheckRegistry);
         resource = new HealthCheckResource(environment);
     }
 
     @Test
-    public void checkHealthCheck_isUnHealthy() throws JsonProcessingException {
+    void checkHealthCheck_isUnHealthy() throws JsonProcessingException {
         SortedMap<String,HealthCheck.Result> map = new TreeMap<>();
         map.put("postgresql", HealthCheck.Result.unhealthy("database is down"));
         map.put("deadlocks", HealthCheck.Result.unhealthy("no new threads available"));
@@ -58,7 +58,7 @@ public class HealthCheckResourceTest {
     }
 
     @Test
-    public void checkHealthCheck_isHealthy() throws JsonProcessingException {
+    void checkHealthCheck_isHealthy() throws JsonProcessingException {
         SortedMap<String,HealthCheck.Result> map = new TreeMap<>();
         map.put("postgresql", HealthCheck.Result.healthy());
         map.put("deadlocks", HealthCheck.Result.healthy());

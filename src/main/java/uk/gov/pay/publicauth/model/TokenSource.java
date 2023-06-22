@@ -11,7 +11,7 @@ public enum TokenSource {
         try {
             return TokenSource.valueOf(source.toUpperCase());
         } catch (Exception e) {
-            LOGGER.error("Unknown token source: " + source);
+            LOGGER.error("Unknown token source: {}", source);
             return API;
         }
     }

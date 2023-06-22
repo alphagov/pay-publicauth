@@ -1,26 +1,28 @@
 package uk.gov.pay.publicauth.model;
 
-import org.junit.Test;
+
+import org.hamcrest.MatcherAssert;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
 
-public class TokenStateTest {
+class TokenStateTest {
 
     @Test
-    public void shouldParseActiveTokens() {
-        assertThat(TokenState.fromString("active"), is(TokenState.ACTIVE));
-        assertThat(TokenState.fromString("ACTIVE"), is(TokenState.ACTIVE));
+    void shouldParseActiveTokens() {
+        MatcherAssert.assertThat(TokenState.fromString("active"), is(TokenState.ACTIVE));
+        MatcherAssert.assertThat(TokenState.fromString("ACTIVE"), is(TokenState.ACTIVE));
     }
 
     @Test
-    public void shouldParseRevokedTokens() {
-        assertThat(TokenState.fromString("revoked"), is(TokenState.REVOKED));
-        assertThat(TokenState.fromString("REVOKED"), is(TokenState.REVOKED));
+    void shouldParseRevokedTokens() {
+        MatcherAssert.assertThat(TokenState.fromString("revoked"), is(TokenState.REVOKED));
+        MatcherAssert.assertThat(TokenState.fromString("REVOKED"), is(TokenState.REVOKED));
     }
     @Test
-    public void shouldReturnActiveTokensIfStateIsUnknown() {
-        assertThat(TokenState.fromString("somethingelse"), is(TokenState.ACTIVE));
+    void shouldReturnActiveTokensIfStateIsUnknown() {
+        MatcherAssert.assertThat(TokenState.fromString("somethingelse"), is(TokenState.ACTIVE));
     }
 }

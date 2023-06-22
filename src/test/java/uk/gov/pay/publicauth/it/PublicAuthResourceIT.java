@@ -7,12 +7,14 @@ import io.restassured.response.ValidatableResponse;
 import org.apache.commons.codec.digest.HmacAlgorithms;
 import org.apache.commons.codec.digest.HmacUtils;
 import org.hamcrest.Matcher;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mindrot.jbcrypt.BCrypt;
 import uk.gov.pay.publicauth.model.TokenHash;
 import uk.gov.pay.publicauth.model.TokenLink;
-import uk.gov.pay.publicauth.utils.DropwizardAppWithPostgresRule;
+import uk.gov.pay.publicauth.utils.DatabaseTestHelper;
+import uk.gov.pay.publicauth.utils.DropwizardAppWithPostgresExtension;
 
 import java.time.ZonedDateTime;
 import java.time.chrono.ChronoZonedDateTime;
@@ -44,10 +46,10 @@ import static uk.gov.pay.publicauth.model.TokenSource.API;
 import static uk.gov.pay.publicauth.model.TokenSource.PRODUCTS;
 
 @SuppressWarnings("OptionalGetWithoutIsPresent")
-public class PublicAuthResourceIT {
+@ExtendWith(DropwizardAppWithPostgresExtension.class)
+class PublicAuthResourceIT {
 
     private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("dd MMM yyyy - HH:mm");
-
     private static final String SALT = "$2a$10$IhaXo6LIBhKIWOiGpbtPOu";
     private static final String BEARER_TOKEN = "testbearertoken";
     private static final TokenLink TOKEN_LINK = TokenLink.of("123456789101112131415161718192021222");
@@ -64,9 +66,6 @@ public class PublicAuthResourceIT {
     private static final String TOKEN_HASH_COLUMN = "token_hash";
     private static final String CREATED_USER_NAME = "user-name";
     private static final String CREATED_USER_NAME2 = "user-name-2";
-
-    @Rule
-    public final DropwizardAppWithPostgresRule app = new DropwizardAppWithPostgresRule();
     private final String validTokenPayload = new Gson().toJson(
             ImmutableMap.of("account_id", ACCOUNT_ID,
                     "description", TOKEN_DESCRIPTION,
@@ -88,31 +87,40 @@ public class PublicAuthResourceIT {
                     "description", TOKEN_DESCRIPTION,
                     "created_by", USER_EMAIL));
 
+    private DatabaseTestHelper databaseHelper;
+    private Integer localPort;
+
+    @BeforeEach
+    public void setup(Integer port, DatabaseTestHelper databaseTestHelper) {
+        databaseHelper = databaseTestHelper;
+        localPort = port;
+    }
+
     @Test
-    public void respondWith200_whenAuthWithValidToken() {
-        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
+    void respondWith200_whenAuthWithValidToken() {
+        databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
         String apiKey = BEARER_TOKEN + encodedHmacValueOf(BEARER_TOKEN);
         tokenResponse(apiKey)
                 .statusCode(200)
                 .body("account_id", is(ACCOUNT_ID))
                 .body("token_type", is(CARD.toString()))
                 .body("token_link", is(TOKEN_LINK.toString()));
-        ZonedDateTime lastUsed = app.getDatabaseHelper().getDateTimeColumn("last_used", ACCOUNT_ID);
+        ZonedDateTime lastUsed = databaseHelper.getDateTimeColumn("last_used", ACCOUNT_ID);
         assertThat(lastUsed, isCloseTo(ZonedDateTime.now(UTC)));
     }
 
     @Test
-    public void respondWith401_whenAuthWithRevokedToken() {
-        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION,
+    void respondWith401_whenAuthWithRevokedToken() {
+        databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION,
                 ZonedDateTime.now(UTC), CREATED_USER_NAME);
         String apiKey = BEARER_TOKEN + encodedHmacValueOf(BEARER_TOKEN);
-        ZonedDateTime lastUsedPreAuth = app.getDatabaseHelper().getDateTimeColumn("last_used", ACCOUNT_ID);
+        ZonedDateTime lastUsedPreAuth = databaseHelper.getDateTimeColumn("last_used", ACCOUNT_ID);
         tokenResponse(apiKey)
                 .statusCode(401)
                 .body("message", is(format("Token with token_link %s has been revoked", TOKEN_LINK)))
                 .body("error_identifier", is(AUTH_TOKEN_REVOKED.toString()))
                 .body("token_link", is(TOKEN_LINK.toString()));
-        ZonedDateTime lastUsedPostAuth = app.getDatabaseHelper().getDateTimeColumn("last_used", ACCOUNT_ID);
+        ZonedDateTime lastUsedPostAuth = databaseHelper.getDateTimeColumn("last_used", ACCOUNT_ID);
 
         assertThat(lastUsedPreAuth, is(lastUsedPostAuth));
     }
@@ -136,17 +144,17 @@ public class PublicAuthResourceIT {
         String tokenApiKey = newToken.substring(0, newToken.length() - apiKeyHashSize);
         String hashedToken = BCrypt.hashpw(tokenApiKey, SALT);
 
-        Optional<String> newTokenDescription = app.getDatabaseHelper().lookupColumnForTokenTable("description", TOKEN_HASH_COLUMN, hashedToken);
+        Optional<String> newTokenDescription = databaseHelper.lookupColumnForTokenTable("description", TOKEN_HASH_COLUMN, hashedToken);
 
         assertThat(newTokenDescription.get(), equalTo(TOKEN_DESCRIPTION));
 
-        Optional<String> newTokenAccountId = app.getDatabaseHelper().lookupColumnForTokenTable("account_id", TOKEN_HASH_COLUMN, hashedToken);
+        Optional<String> newTokenAccountId = databaseHelper.lookupColumnForTokenTable("account_id", TOKEN_HASH_COLUMN, hashedToken);
         assertThat(newTokenAccountId.get(), equalTo(ACCOUNT_ID));
 
-        Optional<String> newCreatedByEmail = app.getDatabaseHelper().lookupColumnForTokenTable("created_by", TOKEN_HASH_COLUMN, hashedToken);
+        Optional<String> newCreatedByEmail = databaseHelper.lookupColumnForTokenTable("created_by", TOKEN_HASH_COLUMN, hashedToken);
         assertThat(newCreatedByEmail.get(), equalTo(USER_EMAIL));
 
-        Optional<String> newTokenType = app.getDatabaseHelper().lookupColumnForTokenTable("token_type", TOKEN_HASH_COLUMN, hashedToken);
+        Optional<String> newTokenType = databaseHelper.lookupColumnForTokenTable("token_type", TOKEN_HASH_COLUMN, hashedToken);
         assertThat(newTokenType.get(), equalTo(CARD.toString()));
     }
 
@@ -181,7 +189,7 @@ public class PublicAuthResourceIT {
         String tokenApiKey = newToken.substring(0, newToken.length() - apiKeyHashSize);
         String hashedToken = BCrypt.hashpw(tokenApiKey, SALT);
 
-        Optional<String> newTokenType = app.getDatabaseHelper().lookupColumnForTokenTable("token_type", TOKEN_HASH_COLUMN, hashedToken);
+        Optional<String> newTokenType = databaseHelper.lookupColumnForTokenTable("token_type", TOKEN_HASH_COLUMN, hashedToken);
         assertThat(newTokenType.get(), equalTo(DIRECT_DEBIT.toString()));
     }
 
@@ -196,7 +204,7 @@ public class PublicAuthResourceIT {
         String tokenApiKey = newToken.substring(0, newToken.length() - apiKeyHashSize);
         String hashedToken = BCrypt.hashpw(tokenApiKey, SALT);
 
-        Optional<String> newType = app.getDatabaseHelper().lookupColumnForTokenTable("type", TOKEN_HASH_COLUMN, hashedToken);
+        Optional<String> newType = databaseHelper.lookupColumnForTokenTable("type", TOKEN_HASH_COLUMN, hashedToken);
         assertThat(newType.get(), equalTo(PRODUCTS.toString()));
     }
 
@@ -244,9 +252,9 @@ public class PublicAuthResourceIT {
         ZonedDateTime inserted = ZonedDateTime.now(UTC);
         ZonedDateTime lastUsed = inserted.plusHours(1);
 
-        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, null, CREATED_USER_NAME, lastUsed);
-        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, API, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed, DIRECT_DEBIT);
-        app.getDatabaseHelper().insertAccount(TokenHash.of("TOKEN-3"), TokenLink.of("123456789101112131415161718192021224"), PRODUCTS, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed, CARD);
+        databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, null, CREATED_USER_NAME, lastUsed);
+        databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, API, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed, DIRECT_DEBIT);
+        databaseHelper.insertAccount(TokenHash.of("TOKEN-3"), TokenLink.of("123456789101112131415161718192021224"), PRODUCTS, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed, CARD);
 
         List<Map<String, String>> retrievedTokens = getTokensFor(ACCOUNT_ID)
                 .statusCode(200)
@@ -284,8 +292,8 @@ public class PublicAuthResourceIT {
         ZonedDateTime lastUsed = inserted.plusHours(1);
         ZonedDateTime revoked = inserted.plusHours(2);
 
-        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, CREATED_USER_NAME, lastUsed);
-        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed);
+        databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, CREATED_USER_NAME, lastUsed);
+        databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed);
 
         List<Map<String, String>> retrievedTokens = getTokensFor(ACCOUNT_ID, "revoked")
                 .statusCode(200)
@@ -309,9 +317,9 @@ public class PublicAuthResourceIT {
         ZonedDateTime inserted = ZonedDateTime.now(UTC);
         ZonedDateTime lastUsed = inserted.plusHours(1);
 
-        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, PRODUCTS, ACCOUNT_ID, TOKEN_DESCRIPTION, null, CREATED_USER_NAME, lastUsed, DIRECT_DEBIT);
-        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, PRODUCTS, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed);
-        app.getDatabaseHelper().insertAccount(TokenHash.of("TOKEN-3"), TokenLink.of("123456789101112131415161718192021224"), API, ACCOUNT_ID, TOKEN_DESCRIPTION, null, CREATED_USER_NAME2, lastUsed, CARD);
+        databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, PRODUCTS, ACCOUNT_ID, TOKEN_DESCRIPTION, null, CREATED_USER_NAME, lastUsed, DIRECT_DEBIT);
+        databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, PRODUCTS, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed);
+        databaseHelper.insertAccount(TokenHash.of("TOKEN-3"), TokenLink.of("123456789101112131415161718192021224"), API, ACCOUNT_ID, TOKEN_DESCRIPTION, null, CREATED_USER_NAME2, lastUsed, CARD);
 
         List<Map<String, String>> retrievedTokens = getTokensFor(ACCOUNT_ID, "active", "products")
                 .statusCode(200)
@@ -343,8 +351,8 @@ public class PublicAuthResourceIT {
         ZonedDateTime inserted = ZonedDateTime.now(UTC);
         ZonedDateTime lastUsed = inserted.plusHours(1);
         ZonedDateTime revoked = inserted.plusHours(2);
-        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, CREATED_USER_NAME, lastUsed);
-        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed);
+        databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, CREATED_USER_NAME, lastUsed);
+        databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed);
 
         List<Map<String, String>> retrievedTokens = getTokensFor(ACCOUNT_ID, "active")
                 .statusCode(200)
@@ -367,8 +375,8 @@ public class PublicAuthResourceIT {
         ZonedDateTime inserted = ZonedDateTime.now(UTC);
         ZonedDateTime lastUsed = inserted.plusHours(1);
         ZonedDateTime revoked = inserted.plusHours(2);
-        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, CREATED_USER_NAME, lastUsed);
-        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed);
+        databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, CREATED_USER_NAME, lastUsed);
+        databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed);
 
         List<Map<String, String>> retrievedTokens = getTokensForWithNoQueryParam(ACCOUNT_ID)
                 .statusCode(200)
@@ -391,8 +399,8 @@ public class PublicAuthResourceIT {
         ZonedDateTime inserted = ZonedDateTime.now(UTC);
         ZonedDateTime lastUsed = inserted.plusHours(1);
         ZonedDateTime revoked = inserted.plusHours(2);
-        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, CREATED_USER_NAME, lastUsed);
-        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed);
+        databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, CREATED_USER_NAME, lastUsed);
+        databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed);
         List<Map<String, String>> retrievedTokens = getTokensFor(ACCOUNT_ID, "something")
                 .statusCode(200)
                 .body("tokens", hasSize(1))
@@ -411,63 +419,63 @@ public class PublicAuthResourceIT {
 
     @Test
     public void respondWith400_ifNotProvidingDescription_whenUpdating() {
-        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
+        databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
 
         updateTokenDescription("{\"token_link\" : \"" + TOKEN_LINK.toString() + "\"}")
                 .statusCode(400)
                 .body("message", is("Missing fields: [description]"));
 
-        Optional<String> tokenLinkInDb = app.getDatabaseHelper().lookupColumnForTokenTable("token_link", "token_link", TOKEN_LINK.toString());
-        Optional<String> descriptionInDb = app.getDatabaseHelper().lookupColumnForTokenTable("description", "token_link", TOKEN_LINK.toString());
+        Optional<String> tokenLinkInDb = databaseHelper.lookupColumnForTokenTable("token_link", "token_link", TOKEN_LINK.toString());
+        Optional<String> descriptionInDb = databaseHelper.lookupColumnForTokenTable("description", "token_link", TOKEN_LINK.toString());
         assertThat(descriptionInDb.get(), equalTo(TOKEN_DESCRIPTION));
         assertThat(tokenLinkInDb.get(), equalTo(TOKEN_LINK.toString()));
     }
 
     @Test
     public void respondWith400_ifNotProvidingTokenLink_whenUpdating() {
-        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
+        databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
 
         updateTokenDescription("{\"description\" : \"" + TOKEN_DESCRIPTION + "\"}")
                 .statusCode(400)
                 .body("message", is("Missing fields: [token_link]"));
 
-        Optional<String> tokenLinkInDb = app.getDatabaseHelper().lookupColumnForTokenTable("token_link", "token_link", TOKEN_LINK.toString());
-        Optional<String> descriptionInDb = app.getDatabaseHelper().lookupColumnForTokenTable("description", "token_link", TOKEN_LINK.toString());
+        Optional<String> tokenLinkInDb = databaseHelper.lookupColumnForTokenTable("token_link", "token_link", TOKEN_LINK.toString());
+        Optional<String> descriptionInDb = databaseHelper.lookupColumnForTokenTable("description", "token_link", TOKEN_LINK.toString());
         assertThat(descriptionInDb.get(), equalTo(TOKEN_DESCRIPTION));
         assertThat(tokenLinkInDb.get(), equalTo(TOKEN_LINK.toString()));
     }
 
     @Test
     public void respondWith400_ifNotProvidingTokenLinkNorDescription_whenUpdating() {
-        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
+        databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
 
         updateTokenDescription("{}")
                 .statusCode(400)
                 .body("message", is("Missing fields: [token_link, description]"));
 
-        Optional<String> tokenLinkInDb = app.getDatabaseHelper().lookupColumnForTokenTable("token_link", "token_link", TOKEN_LINK.toString());
-        Optional<String> descriptionInDb = app.getDatabaseHelper().lookupColumnForTokenTable("description", "token_link", TOKEN_LINK.toString());
+        Optional<String> tokenLinkInDb = databaseHelper.lookupColumnForTokenTable("token_link", "token_link", TOKEN_LINK.toString());
+        Optional<String> descriptionInDb = databaseHelper.lookupColumnForTokenTable("description", "token_link", TOKEN_LINK.toString());
         assertThat(descriptionInDb.get(), equalTo(TOKEN_DESCRIPTION));
         assertThat(tokenLinkInDb.get(), equalTo(TOKEN_LINK.toString()));
     }
 
     @Test
     public void respondWith400_ifNotProvidingBody_whenUpdating() {
-        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
+        databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
 
         updateTokenDescription("")
                 .statusCode(400)
                 .body("message", is("Body cannot be empty"));
 
-        Optional<String> tokenLinkInDb = app.getDatabaseHelper().lookupColumnForTokenTable("token_link", "token_link", TOKEN_LINK.toString());
-        Optional<String> descriptionInDb = app.getDatabaseHelper().lookupColumnForTokenTable("description", "token_link", TOKEN_LINK.toString());
+        Optional<String> tokenLinkInDb = databaseHelper.lookupColumnForTokenTable("token_link", "token_link", TOKEN_LINK.toString());
+        Optional<String> descriptionInDb = databaseHelper.lookupColumnForTokenTable("description", "token_link", TOKEN_LINK.toString());
         assertThat(descriptionInDb.get(), equalTo(TOKEN_DESCRIPTION));
         assertThat(tokenLinkInDb.get(), equalTo(TOKEN_LINK.toString()));
     }
 
     @Test
     public void respondWith200_ifUpdatingDescriptionOfExistingToken() {
-        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
+        databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
         ZonedDateTime nowFromDB = ZonedDateTime.now(UTC);
 
         updateTokenDescription("{\"token_link\" : \"" + TOKEN_LINK.toString() + "\", \"description\" : \"" + TOKEN_DESCRIPTION_2 + "\"}")
@@ -479,7 +487,7 @@ public class PublicAuthResourceIT {
                 .body("created_by", is(CREATED_USER_NAME))
                 .body("token_type", is(CARD.toString()));
 
-        Optional<String> descriptionInDb = app.getDatabaseHelper().lookupColumnForTokenTable("description", "token_link", TOKEN_LINK.toString());
+        Optional<String> descriptionInDb = databaseHelper.lookupColumnForTokenTable("description", "token_link", TOKEN_LINK.toString());
         assertThat(descriptionInDb.get(), equalTo(TOKEN_DESCRIPTION_2));
     }
 
@@ -489,94 +497,94 @@ public class PublicAuthResourceIT {
                 .statusCode(404)
                 .body("message", is("Could not update description of token with token_link " + TOKEN_LINK));
 
-        Optional<String> descriptionInDb = app.getDatabaseHelper().lookupColumnForTokenTable("description", "token_link", TOKEN_LINK.toString());
+        Optional<String> descriptionInDb = databaseHelper.lookupColumnForTokenTable("description", "token_link", TOKEN_LINK.toString());
         assertThat(descriptionInDb.isPresent(), is(false));
     }
 
     @Test
     public void respondWith404_butDoNotUpdateRevokedTokens() {
-        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, ZonedDateTime.now(), CREATED_USER_NAME);
+        databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, ZonedDateTime.now(), CREATED_USER_NAME);
 
         updateTokenDescription("{\"token_link\" : \"" + TOKEN_LINK.toString() + "\", \"description\" : \"" + TOKEN_DESCRIPTION_2 + "\"}")
                 .statusCode(404)
                 .body("message", is("Could not update description of token with token_link " + TOKEN_LINK));
 
-        Optional<String> descriptionInDb = app.getDatabaseHelper().lookupColumnForTokenTable("description", "token_link", TOKEN_LINK.toString());
+        Optional<String> descriptionInDb = databaseHelper.lookupColumnForTokenTable("description", "token_link", TOKEN_LINK.toString());
         assertThat(descriptionInDb.get(), equalTo(TOKEN_DESCRIPTION));
     }
 
     @Test
     public void respondWith400_ifNotProvidingBody_whenRevokingAToken() {
-        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
+        databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
 
         revokeSingleToken(ACCOUNT_ID, "")
                 .statusCode(400)
                 .body("message", is("Body cannot be empty"));
 
-        Optional<String> revokedInDb = app.getDatabaseHelper().lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.toString());
+        Optional<String> revokedInDb = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.toString());
         assertThat(revokedInDb.isPresent(), is(false));
     }
 
     @Test
     public void respondWith400_ifProvidingEmptyBody_whenRevokingAToken() {
-        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
+        databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
 
         revokeSingleToken(ACCOUNT_ID, "{}")
                 .statusCode(400)
                 .body("message", is("At least one of these fields must be present: [token_link, token]"));
 
-        Optional<String> revokedInDb = app.getDatabaseHelper().lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.toString());
+        Optional<String> revokedInDb = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.toString());
         assertThat(revokedInDb.isPresent(), is(false));
     }
 
     @Test
     public void respondWith200_whenSingleTokenIsRevokedByTokenLink() {
-        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
+        databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
 
         revokeSingleToken(ACCOUNT_ID, "{\"token_link\" : \"" + TOKEN_LINK.toString() + "\"}")
                 .statusCode(200)
                 .body("revoked", is(ZonedDateTime.now(UTC).format(DateTimeFormatter.ofPattern("dd MMM yyyy"))));
 
-        Optional<String> revokedInDb = app.getDatabaseHelper().lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.toString());
+        Optional<String> revokedInDb = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.toString());
         assertThat(revokedInDb.isPresent(), is(true));
     }
 
     @Test
     public void respondWith200_whenSingleTokenIsRevokedByToken() {
-        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
+        databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
         String fullBearerToken = BEARER_TOKEN + "qgs2ot3itqer7ag9mvvbs8snqb5jfas3";
         revokeSingleToken(ACCOUNT_ID, "{\"token\" : \"" + fullBearerToken + "\"}")
                 .statusCode(200)
                 .body("revoked", is(ZonedDateTime.now(UTC).format(DateTimeFormatter.ofPattern("dd MMM yyyy"))));
 
-        Optional<String> revokedInDb = app.getDatabaseHelper().lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.toString());
+        Optional<String> revokedInDb = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.toString());
         assertThat(revokedInDb.isPresent(), is(true));
     }
 
     @Test
     public void respondWith404_whenRevokingTokenForAnotherAccount() {
-        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
-        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, ACCOUNT_ID_2, TOKEN_DESCRIPTION, CREATED_USER_NAME);
+        databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
+        databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, ACCOUNT_ID_2, TOKEN_DESCRIPTION, CREATED_USER_NAME);
 
         revokeSingleToken(ACCOUNT_ID, "{\"token_link\" : \"" + TOKEN_LINK_2.toString() + "\"}")
                 .statusCode(404)
                 .body("message", is("Could not revoke token with token_link " + TOKEN_LINK_2));
 
-        Optional<String> token1RevokedInDb = app.getDatabaseHelper().lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.toString());
+        Optional<String> token1RevokedInDb = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.toString());
         assertThat(token1RevokedInDb.isPresent(), is(false));
-        Optional<String> token2RevokedInDb = app.getDatabaseHelper().lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK_2.toString());
+        Optional<String> token2RevokedInDb = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK_2.toString());
         assertThat(token2RevokedInDb.isPresent(), is(false));
     }
 
     @Test
     public void respondWith404_whenRevokingTokenAlreadyRevoked() {
-        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, ZonedDateTime.now(), CREATED_USER_NAME);
+        databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, ZonedDateTime.now(), CREATED_USER_NAME);
 
         revokeSingleToken(ACCOUNT_ID, "{\"token_link\" : \"" + TOKEN_LINK.toString() + "\"}")
                 .statusCode(404)
                 .body("message", is("Could not revoke token with token_link " + TOKEN_LINK));
 
-        Optional<String> token1RevokedInDb = app.getDatabaseHelper().lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.toString());
+        Optional<String> token1RevokedInDb = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.toString());
         assertThat(token1RevokedInDb.isPresent(), is(true));
     }
 
@@ -586,13 +594,13 @@ public class PublicAuthResourceIT {
                 .statusCode(404)
                 .body("message", is("Could not revoke token with token_link " + TOKEN_LINK));
 
-        Optional<String> tokenLinkdInDb = app.getDatabaseHelper().lookupColumnForTokenTable("token_link", "token_link", TOKEN_LINK.toString());
+        Optional<String> tokenLinkdInDb = databaseHelper.lookupColumnForTokenTable("token_link", "token_link", TOKEN_LINK.toString());
         assertThat(tokenLinkdInDb.isPresent(), is(false));
     }
 
     @Test
     public void respondWith401_whenAuthHeaderIsMissing() {
-        given().port(app.getLocalPort())
+        given().port(localPort)
                 .get(API_AUTH_PATH)
                 .then()
                 .statusCode(401);
@@ -601,11 +609,11 @@ public class PublicAuthResourceIT {
     @Test
     public void respondWith401_whenAuthHeaderIsBasicEvenWithValidToken() {
 
-        app.getDatabaseHelper().insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
+        databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
 
         String apiKey = BEARER_TOKEN + encodedHmacValueOf(BEARER_TOKEN);
 
-        given().port(app.getLocalPort())
+        given().port(localPort)
                 .header(AUTHORIZATION, "Basic " + apiKey)
                 .get(API_AUTH_PATH)
                 .then()
@@ -620,12 +628,12 @@ public class PublicAuthResourceIT {
                 .body()
                 .path("token");
 
-        Optional<String> storedTokenHash = app.getDatabaseHelper().lookupColumnForTokenTable(TOKEN_HASH_COLUMN, "account_id", ACCOUNT_ID);
+        Optional<String> storedTokenHash = databaseHelper.lookupColumnForTokenTable(TOKEN_HASH_COLUMN, "account_id", ACCOUNT_ID);
         assertThat(storedTokenHash.get(), is(not(newToken)));
     }
 
     private ValidatableResponse createTokenFor(String body) {
-        return given().port(app.getLocalPort())
+        return given().port(localPort)
                 .accept(JSON)
                 .contentType(JSON)
                 .body(body)
@@ -638,7 +646,7 @@ public class PublicAuthResourceIT {
     }
 
     private ValidatableResponse getTokensFor(String accountId, String tokenState, String type) {
-        return given().port(app.getLocalPort())
+        return given().port(localPort)
                 .accept(JSON)
                 .param("state", tokenState)
                 .param("type", type)
@@ -647,7 +655,7 @@ public class PublicAuthResourceIT {
     }
 
     private ValidatableResponse getTokensForWithNoQueryParam(String accountId) {
-        return given().port(app.getLocalPort())
+        return given().port(localPort)
                 .accept(JSON)
                 .get(FRONTEND_AUTH_PATH + "/" + accountId)
                 .then();
@@ -658,7 +666,7 @@ public class PublicAuthResourceIT {
     }
 
     private ValidatableResponse updateTokenDescription(String body) {
-        return given().port(app.getLocalPort())
+        return given().port(localPort)
                 .accept(JSON)
                 .contentType(JSON)
                 .body(body)
@@ -667,7 +675,7 @@ public class PublicAuthResourceIT {
     }
 
     private ValidatableResponse revokeSingleToken(String accountId, String body) {
-        return given().port(app.getLocalPort())
+        return given().port(localPort)
                 .accept(JSON)
                 .contentType(JSON)
                 .body(body)
@@ -677,7 +685,7 @@ public class PublicAuthResourceIT {
 
     private ValidatableResponse tokenResponse(String token) {
         return given()
-                .port(app.getLocalPort())
+                .port(localPort)
                 .header(AUTHORIZATION, "Bearer " + token)
                 .get(API_AUTH_PATH)
                 .then();
