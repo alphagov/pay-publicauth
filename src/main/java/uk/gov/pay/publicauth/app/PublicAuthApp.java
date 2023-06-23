@@ -35,6 +35,7 @@ import uk.gov.pay.publicauth.resources.HealthCheckResource;
 import uk.gov.pay.publicauth.resources.PublicAuthResource;
 import uk.gov.pay.publicauth.service.TokenService;
 import uk.gov.pay.publicauth.util.DependentResourceWaitCommand;
+import uk.gov.service.payments.logging.SentryAppenderFactory;
 
 import java.util.concurrent.TimeUnit;
 
@@ -67,6 +68,7 @@ public class PublicAuthApp extends Application<PublicAuthConfiguration> {
 
         bootstrap.addCommand(new DependentResourceWaitCommand());
         bootstrap.getObjectMapper().getSubtypeResolver().registerSubtypes(LogstashConsoleAppenderFactory.class);
+        bootstrap.getObjectMapper().getSubtypeResolver().registerSubtypes(SentryAppenderFactory.class);
         bootstrap.getObjectMapper().getSubtypeResolver().registerSubtypes(GovUkPayDropwizardRequestJsonLogLayoutFactory.class);
     }
 

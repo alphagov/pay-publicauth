@@ -14,6 +14,10 @@ logging:
       target: stdout
       customFields:
         container: "publicauth"
+    - type: pay-dropwizard-3-sentry
+      threshold: ERROR
+      dsn: ${SENTRY_DSN:-https://example.com@dummy/1}
+      environment: ${ENVIRONMENT}
   loggers:
     # Liquibase is very chatty and we only want to hear from it if things go wrong
     "liquibase": WARN
