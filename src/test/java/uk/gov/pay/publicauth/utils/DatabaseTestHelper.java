@@ -43,7 +43,7 @@ public class DatabaseTestHelper {
     public void insertAccount(TokenHash tokenHash, TokenLink randomTokenLink, TokenSource tokenSource, String accountId, String description, ZonedDateTime revoked, String createdBy, ZonedDateTime lastUsed, TokenPaymentType tokenPaymentType) {
         jdbi.withHandle(handle ->
                 handle.createUpdate("INSERT INTO tokens(token_hash, token_link, type, account_id, description, token_type, revoked, created_by, last_used) " +
-                        "VALUES (:token_hash,:token_link,:type,:account_id,:description,:token_type,(:revoked at time zone 'utc'), :created_by, (:last_used at time zone 'utc'))")
+                                "VALUES (:token_hash,:token_link,:type,:account_id,:description,:token_type,(:revoked at time zone 'utc'), :created_by, (:last_used at time zone 'utc'))")
                         .bind("token_hash", tokenHash.getValue())
                         .bind("token_link", randomTokenLink.toString())
                         .bind("type", tokenSource)
@@ -71,8 +71,8 @@ public class DatabaseTestHelper {
     public Map<String, Object> getTokenByHash(TokenHash tokenHash) {
         return jdbi.withHandle(h ->
                 h.createQuery("SELECT token_id, type, token_type, token_hash, account_id, issued, revoked, token_link, description, created_by " +
-                        "FROM tokens t " +
-                        "WHERE token_hash = :token_hash")
+                                "FROM tokens t " +
+                                "WHERE token_hash = :token_hash")
                         .bind("token_hash", tokenHash.getValue())
                         .mapToMap()
                         .first());
@@ -80,19 +80,23 @@ public class DatabaseTestHelper {
 
     public ZonedDateTime getDateTimeColumn(String column, String accountId) {
         return jdbi.withHandle(handle ->
-                handle.createQuery("SELECT " + column + " FROM tokens WHERE account_id=:accountId")
-                        .bind("accountId", accountId)
-                        .mapTo(LocalDateTime.class)
-                        .first())
-                        .atZone(ZoneId.of("UTC"));
+                        handle.createQuery("SELECT " + column + " FROM tokens WHERE account_id=:accountId")
+                                .bind("accountId", accountId)
+                                .mapTo(LocalDateTime.class)
+                                .first())
+                .atZone(ZoneId.of("UTC"));
     }
 
     public ZonedDateTime getCurrentTime() {
         return jdbi.withHandle(handle ->
-                handle.createQuery("SELECT (now() at time zone 'utc')")
-                        .mapTo(LocalDateTime.class)
-                        .first())
-                        .atZone(ZoneId.of("UTC"));
-                        
+                        handle.createQuery("SELECT (now() at time zone 'utc')")
+                                .mapTo(LocalDateTime.class)
+                                .first())
+                .atZone(ZoneId.of("UTC"));
+
+    }
+
+    public void truncateDatabase() {
+        jdbi.withHandle(handle -> handle.execute("TRUNCATE tokens"));
     }
 }

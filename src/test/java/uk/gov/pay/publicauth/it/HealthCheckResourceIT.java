@@ -1,30 +1,49 @@
 package uk.gov.pay.publicauth.it;
 
-import io.dropwizard.testing.junit.DropwizardAppRule;
-import org.junit.Rule;
-import org.junit.Test;
+import io.dropwizard.testing.DropwizardTestSupport;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
 import uk.gov.pay.publicauth.app.PublicAuthApp;
 import uk.gov.pay.publicauth.app.config.PublicAuthConfiguration;
-import uk.gov.pay.publicauth.utils.PostgresTestContainersBase;
-
+import uk.gov.pay.publicauth.utils.DropwizardAppWithPostgresExtension;
 
 import static io.dropwizard.testing.ConfigOverride.config;
 import static io.dropwizard.testing.ResourceHelpers.resourceFilePath;
 import static io.restassured.RestAssured.given;
+import static java.lang.String.format;
 import static org.hamcrest.Matchers.is;
+import static uk.gov.pay.publicauth.utils.DropwizardAppWithPostgresExtension.TEST_CONFIG_FILE_PATH;
+import static uk.gov.pay.publicauth.utils.DropwizardAppWithPostgresExtension.VERSION;
 
-public class HealthCheckResourceIT extends PostgresTestContainersBase {
+/*
+Because this test messes with the container lifecycle to validate application health,
+we need to create a separate Postgres container that won't affect other tests when run in sequence
+ */
+class HealthCheckResourceIT {
+    @Container
+    private static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>(format("postgres:%s", VERSION))
+            .withDatabaseName("publicauth_test")
+            .withUsername("test")
+            .withPassword("test");
+    private static DropwizardTestSupport<PublicAuthConfiguration> TEST_SUPPORT;
 
-    @Rule
-    public DropwizardAppRule<PublicAuthConfiguration> app = new DropwizardAppRule<>(
-            PublicAuthApp.class, resourceFilePath("config/test-it-config.yaml"), 
-                config("database.url", POSTGRES_CONTAINER.getJdbcUrl()),
-                config("database.user", POSTGRES_CONTAINER.getUsername()),
-                config("database.password", POSTGRES_CONTAINER.getPassword()));
-    
+    @BeforeAll
+    public static void setup() throws Exception {
+        POSTGRES.start();
+        TEST_SUPPORT = new DropwizardTestSupport<>(PublicAuthApp.class, TEST_CONFIG_FILE_PATH,
+                config("database.url", POSTGRES::getJdbcUrl),
+                config("database.user", POSTGRES::getUsername),
+                config("database.password", POSTGRES::getPassword));
+        TEST_SUPPORT.before();
+    }
+
     @Test
-    public void checkHealthcheck_allIsHealthy() {
-        given().port(app.getLocalPort())
+    void checkHealthcheck_allIsHealthy() {
+        given().port(TEST_SUPPORT.getLocalPort())
                 .get("healthcheck")
                 .then()
                 .statusCode(200)
@@ -33,9 +52,9 @@ public class HealthCheckResourceIT extends PostgresTestContainersBase {
     }
 
     @Test
-    public void checkHealthCheck_isUnHealthy() {
-        POSTGRES_CONTAINER.stop();
-        given().port(app.getLocalPort())
+    void checkHealthCheck_isUnHealthy() {
+        POSTGRES.stop();
+        given().port(TEST_SUPPORT.getLocalPort())
                 .get("healthcheck")
                 .then()
                 .statusCode(503)

@@ -1,26 +1,25 @@
 package uk.gov.pay.publicauth.model;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 
-
-public class TokenStateTest {
+class TokenStateTest {
 
     @Test
-    public void shouldParseActiveTokens() {
+    void shouldParseActiveTokens() {
         assertThat(TokenState.fromString("active"), is(TokenState.ACTIVE));
         assertThat(TokenState.fromString("ACTIVE"), is(TokenState.ACTIVE));
     }
 
     @Test
-    public void shouldParseRevokedTokens() {
+    void shouldParseRevokedTokens() {
         assertThat(TokenState.fromString("revoked"), is(TokenState.REVOKED));
         assertThat(TokenState.fromString("REVOKED"), is(TokenState.REVOKED));
     }
     @Test
-    public void shouldReturnActiveTokensIfStateIsUnknown() {
+    void shouldReturnActiveTokensIfStateIsUnknown() {
         assertThat(TokenState.fromString("somethingelse"), is(TokenState.ACTIVE));
     }
 }

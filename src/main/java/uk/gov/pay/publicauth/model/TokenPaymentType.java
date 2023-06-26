@@ -11,7 +11,7 @@ public enum TokenPaymentType {
         try {
             return TokenPaymentType.valueOf(type.toUpperCase());
         } catch (Exception e) {
-            LOGGER.error("Unknown token payment type: " + type);
+            LOGGER.error("Unknown token payment type: {}", type);
             return CARD;
         }
     }

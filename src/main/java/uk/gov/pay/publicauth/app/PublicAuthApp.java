@@ -3,18 +3,18 @@ package uk.gov.pay.publicauth.app;
 import com.codahale.metrics.graphite.GraphiteReporter;
 import com.codahale.metrics.graphite.GraphiteSender;
 import com.codahale.metrics.graphite.GraphiteUDP;
-import io.dropwizard.Application;
 import io.dropwizard.auth.AuthDynamicFeature;
 import io.dropwizard.auth.AuthValueFactoryProvider;
 import io.dropwizard.auth.oauth.OAuthCredentialAuthFilter;
 import io.dropwizard.configuration.EnvironmentVariableSubstitutor;
 import io.dropwizard.configuration.SubstitutingSourceProvider;
+import io.dropwizard.core.Application;
+import io.dropwizard.core.setup.Bootstrap;
+import io.dropwizard.core.setup.Environment;
 import io.dropwizard.db.DataSourceFactory;
 import io.dropwizard.jdbi3.JdbiFactory;
 import io.dropwizard.jdbi3.bundles.JdbiExceptionsBundle;
 import io.dropwizard.migrations.MigrationsBundle;
-import io.dropwizard.setup.Bootstrap;
-import io.dropwizard.setup.Environment;
 import org.jdbi.v3.core.Jdbi;
 import uk.gov.service.payments.commons.utils.healthchecks.DatabaseHealthCheck;
 import uk.gov.service.payments.commons.utils.metrics.DatabaseMetricsService;
@@ -25,7 +25,6 @@ import uk.gov.pay.publicauth.app.config.PublicAuthConfiguration;
 import uk.gov.pay.publicauth.auth.Token;
 import uk.gov.pay.publicauth.auth.TokenAuthenticator;
 import uk.gov.pay.publicauth.dao.AuthTokenDao;
-import uk.gov.pay.publicauth.exception.TokenInvalidException;
 import uk.gov.pay.publicauth.exception.TokenInvalidExceptionMapper;
 import uk.gov.pay.publicauth.exception.TokenNotFoundExceptionMapper;
 import uk.gov.pay.publicauth.exception.TokenRevokedExceptionMapper;
@@ -36,6 +35,7 @@ import uk.gov.pay.publicauth.resources.HealthCheckResource;
 import uk.gov.pay.publicauth.resources.PublicAuthResource;
 import uk.gov.pay.publicauth.service.TokenService;
 import uk.gov.pay.publicauth.util.DependentResourceWaitCommand;
+import uk.gov.service.payments.logging.SentryAppenderFactory;
 
 import java.util.concurrent.TimeUnit;
 
@@ -68,6 +68,7 @@ public class PublicAuthApp extends Application<PublicAuthConfiguration> {
 
         bootstrap.addCommand(new DependentResourceWaitCommand());
         bootstrap.getObjectMapper().getSubtypeResolver().registerSubtypes(LogstashConsoleAppenderFactory.class);
+        bootstrap.getObjectMapper().getSubtypeResolver().registerSubtypes(SentryAppenderFactory.class);
         bootstrap.getObjectMapper().getSubtypeResolver().registerSubtypes(GovUkPayDropwizardRequestJsonLogLayoutFactory.class);
     }
 

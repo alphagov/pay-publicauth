@@ -4,15 +4,15 @@ import java.time.ZonedDateTime;
 
 public class TokenEntity {
 
-    private TokenLink tokenLink;
-    private String description;
-    private String accountId;
-    private TokenPaymentType tokenPaymentType;
-    private TokenSource tokenSource;
-    private ZonedDateTime revokedDate;
-    private ZonedDateTime issuedDate;
-    private ZonedDateTime lastUsedDate;
-    private String createdBy;
+    private final TokenLink tokenLink;
+    private final String description;
+    private final String accountId;
+    private final TokenPaymentType tokenPaymentType;
+    private final TokenSource tokenSource;
+    private final ZonedDateTime revokedDate;
+    private final ZonedDateTime issuedDate;
+    private final ZonedDateTime lastUsedDate;
+    private final String createdBy;
 
     public TokenEntity(TokenLink tokenLink,
                        String description,
@@ -94,6 +94,7 @@ public class TokenEntity {
         private String createdBy;
 
         public Builder() {
+            /* empty */
         }
 
         public Builder withTokenLink(TokenLink tokenLink) {
