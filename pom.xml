@@ -13,7 +13,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <pay-java-commons.version>1.0.20230623145124</pay-java-commons.version>
+        <pay-java-commons.version>1.0.20230704093921</pay-java-commons.version>
         <swagger.version>2.2.11</swagger.version>
         <hamcrest.version>2.2</hamcrest.version>
         <testcontainers.version>1.18.3</testcontainers.version>
