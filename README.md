@@ -55,8 +55,6 @@ API KEY validation algorithm:
 | `DB_USER`               | The username to log into the database as. |
 | `JAVA_HOME`             | The location of the JRE. Set to `/opt/java/openjdk` in the `Dockerfile`. |
 | `JAVA_OPTS`             | Commandline arguments to pass to the java runtime. Optional. |
-| `METRICS_HOST`          | The hostname to send graphite metrics to. Defaults to `localhost`. |
-| `METRICS_PORT`          | The port number to send graphite metrics to. Defaults to `8092`. |
 | `PORT`                  | The port number to listen for requests on. Defaults to `8080`. |
 | `RUN_APP`               | Set to `true` to run the application. Defaults to `true`. |
 | `RUN_MIGRATION`         | Set to `true` to run a database migration. Defaults to `false`. |

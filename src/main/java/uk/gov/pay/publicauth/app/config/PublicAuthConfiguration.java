@@ -22,12 +22,6 @@ public class PublicAuthConfiguration extends Configuration {
     @JsonProperty("tokensConfig")
     private TokensConfiguration TokensConfiguration;
 
-    @NotNull
-    private String graphiteHost;
-
-    @NotNull
-    private Integer graphitePort;
-
     @JsonProperty("ecsContainerMetadataUriV4")
     private URI ecsContainerMetadataUriV4;
 
@@ -37,14 +31,6 @@ public class PublicAuthConfiguration extends Configuration {
 
     public TokensConfiguration getTokensConfiguration() {
         return TokensConfiguration;
-    }
-
-    public String getGraphiteHost() {
-        return graphiteHost;
-    }
-
-    public Integer getGraphitePort() {
-        return graphitePort;
     }
 
     public Optional<URI> getEcsContainerMetadataUriV4() {
