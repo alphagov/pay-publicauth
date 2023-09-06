@@ -96,10 +96,6 @@
             <artifactId>commons-codec</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.dropwizard.metrics</groupId>
-            <artifactId>metrics-graphite</artifactId>
-        </dependency>
-        <dependency>
             <groupId>uk.gov.service.payments</groupId>
             <artifactId>utils</artifactId>
             <version>${pay-java-commons.version}</version>

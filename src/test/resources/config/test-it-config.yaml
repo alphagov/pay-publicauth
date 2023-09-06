@@ -58,7 +58,4 @@ tokensConfig:
   encryptDBSalt: $2a$10$IhaXo6LIBhKIWOiGpbtPOu
   apiKeyHmacSecret: qwer9yuhgf
 
-graphiteHost: ${METRICS_HOST:-localhost}
-graphitePort: ${METRICS_PORT:-8092}
-
 ecsContainerMetadataUriV4: ${ECS_CONTAINER_METADATA_URI_V4:-}

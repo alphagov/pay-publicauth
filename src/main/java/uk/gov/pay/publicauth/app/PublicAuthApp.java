@@ -1,8 +1,5 @@
 package uk.gov.pay.publicauth.app;
 
-import com.codahale.metrics.graphite.GraphiteReporter;
-import com.codahale.metrics.graphite.GraphiteSender;
-import com.codahale.metrics.graphite.GraphiteUDP;
 import io.dropwizard.auth.AuthDynamicFeature;
 import io.dropwizard.auth.AuthValueFactoryProvider;
 import io.dropwizard.auth.oauth.OAuthCredentialAuthFilter;
@@ -54,7 +51,7 @@ public class PublicAuthApp extends Application<PublicAuthConfiguration> {
     private static final Logger LOGGER = LoggerFactory.getLogger(PublicAuthApp.class);
     
     private static final String SERVICE_METRICS_NODE = "publicauth";
-    private static final int GRAPHITE_SENDING_PERIOD_SECONDS = 10;
+    private static final int METRICS_COLLECTION_PERIOD_SECONDS = 30;
 
     private Jdbi jdbi;
 
@@ -87,7 +84,6 @@ public class PublicAuthApp extends Application<PublicAuthConfiguration> {
 
         jdbi = new JdbiFactory().build(environment, dataSourceFactory, "postgresql");
         initialiseMetrics(conf, environment);
-
         AuthTokenDao authTokenDao = new AuthTokenDao(jdbi);
         TokenService tokenService = new TokenService(conf.getTokensConfiguration(), authTokenDao);
 
@@ -120,9 +116,8 @@ public class PublicAuthApp extends Application<PublicAuthConfiguration> {
                 .scheduledExecutorService("metricscollector")
                 .threads(1)
                 .build()
-                .scheduleAtFixedRate(metricsService::updateMetricData, 0, GRAPHITE_SENDING_PERIOD_SECONDS / 2, TimeUnit.SECONDS);
+                .scheduleAtFixedRate(metricsService::updateMetricData, 0, METRICS_COLLECTION_PERIOD_SECONDS / 2, TimeUnit.SECONDS);
 
-        initialiseGraphiteMetrics(configuration, environment);
         configuration.getEcsContainerMetadataUriV4().ifPresent(uri -> initialisePrometheusMetrics(environment, uri));
     }
 
@@ -131,14 +126,6 @@ public class PublicAuthApp extends Application<PublicAuthConfiguration> {
         CollectorRegistry collectorRegistry = new CollectorRegistry();
         collectorRegistry.register(new DropwizardExports(environment.metrics(), new PrometheusDefaultLabelSampleBuilder(ecsContainerMetadataUri)));
         environment.admin().addServlet("prometheusMetrics", new MetricsServlet(collectorRegistry)).addMapping("/metrics");
-    }
-
-    private static void initialiseGraphiteMetrics(PublicAuthConfiguration configuration, Environment environment) {
-        GraphiteSender graphiteUDP = new GraphiteUDP(configuration.getGraphiteHost(), configuration.getGraphitePort());
-        GraphiteReporter.forRegistry(environment.metrics())
-                .prefixedWith(SERVICE_METRICS_NODE)
-                .build(graphiteUDP)
-                .start(GRAPHITE_SENDING_PERIOD_SECONDS, TimeUnit.SECONDS);
     }
 
     public Jdbi getJdbi() {
