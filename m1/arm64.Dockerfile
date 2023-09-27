@@ -1,4 +1,4 @@
-FROM eclipse-temurin:11-jre@sha256:84dcef4dc8684119e56c2e31053b8c3bcf8f677a51288904f5a75fd69da6b3dd
+FROM eclipse-temurin:11-jre@sha256:3efc210202a0aa206aa353f7d31b36d24aa239251d6a30bdc3c25016f280c1bd
 
 ARG DNS_TTL=15
 
