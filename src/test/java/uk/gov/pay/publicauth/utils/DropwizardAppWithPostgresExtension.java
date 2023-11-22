@@ -30,7 +30,7 @@ public class DropwizardAppWithPostgresExtension implements BeforeAllCallback, Af
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DropwizardAppWithPostgresExtension.class);
     public static final String TEST_CONFIG_FILE_PATH = resourceFilePath("config/test-it-config.yaml");
-    public static final String VERSION = "11.16";
+    public static final String VERSION = "15.2";
     private static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>(format("postgres:%s", VERSION))
             .withDatabaseName("publicauth_test")
             .withUsername("test")
