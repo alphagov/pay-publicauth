@@ -35,7 +35,7 @@ jobs:
           restore-keys: ${{ runner.os }}-m2
       - name: Pull docker image dependencies
         run: |
-          docker pull postgres:11.16
+          docker pull postgres:15.2
       - name: Compile
         run: mvn clean compile
       - name: Check for OpenApi file changes
