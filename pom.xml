@@ -7,7 +7,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <pay-java-commons.version>1.0.20240109102542</pay-java-commons.version>
+        <pay-java-commons.version>1.0.20240129154528</pay-java-commons.version>
         <prometheus.version>0.16.0</prometheus.version>
         <swagger.version>2.2.20</swagger.version>
         <hamcrest.version>2.2</hamcrest.version>
@@ -18,7 +18,7 @@
             <dependency>
                 <groupId>io.dropwizard</groupId>
                 <artifactId>dropwizard-dependencies</artifactId>
-                <version>3.0.5</version>
+                <version>3.0.6</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
