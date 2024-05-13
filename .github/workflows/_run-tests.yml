@@ -1,0 +1,22 @@
+name: Github Actions Tests
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  detect-secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b
+      - name: Detect secrets
+        uses: alphagov/pay-ci/actions/detect-secrets@master
+
+  integration-tests:
+    name: "Integration tests"
+    uses: alphagov/pay-ci/.github/workflows/_run-java-tests-and-publish-pacts.yml@master
+    with:
+      publish_pacts: false
