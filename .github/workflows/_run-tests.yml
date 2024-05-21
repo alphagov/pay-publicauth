@@ -17,6 +17,6 @@ jobs:
 
   integration-tests:
     name: "Integration tests"
-    uses: alphagov/pay-ci/.github/workflows/_run-java-tests-and-publish-pacts.yml@master
+    uses: alphagov/pay-ci/.github/workflows/_run-java-tests-and-publish-pacts.yml@pp_11911_docker_images
     with:
       publish_pacts: false
