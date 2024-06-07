@@ -31,7 +31,7 @@ updates:
     ignore:
       - dependency-name: "eclipse-temurin"
         versions:
-          - "> 11"
+          - "> 21"
     open-pull-requests-limit: 10
     labels:
       - dependencies
@@ -45,7 +45,7 @@ updates:
     ignore:
       - dependency-name: "eclipse-temurin"
         versions:
-          - "> 11"
+          - "> 21"
     open-pull-requests-limit: 10
     labels:
       - dependencies
