@@ -38,30 +38,35 @@ public class PublicAuthRevokeTokenResourceIT {
                 "description", "Sirius's token",
                 "token_account_type", "test",
                 "created_by", "sirius@black.hp");
+
+        Map<String, String> token3 = Map.of("account_id", "2",
+                "description", "Buckbeak's token",
+                "token_account_type", "test",
+                "created_by", "buck@beak.hp");
         
         createToken(token1);
         createToken(token2);
+        createToken(token3);
 
-        List<Map<String, String>> retrievedTokens = given().port(applicationPort).accept(JSON)
-                .param("state", "active")
-                .get("/v1/frontend/auth/" + accountId)
-                .then().statusCode(200)
-                .body("tokens", hasSize(2))
-                .extract().path("tokens");
-        
-        retrievedTokens.forEach(token -> assertThat(token.containsKey("revoked"), is(false)));
+        assertRevokedStatusForTokens(accountId, false, 2);
+        assertRevokedStatusForTokens("2", false, 1);
         
         given().port(applicationPort).accept(JSON).delete(format("/v1/frontend/auth/%s/revoke-all", accountId))
                 .then().statusCode(200);
 
-        retrievedTokens = given().port(applicationPort).accept(JSON)
-                .param("state", "revoked")
+        assertRevokedStatusForTokens(accountId, true, 2);
+        assertRevokedStatusForTokens("2", false, 1);
+    }
+
+    private void assertRevokedStatusForTokens(String accountId, boolean isRevoked, int expectedNumberOfTokens) {
+        List<Map<String, String>> retrievedTokens = given().port(applicationPort).accept(JSON)
+                .param("state", isRevoked ? "revoked" : "active")
                 .get("/v1/frontend/auth/" + accountId)
                 .then().statusCode(200)
-                .body("tokens", hasSize(2))
+                .body("tokens", hasSize(expectedNumberOfTokens))
                 .extract().path("tokens");
 
-        retrievedTokens.forEach(token -> assertThat(token.containsKey("revoked"), is(true)));
+        retrievedTokens.forEach(token -> assertThat(token.containsKey("revoked"), is(isRevoked)));
     }
 
     private void createToken(Map<String, String> token1) {
