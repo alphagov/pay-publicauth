@@ -2,7 +2,6 @@ package uk.gov.pay.publicauth.resources;
 
 import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.google.common.collect.ImmutableMap;
 import io.dropwizard.auth.Auth;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -45,6 +44,7 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -104,7 +104,15 @@ public class PublicAuthResource {
     )
     public Response createTokenForAccount(@NotNull @Valid CreateTokenRequest createTokenRequest) {
         String apiKey = tokenService.createTokenForAccount(createTokenRequest);
-        return ok(ImmutableMap.of("token", apiKey)).build();
+        return ok(Map.of("token", apiKey)).build();
+    }
+
+    @Path("/v1/frontend/auth/{accountId}/revoke-all")
+    @Timed
+    @DELETE
+    public Response revokeTokensForAccount(@Parameter(example = "1") @PathParam("accountId") String accountId) {
+        tokenService.revokeTokens(accountId);
+        return ok().build();
     }
 
     @Path("/v1/frontend/auth/{accountId}")
@@ -127,7 +135,7 @@ public class PublicAuthResource {
         state = Optional.ofNullable(state).orElse(ACTIVE);
         type = Optional.ofNullable(type).orElse(API);
         List<TokenResponse> tokenResponses = tokenService.findTokensBy(accountId, state, type);
-        return ok(ImmutableMap.of("tokens", tokenResponses)).build();
+        return ok(Map.of("tokens", tokenResponses)).build();
     }
 
     @Path("/v1/frontend/auth")
@@ -198,7 +206,7 @@ public class PublicAuthResource {
     private Response buildRevokedTokenResponse(ZonedDateTime revokedDate) {
         LOGGER.info("revoked token on date {}", revokedDate);
         String formattedDate = DateTimeFormatter.ofPattern(REVOKED_DATE_FORMAT_PATTERN).format(revokedDate);
-        return ok(ImmutableMap.of("revoked", formattedDate)).build();
+        return ok(Map.of("revoked", formattedDate)).build();
     }
 
     private void validatePayloadHasFields(JsonNode payload, String... expectedFields) throws ValidationException {

@@ -163,6 +163,23 @@ paths:
       summary: Retrieves generated tokens for gateway account.
       tags:
       - Auth
+  /v1/frontend/auth/{accountId}/revoke-all:
+    delete:
+      operationId: revokeTokensForAccount
+      parameters:
+      - example: 1
+        in: path
+        name: accountId
+        required: true
+        schema:
+          type: string
+      responses:
+        default:
+          content:
+            '*/*': {}
+          description: default response
+      tags:
+      - Auth
 components:
   schemas:
     AuthResponse:

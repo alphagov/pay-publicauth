@@ -102,6 +102,13 @@ public class AuthTokenDao {
                         .findFirst());
     }
 
+    public int revokeTokens(String accountId) {
+        return jdbi.withHandle(handle ->
+                handle.createUpdate("UPDATE tokens SET revoked=(now() at time zone 'utc') WHERE account_id=:account_id AND revoked IS NULL")
+                        .bind("account_id", accountId)
+                        .execute());
+    }
+
     public Optional<TokenEntity> findTokenByTokenLink(TokenLink tokenLink) {
         return jdbi.withHandle(handle ->
                 handle.createQuery(TOKEN_SELECT + "WHERE token_link = :token_link")

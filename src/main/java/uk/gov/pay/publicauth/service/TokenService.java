@@ -122,6 +122,11 @@ public class TokenService {
                 .orElseThrow(() -> new TokenNotFoundException("Could not revoke token with token_link " + tokenLink));
     }
 
+    public void revokeTokens(String accountId) {
+        int numberOfTokensRevoked = authTokenDao.revokeTokens(accountId);
+        LOGGER.info("Revoked " + numberOfTokensRevoked + " tokens from gateway account with id " + accountId);
+    }
+    
     /**
      * Tokens includes:
      * - Salted BCrypt Hash. Intended to be used as encrypted value when storing in DB

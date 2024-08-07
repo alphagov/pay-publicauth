@@ -38,17 +38,18 @@ import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.core.Is.is;
-import static uk.gov.service.payments.commons.model.ErrorIdentifier.AUTH_TOKEN_INVALID;
-import static uk.gov.service.payments.commons.model.ErrorIdentifier.AUTH_TOKEN_REVOKED;
 import static uk.gov.pay.publicauth.model.TokenPaymentType.CARD;
 import static uk.gov.pay.publicauth.model.TokenPaymentType.DIRECT_DEBIT;
 import static uk.gov.pay.publicauth.model.TokenSource.API;
 import static uk.gov.pay.publicauth.model.TokenSource.PRODUCTS;
+import static uk.gov.service.payments.commons.model.ErrorIdentifier.AUTH_TOKEN_INVALID;
+import static uk.gov.service.payments.commons.model.ErrorIdentifier.AUTH_TOKEN_REVOKED;
 
 @SuppressWarnings("OptionalGetWithoutIsPresent")
 @ExtendWith(DropwizardAppWithPostgresExtension.class)
 class PublicAuthResourceIT {
 
+    private static final Gson gson = new Gson();
     private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("dd MMM yyyy - HH:mm");
     private static final String SALT = "$2a$10$IhaXo6LIBhKIWOiGpbtPOu";
     private static final String BEARER_TOKEN = "testbearertoken";
@@ -66,22 +67,22 @@ class PublicAuthResourceIT {
     private static final String TOKEN_HASH_COLUMN = "token_hash";
     private static final String CREATED_USER_NAME = "user-name";
     private static final String CREATED_USER_NAME2 = "user-name-2";
-    private final String validTokenPayload = new Gson().toJson(
+    private final String validTokenPayload = gson.toJson(
             ImmutableMap.of("account_id", ACCOUNT_ID,
                     "description", TOKEN_DESCRIPTION,
                     "token_account_type", "live",
                     "created_by", USER_EMAIL));
-    private final String validDirectDebitTokenPayload = new Gson().toJson(
+    private final String validDirectDebitTokenPayload = gson.toJson(
             ImmutableMap.of("account_id", ACCOUNT_ID,
                     "description", TOKEN_DESCRIPTION,
                     "token_type", DIRECT_DEBIT.toString(),
                     "created_by", USER_EMAIL));
-    private final String validProductsTokenPayload = new Gson().toJson(
+    private final String validProductsTokenPayload = gson.toJson(
             ImmutableMap.of("account_id", ACCOUNT_ID,
                     "description", TOKEN_DESCRIPTION,
                     "type", PRODUCTS.toString(),
                     "created_by", USER_EMAIL));
-    private final String validTokenPayloadWithTokenAccountType = new Gson().toJson(
+    private final String validTokenPayloadWithTokenAccountType = gson.toJson(
             ImmutableMap.of("account_id", ACCOUNT_ID,
                     "token_account_type", "test",
                     "description", TOKEN_DESCRIPTION,
@@ -169,7 +170,7 @@ class PublicAuthResourceIT {
 
     @Test
     public void respondWith400_whenCreateAToken_ifInvalidTokenTypeProvided() {
-        String invalidTypeBody = new Gson().toJson(
+        String invalidTypeBody = gson.toJson(
                 ImmutableMap.of("account_id", ACCOUNT_ID,
                         "token_account_type", "not-an-account-type",
                         "description", TOKEN_DESCRIPTION,
@@ -541,7 +542,7 @@ class PublicAuthResourceIT {
     public void respondWith200_whenSingleTokenIsRevokedByTokenLink() {
         databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
 
-        revokeSingleToken(ACCOUNT_ID, "{\"token_link\" : \"" + TOKEN_LINK.toString() + "\"}")
+        revokeSingleToken(ACCOUNT_ID, "{\"token_link\" : \"" + TOKEN_LINK + "\"}")
                 .statusCode(200)
                 .body("revoked", is(ZonedDateTime.now(UTC).format(DateTimeFormatter.ofPattern("dd MMM yyyy"))));
 
