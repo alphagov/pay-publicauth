@@ -102,8 +102,8 @@ public class AuthTokenDao {
                         .findFirst());
     }
 
-    public void revokeTokens(String accountId) {
-        jdbi.withHandle(handle ->
+    public int revokeTokens(String accountId) {
+        return jdbi.withHandle(handle ->
                 handle.createUpdate("UPDATE tokens SET revoked=(now() at time zone 'utc') WHERE account_id=:account_id AND revoked IS NULL")
                         .bind("account_id", accountId)
                         .execute());

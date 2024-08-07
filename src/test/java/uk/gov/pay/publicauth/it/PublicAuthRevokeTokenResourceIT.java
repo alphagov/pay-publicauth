@@ -1,8 +1,16 @@
 package uk.gov.pay.publicauth.it;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.classic.spi.LoggingEvent;
+import ch.qos.logback.core.Appender;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.slf4j.LoggerFactory;
+import uk.gov.pay.publicauth.service.TokenService;
 import uk.gov.pay.publicauth.utils.DropwizardAppWithPostgresExtension;
 
 import java.util.List;
@@ -14,15 +22,23 @@ import static java.lang.String.format;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.Is.is;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(DropwizardAppWithPostgresExtension.class)
 public class PublicAuthRevokeTokenResourceIT {
 
     private Integer applicationPort;
+    private Appender<ILoggingEvent> mockAppender = mock(Appender.class);
+    private ArgumentCaptor<LoggingEvent> loggingEventArgumentCaptor = ArgumentCaptor.forClass(LoggingEvent.class);
 
     @BeforeEach
     public void setup(Integer port) {
         applicationPort = port;
+        Logger root = (Logger) LoggerFactory.getLogger(TokenService.class);
+        root.setLevel(Level.INFO);
+        root.addAppender(mockAppender);
     }
     
     @Test
@@ -56,6 +72,11 @@ public class PublicAuthRevokeTokenResourceIT {
 
         assertRevokedStatusForTokens(accountId, true, 2);
         assertRevokedStatusForTokens("2", false, 1);
+
+        verify(mockAppender, times(4)).doAppend(loggingEventArgumentCaptor.capture()); // Each create token contributes to one log line. Therefore since 3 tokens were created we want 3 + 1.
+        List<LoggingEvent> logEvents = loggingEventArgumentCaptor.getAllValues();
+        assertThat(logEvents.stream().anyMatch(e -> e.getFormattedMessage().contains("Revoked 2 tokens from gateway account with id " + accountId)), 
+                is(true));
     }
 
     private void assertRevokedStatusForTokens(String accountId, boolean isRevoked, int expectedNumberOfTokens) {

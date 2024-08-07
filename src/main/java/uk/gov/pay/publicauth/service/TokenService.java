@@ -123,7 +123,8 @@ public class TokenService {
     }
 
     public void revokeTokens(String accountId) {
-        authTokenDao.revokeTokens(accountId);
+        int numberOfTokensRevoked = authTokenDao.revokeTokens(accountId);
+        LOGGER.info("Revoked " + numberOfTokensRevoked + " tokens from gateway account with id " + accountId);
     }
     
     /**
