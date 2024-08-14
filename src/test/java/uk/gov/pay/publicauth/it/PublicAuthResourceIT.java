@@ -1,8 +1,6 @@
 package uk.gov.pay.publicauth.it;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.io.BaseEncoding;
-import com.google.gson.Gson;
 import io.restassured.response.ValidatableResponse;
 import org.apache.commons.codec.digest.HmacAlgorithms;
 import org.apache.commons.codec.digest.HmacUtils;
@@ -49,7 +47,6 @@ import static uk.gov.service.payments.commons.model.ErrorIdentifier.AUTH_TOKEN_R
 @ExtendWith(DropwizardAppWithPostgresExtension.class)
 class PublicAuthResourceIT {
 
-    private static final Gson gson = new Gson();
     private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("dd MMM yyyy - HH:mm");
     private static final String SALT = "$2a$10$IhaXo6LIBhKIWOiGpbtPOu";
     private static final String BEARER_TOKEN = "testbearertoken";
@@ -67,26 +64,22 @@ class PublicAuthResourceIT {
     private static final String TOKEN_HASH_COLUMN = "token_hash";
     private static final String CREATED_USER_NAME = "user-name";
     private static final String CREATED_USER_NAME2 = "user-name-2";
-    private final String validTokenPayload = gson.toJson(
-            ImmutableMap.of("account_id", ACCOUNT_ID,
+    private final Map<String, String> validTokenPayload = Map.of("account_id", ACCOUNT_ID,
                     "description", TOKEN_DESCRIPTION,
                     "token_account_type", "live",
-                    "created_by", USER_EMAIL));
-    private final String validDirectDebitTokenPayload = gson.toJson(
-            ImmutableMap.of("account_id", ACCOUNT_ID,
+                    "created_by", USER_EMAIL);
+    private final Map<String, String> validDirectDebitTokenPayload = Map.of("account_id", ACCOUNT_ID,
                     "description", TOKEN_DESCRIPTION,
                     "token_type", DIRECT_DEBIT.toString(),
-                    "created_by", USER_EMAIL));
-    private final String validProductsTokenPayload = gson.toJson(
-            ImmutableMap.of("account_id", ACCOUNT_ID,
+                    "created_by", USER_EMAIL);
+    private final Map<String, String> validProductsTokenPayload = Map.of("account_id", ACCOUNT_ID,
                     "description", TOKEN_DESCRIPTION,
                     "type", PRODUCTS.toString(),
-                    "created_by", USER_EMAIL));
-    private final String validTokenPayloadWithTokenAccountType = gson.toJson(
-            ImmutableMap.of("account_id", ACCOUNT_ID,
+                    "created_by", USER_EMAIL);
+    private final Map<String, String> validTokenPayloadWithTokenAccountType = Map.of("account_id", ACCOUNT_ID,
                     "token_account_type", "test",
                     "description", TOKEN_DESCRIPTION,
-                    "created_by", USER_EMAIL));
+                    "created_by", USER_EMAIL);
 
     private DatabaseTestHelper databaseHelper;
     private Integer localPort;
@@ -170,12 +163,10 @@ class PublicAuthResourceIT {
 
     @Test
     public void respondWith400_whenCreateAToken_ifInvalidTokenTypeProvided() {
-        String invalidTypeBody = gson.toJson(
-                ImmutableMap.of("account_id", ACCOUNT_ID,
-                        "token_account_type", "not-an-account-type",
-                        "description", TOKEN_DESCRIPTION,
-                        "created_by", USER_EMAIL));
-        createTokenFor(invalidTypeBody)
+        createTokenFor(Map.of("account_id", ACCOUNT_ID,
+                "token_account_type", "not-an-account-type",
+                "description", TOKEN_DESCRIPTION,
+                "created_by", USER_EMAIL))
                 .statusCode(400);
     }
 
@@ -211,7 +202,7 @@ class PublicAuthResourceIT {
 
     @Test
     public void respondWith422_ifAccountAndDescriptionAreMissing() {
-        createTokenFor("{}")
+        createTokenFor(Map.of())
                 .statusCode(422)
                 .body("errors.size()", is(3))
                 .body("errors", containsInAnyOrder(
@@ -222,22 +213,26 @@ class PublicAuthResourceIT {
 
     @Test
     public void respondWith422_ifAccountIsMissing() {
-        createTokenFor("{\"description\" : \"" + ACCOUNT_ID + "\", \"created_by\": \"some-user\"}")
+        createTokenFor(Map.of("description", ACCOUNT_ID, "created_by", "some-user"))
                 .statusCode(422)
                 .body("errors", equalTo(List.of("accountId must not be null")));
     }
 
     @Test
     public void respondWith422_ifDescriptionIsMissing() {
-        createTokenFor("{\"account_id\" : \"" + ACCOUNT_ID + "\", \"created_by\": \"some-user\"}")
+        createTokenFor(Map.of("account_id", ACCOUNT_ID, "created_by", "some-user"))
                 .statusCode(422)
                 .body("errors", equalTo(List.of("description must not be null")));
     }
 
     @Test
     public void respondWith422_ifBodyIsMissing() {
-        createTokenFor("")
-                .statusCode(422)
+        given().port(localPort)
+                .accept(JSON)
+                .contentType(JSON)
+                .body("")
+                .post(FRONTEND_AUTH_PATH)
+                .then().statusCode(422)
                 .body("errors", equalTo(List.of("The request body must not be null")));
     }
 
@@ -633,7 +628,7 @@ class PublicAuthResourceIT {
         assertThat(storedTokenHash.get(), is(not(newToken)));
     }
 
-    private ValidatableResponse createTokenFor(String body) {
+    private ValidatableResponse createTokenFor(Map<String, String> body) {
         return given().port(localPort)
                 .accept(JSON)
                 .contentType(JSON)

@@ -110,6 +110,13 @@ public class PublicAuthResource {
     @Path("/v1/frontend/auth/{accountId}/revoke-all")
     @Timed
     @DELETE
+    @Operation(
+            summary = "Revokes all tokens associated with a gateway account. It is not possible to tell whether the " +
+                    "gateway account actually exists (in connector), so this method currently does not return a 404.",
+            responses = {
+                    @ApiResponse(responseCode = "200")
+            }
+    )
     public Response revokeTokensForAccount(@Parameter(example = "1") @PathParam("accountId") String accountId) {
         tokenService.revokeTokens(accountId);
         return ok().build();

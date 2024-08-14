@@ -178,6 +178,9 @@ paths:
           content:
             '*/*': {}
           description: default response
+      summary: "Revokes all tokens associated with a gateway account. It is not possible\
+        \ to tell whether the gateway account actually exists (in connector), so this\
+        \ method currently does not return a 404."
       tags:
       - Auth
 components:
