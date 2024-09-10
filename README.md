@@ -49,6 +49,7 @@ API KEY validation algorithm:
 | NAME                    | DESCRIPTION                                                                    |
 | ----------------------- | ------------------------------------------------------------------------------ |
 | `ADMIN_PORT`            | The port number to listen for Dropwizard admin requests on. Defaults to `8081`. |
+| `BIND_HOST`             | The IP address for the application to bind to. Defaults to `127.0.0.1`. |
 | `DB_HOST`               | The hostname of the database server. |
 | `DB_PASSWORD`           | The password for the `DB_USER` user. |
 | `DB_SSL_OPTION`         | To turn TLS on this value must be set as `ssl=true`. Otherwise must be empty. |
