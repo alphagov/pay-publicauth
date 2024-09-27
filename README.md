@@ -45,6 +45,11 @@ API KEY validation algorithm:
 5. `TOKEN_HASH` := `bcrypt(TOKEN, TOKEN_DB_BCRYPT_SALT)`
 6. lookup `TOKEN_HASH` in database; return `true` iff found
 
+TOKEN_LINK:
+
+1. `TOKEN_LINK` := `randomUUID()`
+2. Stored in `tokens` table, used as an external id for the API key
+
 ## Environment variables
 | NAME                    | DESCRIPTION                                                                    |
 | ----------------------- | ------------------------------------------------------------------------------ |
