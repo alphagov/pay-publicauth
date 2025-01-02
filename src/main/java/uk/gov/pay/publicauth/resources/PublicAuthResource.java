@@ -145,6 +145,23 @@ public class PublicAuthResource {
         return ok(Map.of("tokens", tokenResponses)).build();
     }
 
+    @Path("/v1/frontend/auth/{accountId}/{tokenLink}")
+    @Timed
+    @Produces(APPLICATION_JSON)
+    @GET
+    @Operation(
+            summary = "Get a token by gateway account id and token link.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "OK",
+                            content = @Content(schema = @Schema(implementation = TokenResponse.class))),
+                    @ApiResponse(responseCode = "404", description = "Token not found")
+            }
+    )
+    public Response getTokenByTokenLink(@Parameter(example = "1") @PathParam("accountId") String accountId,
+                                        @Parameter(example = "a-token-link") @PathParam("tokenLink") String tokenLink) {
+        return Response.ok(tokenService.findTokenBy(accountId, TokenLink.of(tokenLink))).build();    
+    }
+    
     @Path("/v1/frontend/auth")
     @Timed
     @Consumes(APPLICATION_JSON)

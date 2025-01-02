@@ -42,6 +42,17 @@ public class AuthTokenDao {
                         .bind("token_hash", tokenHash.getValue())
                         .execute());
     }
+    
+    public Optional<TokenEntity> findTokenBy(String accountId, TokenLink tokenLink) {
+        return jdbi.withHandle(handle ->
+                handle.createQuery(TOKEN_SELECT +
+                                "WHERE account_id = :account_id " +
+                                "AND token_link = :token_link")
+                        .bind("account_id", accountId)
+                        .bind("token_link", tokenLink.toString())
+                        .map(new TokenMapper())
+                        .findFirst());
+    }
 
     public List<TokenEntity> findTokensBy(String accountId, TokenState tokenState, TokenSource tokenSource) {
         String revokedClause = (tokenState.equals(TokenState.REVOKED)) ? "AND revoked IS NOT NULL " : "AND revoked IS NULL ";

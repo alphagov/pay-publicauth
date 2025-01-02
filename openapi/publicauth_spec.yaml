@@ -183,6 +183,34 @@ paths:
         \ method currently does not return a 404."
       tags:
       - Auth
+  /v1/frontend/auth/{accountId}/{tokenLink}:
+    get:
+      operationId: getTokenByTokenLink
+      parameters:
+      - example: 1
+        in: path
+        name: accountId
+        required: true
+        schema:
+          type: string
+      - example: a-token-link
+        in: path
+        name: tokenLink
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+          description: OK
+        "404":
+          description: Token not found
+      summary: Get a token by gateway account id and token link.
+      tags:
+      - Auth
 components:
   schemas:
     AuthResponse:
