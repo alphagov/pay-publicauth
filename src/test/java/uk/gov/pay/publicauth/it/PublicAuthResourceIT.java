@@ -36,6 +36,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.Is.is;
 import static uk.gov.pay.publicauth.model.TokenPaymentType.CARD;
 import static uk.gov.pay.publicauth.model.TokenPaymentType.DIRECT_DEBIT;
@@ -312,6 +313,31 @@ class PublicAuthResourceIT {
             getTokensFor(ACCOUNT_ID)
                     .statusCode(200)
                     .body("tokens", hasSize(0));
+        }
+        
+        @Test
+        void get_token_by_tokenLink_should_return_200_if_token_exists() {
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, null, CREATED_USER_NAME, null);
+
+            given().port(localPort)
+                    .accept(JSON)
+                    .get(String.format("/v1/frontend/auth/%s/%s", ACCOUNT_ID, TOKEN_LINK))
+                    .then()
+                    .statusCode(200)
+                    .body("token_link", is(TOKEN_LINK.toString()))
+                    .body("description", is(TOKEN_DESCRIPTION))
+                    .body("last_used", nullValue())
+                    .body("created_by", is(CREATED_USER_NAME))
+                    .body("token_type", is(CARD.toString()));
+        }
+
+        @Test
+        void get_token_by_tokenLink_should_return_404_if_token_does_not_exist() {
+            given().port(localPort)
+                    .accept(JSON)
+                    .get(String.format("/v1/frontend/auth/%s/123-456", ACCOUNT_ID))
+                    .then()
+                    .statusCode(404);
         }
     
         @Test

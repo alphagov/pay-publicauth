@@ -14,6 +14,7 @@ import uk.gov.pay.publicauth.exception.TokenNotFoundException;
 import uk.gov.pay.publicauth.exception.TokenRevokedException;
 import uk.gov.pay.publicauth.model.AuthResponse;
 import uk.gov.pay.publicauth.model.CreateTokenRequest;
+import uk.gov.pay.publicauth.model.TokenEntity;
 import uk.gov.pay.publicauth.model.TokenHash;
 import uk.gov.pay.publicauth.model.TokenLink;
 import uk.gov.pay.publicauth.model.TokenResponse;
@@ -72,6 +73,11 @@ public class TokenService {
                     return new AuthResponse(tokenEntity.getAccountId(), tokenEntity.getTokenLink(), tokenEntity.getTokenPaymentType());
                 })
                 .orElseThrow(() -> new TokenInvalidException("Token does not exist"));
+    }
+    
+    public TokenResponse findTokenBy(String accountId, TokenLink tokenLink) {
+        return authTokenDao.findTokenBy(accountId, tokenLink).map(TokenResponse::fromEntity)
+                .orElseThrow(() -> new TokenNotFoundException("Could not update description of token with token_link " + tokenLink));
     }
 
     /**
