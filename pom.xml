@@ -79,12 +79,6 @@
             <groupId>jakarta.xml.bind</groupId>
             <artifactId>jakarta.xml.bind-api</artifactId>
         </dependency>
-        <dependency>
-            <!-- this has been added so we can use org.apache.http.conn.ssl.DefaultHostnameVerifier for Postgres.
-                    publicauth doesn't perform any outgoing HTTP calls -->
-            <groupId>org.apache.httpcomponents.client5</groupId>
-            <artifactId>httpclient5</artifactId>
-        </dependency>
 
         <!-- Main dependencies that need explicit versions -->
         <dependency>
@@ -136,6 +130,13 @@
             <groupId>uk.gov.service.payments</groupId>
             <artifactId>logging-dropwizard-4</artifactId>
             <version>${pay-java-commons.version}</version>
+        </dependency>
+        <dependency>
+        <!-- this has been added so we can use org.apache.http.conn.ssl.DefaultHostnameVerifier for Postgres.
+                it does not work with dropwizard 0.8.x but publicauth doesn't perform any outgoing HTTP calls -->
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>4.5.14</version>
         </dependency>
 
         <!-- Test dependencies that are imported from one of the BOMs specified
