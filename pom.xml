@@ -131,6 +131,13 @@
             <artifactId>logging-dropwizard-4</artifactId>
             <version>${pay-java-commons.version}</version>
         </dependency>
+        <dependency>
+        <!-- this has been added so we can use org.apache.http.conn.ssl.DefaultHostnameVerifier for Postgres.
+                it does not work with dropwizard 0.8.x but publicauth doesn't perform any outgoing HTTP calls -->
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>4.5.14</version>
+        </dependency>
 
         <!-- Test dependencies that are imported from one of the BOMs specified
              in <dependencyManagement> so no explicit versions needed -->
