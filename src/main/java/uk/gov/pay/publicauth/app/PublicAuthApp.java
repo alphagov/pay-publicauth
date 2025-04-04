@@ -14,7 +14,7 @@ import io.dropwizard.jdbi3.bundles.JdbiExceptionsBundle;
 import io.dropwizard.migrations.MigrationsBundle;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.dropwizard.DropwizardExports;
-import io.prometheus.client.servlet.jakarta.exporter.MetricsServlet;
+import io.prometheus.client.exporter.MetricsServlet;
 import org.jdbi.v3.core.Jdbi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,7 +42,7 @@ import uk.gov.service.payments.logging.SentryAppenderFactory;
 import java.util.concurrent.TimeUnit;
 
 import static java.util.EnumSet.of;
-import static jakarta.servlet.DispatcherType.REQUEST;
+import static javax.servlet.DispatcherType.REQUEST;
 
 public class PublicAuthApp extends Application<PublicAuthConfiguration> {
 
