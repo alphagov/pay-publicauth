@@ -148,4 +148,22 @@
             End; $$
         </createProcedure>
     </changeSet>
+
+    <changeSet id="add service_mode column to tokens table" author="">
+        <addColumn tableName="tokens">
+            <column name="service_mode" type="varchar(255)">
+                <constraints nullable="true" unique="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="add service_external_id column to tokens table" author="">
+        <addColumn tableName="tokens">
+            <column name="service_external_id" type="varchar(255)">
+                <constraints nullable="true" unique="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+
 </databaseChangeLog>
