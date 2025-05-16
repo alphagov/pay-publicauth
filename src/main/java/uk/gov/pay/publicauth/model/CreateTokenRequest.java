@@ -6,8 +6,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 import jakarta.validation.constraints.NotNull;
 
-import java.io.Serial;
-
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 import static java.util.UUID.randomUUID;
 import static uk.gov.pay.publicauth.model.TokenPaymentType.CARD;
