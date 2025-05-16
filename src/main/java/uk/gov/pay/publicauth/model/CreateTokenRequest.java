@@ -6,6 +6,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 import jakarta.validation.constraints.NotNull;
 
+import java.io.Serial;
+
+import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 import static java.util.UUID.randomUUID;
 import static uk.gov.pay.publicauth.model.TokenPaymentType.CARD;
 import static uk.gov.pay.publicauth.model.TokenSource.API;
@@ -28,25 +31,37 @@ public class CreateTokenRequest {
     private final TokenLink tokenLink = TokenLink.of(randomUUID().toString());
     @Schema(hidden = true)
     private final TokenAccountType tokenAccountType;
+    @Schema(hidden = true)
+    private final ServiceMode serviceMode;
+    @Schema(hidden = true)
+    private final String serviceExternalId;
 
     @JsonCreator
-    public CreateTokenRequest(@Schema(example = "1", required = true, description = "Gateway account to associate the new token to")
+    public CreateTokenRequest(@Schema(example = "1", description = "Gateway account to associate the new token to", requiredMode = REQUIRED)
                               @NotNull @JsonProperty("account_id") String accountId,
-                              @Schema(example = "Token description", required = true, description = "Description of the new token")
+                              @Schema(example = "Token description", description = "Description of the new token", requiredMode = REQUIRED)
                               @NotNull @JsonProperty("description") String description,
-                              @Schema(required = true, example = "test@example.org") @NotNull @JsonProperty("created_by") String createdBy,
+                              @Schema(example = "test@example.org", requiredMode = REQUIRED) @NotNull @JsonProperty("created_by") String createdBy,
                               @Schema(example = "CARD", defaultValue = "CARD")
                               @JsonProperty("token_type") TokenPaymentType tokenPaymentType,
                               @Schema(example = "API", defaultValue = "API")
                               @JsonProperty("type") TokenSource tokenSource,
                               @Schema(example = "LIVE", defaultValue = "LIVE")
-                              @JsonProperty("token_account_type") TokenAccountType tokenAccountType) {
+                              @JsonProperty("token_account_type") TokenAccountType tokenAccountType,
+                              @Schema(example = "LIVE")
+                              @JsonProperty("service_mode") ServiceMode serviceMode,
+                              @Schema(example = "LIVE") 
+                              @JsonProperty("service_external_id") String serviceExternalId
+        
+    ) {
         this.accountId = accountId;
         this.description = description;
         this.createdBy = createdBy;
         this.tokenPaymentType = tokenPaymentType == null ? CARD : tokenPaymentType;
         this.tokenSource = tokenSource == null ? API : tokenSource;
         this.tokenAccountType = tokenAccountType;
+        this.serviceMode = serviceMode;
+        this.serviceExternalId = serviceExternalId;
     }
 
     public String getAccountId() {
@@ -75,5 +90,13 @@ public class CreateTokenRequest {
 
     public TokenAccountType getTokenAccountType() {
         return tokenAccountType;
+    }
+    
+    public ServiceMode getServiceMode() {
+        return serviceMode;
+    }
+    
+    public String getServiceExternalId() {
+        return serviceExternalId;
     }
 }

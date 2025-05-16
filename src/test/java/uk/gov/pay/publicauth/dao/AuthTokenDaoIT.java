@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import uk.gov.pay.publicauth.app.PublicAuthApp;
 import uk.gov.pay.publicauth.model.CreateTokenRequest;
+import uk.gov.pay.publicauth.model.ServiceMode;
 import uk.gov.pay.publicauth.model.TokenEntity;
 import uk.gov.pay.publicauth.model.TokenHash;
 import uk.gov.pay.publicauth.model.TokenLink;
@@ -53,6 +54,7 @@ class AuthTokenDaoIT {
     private static final TokenLink TOKEN_LINK_2 = TokenLink.of("123456789101112131415161718192021223");
     private static final String TOKEN_DESCRIPTION = "Token description";
     private static final String TOKEN_DESCRIPTION_2 = "Token description 2";
+    private static final String SERVICE_EXTERNAL_ID = "cd1b871207a94a7fa157dee678146acd";
     private DatabaseTestHelper databaseHelper;
 
     @BeforeEach
@@ -171,7 +173,7 @@ class AuthTokenDaoIT {
 
     @Test
     void shouldInsertNewToken() {
-        var createTokenRequest = new CreateTokenRequest("account-id", "description", "user", CARD, API, TokenAccountType.LIVE);
+        var createTokenRequest = new CreateTokenRequest("account-id", "description", "user", CARD, API, TokenAccountType.LIVE, ServiceMode.LIVE, SERVICE_EXTERNAL_ID);
         authTokenDao.storeToken(TokenHash.of("token-hash"), createTokenRequest);
         Map<String, Object> tokenByHash = databaseHelper.getTokenByHash(TokenHash.of("token-hash"));
         ZonedDateTime now = databaseHelper.getCurrentTime();
@@ -183,6 +185,8 @@ class AuthTokenDaoIT {
         assertThat(tokenByHash.get("created_by"), is("user"));
         assertNull(tokenByHash.get("last_used"));
         assertThat(tokenByHash.get("token_type"), is(CARD.toString()));
+        assertThat(tokenByHash.get("service_mode"), is(ServiceMode.LIVE.toString()));
+        assertThat(tokenByHash.get("service_external_id"), is(SERVICE_EXTERNAL_ID));
         ZonedDateTime tokenIssueTime = databaseHelper.issueTimestampForAccount("account-id");
         assertThat(tokenIssueTime, isCloseTo(now));
     }
@@ -305,7 +309,7 @@ class AuthTokenDaoIT {
     @Test
     void shouldErrorIfTriesToSaveTheSameTokenTwice() {
         databaseHelper.insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, TEST_USER_NAME);
-        var createTokenRequest = new CreateTokenRequest(ACCOUNT_ID, TOKEN_DESCRIPTION, "test@email.com", CARD, API, TokenAccountType.LIVE);
+        var createTokenRequest = new CreateTokenRequest(ACCOUNT_ID, TOKEN_DESCRIPTION, "test@email.com", CARD, API, TokenAccountType.LIVE, ServiceMode.LIVE, SERVICE_EXTERNAL_ID);
         Assertions.assertThrows(RuntimeException.class, () -> {
             authTokenDao.storeToken(TOKEN_HASH, createTokenRequest);
         });

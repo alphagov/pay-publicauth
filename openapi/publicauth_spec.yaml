@@ -244,6 +244,17 @@ components:
           type: string
           description: Description of the new token
           example: Token description
+        service_external_id:
+          type: string
+          example: LIVE
+          writeOnly: true
+        service_mode:
+          type: string
+          enum:
+          - LIVE
+          - TEST
+          example: LIVE
+          writeOnly: true
         token_account_type:
           type: string
           default: LIVE

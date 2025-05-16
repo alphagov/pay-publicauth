@@ -1,5 +1,6 @@
 package uk.gov.pay.publicauth.fixture;
 
+import uk.gov.pay.publicauth.model.ServiceMode;
 import uk.gov.pay.publicauth.model.TokenEntity;
 import uk.gov.pay.publicauth.model.TokenLink;
 import uk.gov.pay.publicauth.model.TokenPaymentType;
@@ -20,6 +21,8 @@ public class TokenEntityFixture {
     private ZonedDateTime issuedDate = ZonedDateTime.parse("2020-01-01T12:30:00.000Z");
     private ZonedDateTime lastUsedDate;
     private String createdBy = "a-user-id";
+    private ServiceMode serviceMode;
+    private String serviceExternalId;
 
     private TokenEntityFixture() {
     }
@@ -83,6 +86,9 @@ public class TokenEntityFixture {
                 this.revokedDate,
                 this.issuedDate,
                 this.lastUsedDate,
-                this.createdBy);
+                this.createdBy,
+                this.serviceMode,
+                this.serviceExternalId
+        );
     }
 }
