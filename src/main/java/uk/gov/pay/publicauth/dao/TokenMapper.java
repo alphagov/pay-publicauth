@@ -2,6 +2,7 @@ package uk.gov.pay.publicauth.dao;
 
 import org.jdbi.v3.core.mapper.RowMapper;
 import org.jdbi.v3.core.statement.StatementContext;
+import uk.gov.pay.publicauth.model.ServiceMode;
 import uk.gov.pay.publicauth.model.TokenEntity;
 import uk.gov.pay.publicauth.model.TokenLink;
 import uk.gov.pay.publicauth.model.TokenPaymentType;
@@ -28,7 +29,12 @@ public class TokenMapper implements RowMapper<TokenEntity> {
                 .withRevokedDate(getZonedDateTime(rs, "revoked").orElse(null))
                 .withIssuedDate(getZonedDateTime(rs, "issued").orElse(null))
                 .withLastUsedDate(getZonedDateTime(rs, "last_used").orElse(null))
-                .withCreatedBy(rs.getString(("created_by")))
+                .withCreatedBy(rs.getString("created_by"))
+                .withServiceMode(
+                        Optional.ofNullable(rs.getString("service_mode"))
+                                .map(ServiceMode::valueOf)
+                                .orElse(null))
+                .withServiceExternalId(rs.getString("service_external_id"))
                 .withTokenPaymentType(
                         Optional.ofNullable(rs.getString("token_type"))
                                 .map(TokenPaymentType::valueOf)
