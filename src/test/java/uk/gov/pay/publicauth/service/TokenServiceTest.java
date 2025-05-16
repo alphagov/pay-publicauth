@@ -18,6 +18,7 @@ import uk.gov.pay.publicauth.exception.TokenInvalidException;
 import uk.gov.pay.publicauth.exception.TokenRevokedException;
 import uk.gov.pay.publicauth.model.AuthResponse;
 import uk.gov.pay.publicauth.model.CreateTokenRequest;
+import uk.gov.pay.publicauth.model.ServiceMode;
 import uk.gov.pay.publicauth.model.TokenEntity;
 import uk.gov.pay.publicauth.model.TokenHash;
 import uk.gov.pay.publicauth.model.TokenLink;
@@ -50,6 +51,7 @@ class TokenServiceTest {
     private static final String EXPECTED_SECRET_KEY = "qwer9yuhgf";
     private static final List<Character> BASE32_HEX_DICTIONARY = asList("0123456789abcdefghijklmnopqrstuv".toCharArray());
     private static final TokenHash TOKEN_HASH = TokenHash.of("TOKEN");
+    private static final String SERVICE_EXTERNAL_ID = "cd1b871207a94a7fa157dee678146acd";
 
     private TokenService tokenService;
 
@@ -105,7 +107,7 @@ class TokenServiceTest {
 
     @Test
     void shouldCreateValidToken() {
-        CreateTokenRequest createTokenRequest = new CreateTokenRequest("42", "A token description", "a-user-id", CARD, API, null);
+        CreateTokenRequest createTokenRequest = new CreateTokenRequest("42", "A token description", "a-user-id", CARD, API, null, ServiceMode.LIVE, SERVICE_EXTERNAL_ID);
         String apiKey = tokenService.createTokenForAccount(createTokenRequest);
 
         // Minimum length guarantee is 32 for Hmac and an extremely very unlikely
@@ -137,21 +139,21 @@ class TokenServiceTest {
 
     @Test
     void shouldCreateValidToken_withPrefixForLiveAccountType() {
-        CreateTokenRequest createTokenRequest = new CreateTokenRequest("42", "A token description", "a-user-id", CARD, API, TokenAccountType.LIVE);
+        CreateTokenRequest createTokenRequest = new CreateTokenRequest("42", "A token description", "a-user-id", CARD, API, TokenAccountType.LIVE, ServiceMode.LIVE, SERVICE_EXTERNAL_ID);
         String apiKey = tokenService.createTokenForAccount(createTokenRequest);
         assertThat(apiKey.contains("api_live_"), is(true));
     }
 
     @Test
     void shouldCreateValidToken_withPrefixForTestAccountType() {
-        CreateTokenRequest createTokenRequest = new CreateTokenRequest("42", "A token description", "a-user-id", CARD, API, TokenAccountType.TEST);
+        CreateTokenRequest createTokenRequest = new CreateTokenRequest("42", "A token description", "a-user-id", CARD, API, TokenAccountType.TEST, ServiceMode.TEST, SERVICE_EXTERNAL_ID);
         String apiKey = tokenService.createTokenForAccount(createTokenRequest);
         assertThat(apiKey.contains("api_test_"), is(true));
     }
 
     @Test
     void shouldCreateDifferentTokensWhenCalledTwice() {
-        CreateTokenRequest createTokenRequest = new CreateTokenRequest("42", "A token description", "a-user-id", CARD, API, TokenAccountType.LIVE);
+        CreateTokenRequest createTokenRequest = new CreateTokenRequest("42", "A token description", "a-user-id", CARD, API, TokenAccountType.LIVE, ServiceMode.LIVE, SERVICE_EXTERNAL_ID);
         String apiKey1 = tokenService.createTokenForAccount(createTokenRequest);
         String apiKey2 = tokenService.createTokenForAccount(createTokenRequest);
 

@@ -19,7 +19,7 @@ public class AuthTokenDao {
     private static final Logger LOGGER = LoggerFactory.getLogger(AuthTokenDao.class);
 
     private static final String TOKEN_SELECT =
-            "SELECT token_link, description, account_id, token_type, type, issued, revoked, last_used, created_by FROM tokens ";
+            "SELECT token_link, description, account_id, token_type, type, issued, revoked, last_used, created_by, service_mode, service_external_id FROM tokens ";
 
     private final Jdbi jdbi;
 
@@ -79,8 +79,8 @@ public class AuthTokenDao {
 
     public void storeToken(TokenHash tokenHash, CreateTokenRequest createTokenRequest) {
         Integer rowsUpdated = jdbi.withHandle(handle ->
-                handle.createUpdate("INSERT INTO tokens(token_hash, token_link, type, description, account_id, created_by, token_type) " +
-                        "VALUES (:token_hash,:token_link,:type,:description,:account_id,:created_by,:token_type)")
+                handle.createUpdate("INSERT INTO tokens(token_hash, token_link, type, description, account_id, created_by, token_type, service_mode, service_external_id) " +
+                        "VALUES (:token_hash,:token_link,:type,:description,:account_id,:created_by,:token_type,:service_mode,:service_external_id)")
                         .bind("token_hash", tokenHash.getValue())
                         .bind("token_link", createTokenRequest.getTokenLink().toString())
                         .bind("type", createTokenRequest.getTokenSource())
@@ -88,10 +88,13 @@ public class AuthTokenDao {
                         .bind("account_id", createTokenRequest.getAccountId())
                         .bind("created_by", createTokenRequest.getCreatedBy())
                         .bind("token_type", createTokenRequest.getTokenPaymentType())
+                        .bind("service_mode", createTokenRequest.getServiceMode())
+                        .bind("service_external_id", createTokenRequest.getServiceExternalId())
                         .execute());
         if (rowsUpdated != 1) {
             LOGGER.error("Unable to store new token for account '{}'. '{}' rows were updated", createTokenRequest.getAccountId(), rowsUpdated);
-            throw new RuntimeException(String.format("Unable to store new token for account %s}", createTokenRequest.getAccountId()));
+            LOGGER.error("Unable to store new token for service '{}' in mode {}. '{}' rows were updated", createTokenRequest.getServiceExternalId(), createTokenRequest.getServiceMode(), rowsUpdated);
+            throw new RuntimeException(String.format("Unable to store new token for account %s | service %s in mode %s", createTokenRequest.getAccountId(), createTokenRequest.getServiceExternalId(), createTokenRequest.getServiceMode()));
         }
     }
 

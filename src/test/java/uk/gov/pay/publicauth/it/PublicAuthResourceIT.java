@@ -66,6 +66,7 @@ class PublicAuthResourceIT {
     private static final String TOKEN_HASH_COLUMN = "token_hash";
     private static final String CREATED_USER_NAME = "user-name";
     private static final String CREATED_USER_NAME2 = "user-name-2";
+    private static final String SERVICE_EXTERNAL_ID = "cd1b871207a94a7fa157dee678146acd";
     private final Map<String, String> validTokenPayload = Map.of("account_id", ACCOUNT_ID,
                     "description", TOKEN_DESCRIPTION,
                     "token_account_type", "live",
@@ -206,6 +207,29 @@ class PublicAuthResourceIT {
                     .body("token", is(notNullValue()))
                     .extract().path("token");
             assertThat(newToken.contains("api_test_"), is(true));
+        }
+        @Test
+        public void respondWith200_whenCreateAToken_ifValidServiceModeAndServiceExternalIdProvided() {
+            String newToken = createTokenFor(Map.of(
+                    "account_id", ACCOUNT_ID,
+                    "description", TOKEN_DESCRIPTION,
+                    "created_by", USER_EMAIL,
+                    "service_mode", "test",
+                    "service_external_id", SERVICE_EXTERNAL_ID
+            ))
+                    .statusCode(200)
+                    .body("token", is(notNullValue()))
+                    .extract().path("token");
+            
+            int apiKeyHashSize = 32;
+            String tokenApiKey = newToken.substring(0, newToken.length() - apiKeyHashSize);
+            String hashedToken = BCrypt.hashpw(tokenApiKey, SALT);
+
+            Optional<String> newCreatedByEmail = databaseHelper.lookupColumnForTokenTable("service_mode", TOKEN_HASH_COLUMN, hashedToken);
+            assertThat(newCreatedByEmail.get(), equalTo("TEST"));
+
+            Optional<String> newTokenType = databaseHelper.lookupColumnForTokenTable("service_external_id", TOKEN_HASH_COLUMN, hashedToken);
+            assertThat(newTokenType.get(), equalTo(SERVICE_EXTERNAL_ID));
         }
     
         @Test

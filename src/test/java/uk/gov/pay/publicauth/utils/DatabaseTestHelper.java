@@ -70,7 +70,7 @@ public class DatabaseTestHelper {
 
     public Map<String, Object> getTokenByHash(TokenHash tokenHash) {
         return jdbi.withHandle(h ->
-                h.createQuery("SELECT token_id, type, token_type, token_hash, account_id, issued, revoked, token_link, description, created_by " +
+                h.createQuery("SELECT token_id, type, token_type, token_hash, account_id, issued, revoked, token_link, description, created_by, service_mode, service_external_id " +
                                 "FROM tokens t " +
                                 "WHERE token_hash = :token_hash")
                         .bind("token_hash", tokenHash.getValue())

@@ -3,7 +3,6 @@ package uk.gov.pay.publicauth.model;
 import java.time.ZonedDateTime;
 
 public class TokenEntity {
-
     private final TokenLink tokenLink;
     private final String description;
     private final String accountId;
@@ -13,6 +12,8 @@ public class TokenEntity {
     private final ZonedDateTime issuedDate;
     private final ZonedDateTime lastUsedDate;
     private final String createdBy;
+    private final ServiceMode serviceMode;
+    private final String serviceExternalId;
 
     public TokenEntity(TokenLink tokenLink,
                        String description,
@@ -22,7 +23,10 @@ public class TokenEntity {
                        ZonedDateTime revokedDate,
                        ZonedDateTime issuedDate,
                        ZonedDateTime lastUsedDate,
-                       String createdBy) {
+                       String createdBy,
+                       ServiceMode serviceMode,
+                       String serviceExternalId
+    ) {
         this.tokenLink = tokenLink;
         this.description = description;
         this.accountId = accountId;
@@ -32,6 +36,8 @@ public class TokenEntity {
         this.issuedDate = issuedDate;
         this.lastUsedDate = lastUsedDate;
         this.createdBy = createdBy;
+        this.serviceMode = serviceMode;
+        this.serviceExternalId = serviceExternalId;
     }
 
     public TokenEntity(Builder builder) {
@@ -44,6 +50,8 @@ public class TokenEntity {
         this.issuedDate = builder.issuedDate;
         this.lastUsedDate = builder.lastUsedDate;
         this.createdBy = builder.createdBy;
+        this.serviceMode = builder.serviceMode;
+        this.serviceExternalId = builder.serviceExternalId;
     }
 
     public TokenLink getTokenLink() {
@@ -82,6 +90,14 @@ public class TokenEntity {
         return createdBy;
     }
 
+    public ServiceMode getServiceMode() {
+        return serviceMode;
+    }
+
+    public String getServiceExternalId() {
+        return serviceExternalId;
+    }
+
     public static final class Builder {
         private TokenLink tokenLink;
         private String description;
@@ -92,6 +108,8 @@ public class TokenEntity {
         private ZonedDateTime issuedDate;
         private ZonedDateTime lastUsedDate;
         private String createdBy;
+        private ServiceMode serviceMode;
+        private String serviceExternalId;
 
         public Builder() {
             /* empty */
@@ -139,6 +157,16 @@ public class TokenEntity {
 
         public Builder withCreatedBy(String createdBy) {
             this.createdBy = createdBy;
+            return this;
+        }
+        
+        public Builder withServiceMode(ServiceMode serviceMode) {
+            this.serviceMode = serviceMode;
+            return this;
+        }
+
+        public Builder withServiceExternalId(String serviceExternalId) {
+            this.serviceExternalId = serviceExternalId;
             return this;
         }
 
