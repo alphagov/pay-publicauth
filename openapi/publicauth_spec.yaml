@@ -246,7 +246,7 @@ components:
           example: Token description
         service_external_id:
           type: string
-          example: LIVE
+          example: cd1b871207a94a7fa157dee678146acd
           writeOnly: true
         service_mode:
           type: string
