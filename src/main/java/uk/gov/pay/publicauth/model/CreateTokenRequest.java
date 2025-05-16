@@ -48,7 +48,7 @@ public class CreateTokenRequest {
                               @JsonProperty("token_account_type") TokenAccountType tokenAccountType,
                               @Schema(example = "LIVE")
                               @JsonProperty("service_mode") ServiceMode serviceMode,
-                              @Schema(example = "LIVE") 
+                              @Schema(example = "cd1b871207a94a7fa157dee678146acd")
                               @JsonProperty("service_external_id") String serviceExternalId
         
     ) {
