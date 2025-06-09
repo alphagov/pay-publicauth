@@ -10,8 +10,11 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mindrot.jbcrypt.BCrypt;
+import uk.gov.pay.publicauth.model.ServiceMode;
 import uk.gov.pay.publicauth.model.TokenHash;
 import uk.gov.pay.publicauth.model.TokenLink;
+import uk.gov.pay.publicauth.model.TokenPaymentType;
+import uk.gov.pay.publicauth.model.TokenSource;
 import uk.gov.pay.publicauth.utils.DatabaseTestHelper;
 import uk.gov.pay.publicauth.utils.DropwizardAppWithPostgresExtension;
 
@@ -66,6 +69,7 @@ class PublicAuthResourceIT {
     private static final String TOKEN_HASH_COLUMN = "token_hash";
     private static final String CREATED_USER_NAME = "user-name";
     private static final String CREATED_USER_NAME2 = "user-name-2";
+    private static final ServiceMode SERVICE_MODE = ServiceMode.TEST;
     private static final String SERVICE_EXTERNAL_ID = "cd1b871207a94a7fa157dee678146acd";
     private final Map<String, String> validTokenPayload = Map.of("account_id", ACCOUNT_ID,
                     "description", TOKEN_DESCRIPTION,
@@ -105,6 +109,21 @@ class PublicAuthResourceIT {
                     .body("account_id", is(ACCOUNT_ID))
                     .body("token_type", is(CARD.toString()))
                     .body("token_link", is(TOKEN_LINK.toString()));
+            ZonedDateTime lastUsed = databaseHelper.getDateTimeColumn("last_used", ACCOUNT_ID);
+            assertThat(lastUsed, isCloseTo(ZonedDateTime.now(UTC)));
+        }
+
+        @Test
+        void respondWith200_serviceMode_serviceExternalId_whenAuthWithValidToken() {
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, TokenSource.API, ACCOUNT_ID, TOKEN_DESCRIPTION, null, CREATED_USER_NAME, null, TokenPaymentType.CARD, SERVICE_MODE, SERVICE_EXTERNAL_ID);
+            String apiKey = BEARER_TOKEN + encodedHmacValueOf(BEARER_TOKEN);
+            tokenResponse(apiKey)
+                    .statusCode(200)
+                    .body("account_id", is(ACCOUNT_ID))
+                    .body("token_type", is(CARD.toString()))
+                    .body("token_link", is(TOKEN_LINK.toString()))
+                    .body("service_mode", is(SERVICE_MODE.toString()))
+                    .body("service_external_id", is(SERVICE_EXTERNAL_ID));
             ZonedDateTime lastUsed = databaseHelper.getDateTimeColumn("last_used", ACCOUNT_ID);
             assertThat(lastUsed, isCloseTo(ZonedDateTime.now(UTC)));
         }
@@ -214,7 +233,7 @@ class PublicAuthResourceIT {
                     "account_id", ACCOUNT_ID,
                     "description", TOKEN_DESCRIPTION,
                     "created_by", USER_EMAIL,
-                    "service_mode", "test",
+                    "service_mode", SERVICE_MODE.toString().toLowerCase(),
                     "service_external_id", SERVICE_EXTERNAL_ID
             ))
                     .statusCode(200)
@@ -226,7 +245,7 @@ class PublicAuthResourceIT {
             String hashedToken = BCrypt.hashpw(tokenApiKey, SALT);
 
             Optional<String> newCreatedByEmail = databaseHelper.lookupColumnForTokenTable("service_mode", TOKEN_HASH_COLUMN, hashedToken);
-            assertThat(newCreatedByEmail.get(), equalTo("TEST"));
+            assertThat(newCreatedByEmail.get(), equalTo(SERVICE_MODE.toString()));
 
             Optional<String> newTokenType = databaseHelper.lookupColumnForTokenTable("service_external_id", TOKEN_HASH_COLUMN, hashedToken);
             assertThat(newTokenType.get(), equalTo(SERVICE_EXTERNAL_ID));
@@ -353,6 +372,24 @@ class PublicAuthResourceIT {
                     .body("last_used", nullValue())
                     .body("created_by", is(CREATED_USER_NAME))
                     .body("token_type", is(CARD.toString()));
+        }
+
+        @Test
+        void get_token_by_tokenLink_should_return_serviceMode_and_serviceExternalId() {
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, TokenSource.API, ACCOUNT_ID, TOKEN_DESCRIPTION, null, CREATED_USER_NAME, null, TokenPaymentType.CARD, SERVICE_MODE, SERVICE_EXTERNAL_ID);
+            
+            given().port(localPort)
+                    .accept(JSON)
+                    .get(String.format("/v1/frontend/auth/%s/%s", ACCOUNT_ID, TOKEN_LINK))
+                    .then()
+                    .statusCode(200)
+                    .body("token_link", is(TOKEN_LINK.toString()))
+                    .body("description", is(TOKEN_DESCRIPTION))
+                    .body("last_used", nullValue())
+                    .body("created_by", is(CREATED_USER_NAME))
+                    .body("token_type", is(CARD.toString()))
+                    .body("service_mode", is(SERVICE_MODE.toString()))
+                    .body("service_external_id", is(SERVICE_EXTERNAL_ID));
         }
 
         @Test

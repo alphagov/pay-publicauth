@@ -21,10 +21,20 @@ public class AuthResponse {
     @JsonSerialize(using = ToStringSerializer.class)
     private TokenPaymentType tokenPaymentType;
 
-    public AuthResponse(String accountId, TokenLink tokenLink, TokenPaymentType tokenPaymentType) {
-        this.tokenLink = tokenLink;
-        this.accountId = accountId;
-        this.tokenPaymentType = tokenPaymentType;
+    @JsonProperty("service_mode")
+    @Schema(example = "LIVE")
+    private final ServiceMode serviceMode;
+
+    @JsonProperty("service_external_id")
+    @Schema(example = "cd1b871207a94a7fa157dee678146acd")
+    private final String serviceExternalId;
+         
+    public AuthResponse(TokenEntity tokenEntity) {
+        this.accountId = tokenEntity.getAccountId();
+        this.tokenLink = tokenEntity.getTokenLink();
+        this.tokenPaymentType = tokenEntity.getTokenPaymentType();
+        this.serviceMode = tokenEntity.getServiceMode();
+        this.serviceExternalId = tokenEntity.getServiceExternalId();
     }
 
     public String getAccountId() {
@@ -37,5 +47,13 @@ public class AuthResponse {
 
     public TokenPaymentType getTokenPaymentType() {
         return tokenPaymentType;
+    }
+    
+    public ServiceMode getServiceMode() {
+        return serviceMode;
+    }
+    
+    public String getServiceExternalId() {
+        return serviceExternalId;
     }
 }

@@ -1,6 +1,7 @@
 package uk.gov.pay.publicauth.utils;
 
 import org.jdbi.v3.core.Jdbi;
+import uk.gov.pay.publicauth.model.ServiceMode;
 import uk.gov.pay.publicauth.model.TokenHash;
 import uk.gov.pay.publicauth.model.TokenLink;
 import uk.gov.pay.publicauth.model.TokenPaymentType;
@@ -41,9 +42,13 @@ public class DatabaseTestHelper {
     }
 
     public void insertAccount(TokenHash tokenHash, TokenLink randomTokenLink, TokenSource tokenSource, String accountId, String description, ZonedDateTime revoked, String createdBy, ZonedDateTime lastUsed, TokenPaymentType tokenPaymentType) {
+        insertAccount(tokenHash, randomTokenLink, tokenSource, accountId, description, revoked, createdBy, lastUsed, tokenPaymentType, null, null);
+    }
+    
+    public void insertAccount(TokenHash tokenHash, TokenLink randomTokenLink, TokenSource tokenSource, String accountId, String description, ZonedDateTime revoked, String createdBy, ZonedDateTime lastUsed, TokenPaymentType tokenPaymentType, ServiceMode serviceMode, String serviceExternalId) {
         jdbi.withHandle(handle ->
-                handle.createUpdate("INSERT INTO tokens(token_hash, token_link, type, account_id, description, token_type, revoked, created_by, last_used) " +
-                                "VALUES (:token_hash,:token_link,:type,:account_id,:description,:token_type,(:revoked at time zone 'utc'), :created_by, (:last_used at time zone 'utc'))")
+                handle.createUpdate("INSERT INTO tokens(token_hash, token_link, type, account_id, description, token_type, revoked, created_by, last_used, service_mode, service_external_id) " +
+                                "VALUES (:token_hash,:token_link,:type,:account_id,:description,:token_type,(:revoked at time zone 'utc'), :created_by, (:last_used at time zone 'utc'),:service_mode,:service_external_id)")
                         .bind("token_hash", tokenHash.getValue())
                         .bind("token_link", randomTokenLink.toString())
                         .bind("type", tokenSource)
@@ -53,6 +58,8 @@ public class DatabaseTestHelper {
                         .bind("revoked", revoked == null ? null : from(revoked.toInstant()))
                         .bind("created_by", createdBy)
                         .bind("last_used", lastUsed == null ? null : from(lastUsed.toInstant()))
+                        .bind("service_mode", serviceMode)
+                        .bind("service_external_id", serviceExternalId)
                         .execute());
     }
 
