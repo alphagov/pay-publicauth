@@ -30,8 +30,10 @@ public class CreateTokenRequest {
     @Schema(hidden = true)
     private final TokenAccountType tokenAccountType;
     @Schema(hidden = true)
+    @NotNull
     private final ServiceMode serviceMode;
     @Schema(hidden = true)
+    @NotNull
     private final String serviceExternalId;
 
     @JsonCreator
@@ -46,9 +48,9 @@ public class CreateTokenRequest {
                               @JsonProperty("type") TokenSource tokenSource,
                               @Schema(example = "LIVE", defaultValue = "LIVE")
                               @JsonProperty("token_account_type") TokenAccountType tokenAccountType,
-                              @Schema(example = "LIVE")
+                              @Schema(example = "LIVE", requiredMode = REQUIRED)
                               @JsonProperty("service_mode") ServiceMode serviceMode,
-                              @Schema(example = "cd1b871207a94a7fa157dee678146acd")
+                              @Schema(example = "cd1b871207a94a7fa157dee678146acd", requiredMode = REQUIRED)
                               @JsonProperty("service_external_id") String serviceExternalId
         
     ) {
