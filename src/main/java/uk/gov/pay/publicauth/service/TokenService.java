@@ -15,16 +15,14 @@ import uk.gov.pay.publicauth.exception.TokenRevokedException;
 import uk.gov.pay.publicauth.model.AuthResponse;
 import uk.gov.pay.publicauth.model.CreateTokenRequest;
 import uk.gov.pay.publicauth.model.ServiceMode;
-import uk.gov.pay.publicauth.model.TokenEntity;
+import uk.gov.pay.publicauth.model.TokenAccountType;
 import uk.gov.pay.publicauth.model.TokenHash;
 import uk.gov.pay.publicauth.model.TokenLink;
 import uk.gov.pay.publicauth.model.TokenResponse;
 import uk.gov.pay.publicauth.model.TokenSource;
 import uk.gov.pay.publicauth.model.TokenState;
 import uk.gov.pay.publicauth.model.Tokens;
-import uk.gov.pay.publicauth.model.TokenAccountType;
 
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -108,6 +106,13 @@ public class TokenService {
                 .collect(Collectors.toList());
     }
 
+    public List<TokenResponse> findTokensBy(String serviceExternalId, ServiceMode mode, TokenState tokenState, TokenSource tokenSource) {
+        return authTokenDao.findTokensBy(serviceExternalId, mode, tokenState, tokenSource)
+                .stream()
+                .map(TokenResponse::fromEntity)
+                .collect(Collectors.toList());
+    }
+
     public TokenResponse updateTokenDescription(TokenLink tokenLink, String description) {
         if (authTokenDao.updateTokenDescription(tokenLink, description)) {
             LOGGER.info("Updated description of token with token_link {}", tokenLink);
@@ -137,7 +142,6 @@ public class TokenService {
     public void revokeTokens(String serviceExternalId, ServiceMode mode) {
         int numberOfTokensRevoked = authTokenDao.revokeTokens(serviceExternalId, mode);
         LOGGER.info("Revoked " + numberOfTokensRevoked + " tokens from service with id " + serviceExternalId + "in " + mode + " mode");
-    
     }
     
     /**

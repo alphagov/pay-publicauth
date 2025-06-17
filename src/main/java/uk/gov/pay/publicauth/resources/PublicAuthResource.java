@@ -66,6 +66,7 @@ public class PublicAuthResource {
     private static final String TOKEN_FIELD = "token";
     private static final String DESCRIPTION_FIELD = "description";
     private static final String REVOKED_DATE_FORMAT_PATTERN = "dd MMM yyyy";
+    private static final String SERVICE_EXTERNAL_ID_EXAMPLE = "7d19aff33f8948deb97ed16b2912dcd3";
 
     private final TokenService tokenService;
 
@@ -134,7 +135,9 @@ public class PublicAuthResource {
                     @ApiResponse(responseCode = "200")
             }
     )
-    public Response revokeTokensForServiceAndMode(@Parameter(example = "UPDATE") @PathParam("serviceExternalId") String serviceExternalId, @PathParam("mode") ServiceMode mode) {
+    public Response revokeTokensForServiceAndMode(@Parameter(example = SERVICE_EXTERNAL_ID_EXAMPLE) 
+                                                      @PathParam("serviceExternalId") String serviceExternalId, 
+                                                  @PathParam("mode") ServiceMode mode) {
         tokenService.revokeTokens(serviceExternalId, mode);
         return ok().build();
     }
@@ -162,6 +165,31 @@ public class PublicAuthResource {
         return ok(Map.of("tokens", tokenResponses)).build();
     }
 
+    @Path("/v1/frontend/auth/service/{serviceExternalId}/mode/{mode}")
+    @Timed
+    @Produces(APPLICATION_JSON)
+    @GET
+    @Operation(
+            summary = "Retrieves generated tokens for service and mode.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "OK",
+                            content = @Content(schemaProperties = @SchemaProperty(name = "tokens",
+                                    array = @ArraySchema(schema = @Schema(name = "tokens",
+                                            implementation = TokenResponse.class, type = "array"))))),
+                    @ApiResponse(responseCode = "422", description = "Invalid or missing required parameters")
+            }
+    )
+    public Response getIssuedTokensForServiceAndMode(@Parameter(example = SERVICE_EXTERNAL_ID_EXAMPLE) 
+                                                         @PathParam("serviceExternalId") String serviceExternalId, 
+                                                     @PathParam("mode") ServiceMode mode,
+                                              @Parameter(example = "REVOKED") @QueryParam("state") TokenState state,
+                                              @Parameter(example = "API") @QueryParam("type") TokenSource type) {
+        state = Optional.ofNullable(state).orElse(ACTIVE);
+        type = Optional.ofNullable(type).orElse(API);
+        List<TokenResponse> tokenResponses = tokenService.findTokensBy(serviceExternalId, mode, state, type);
+        return ok(Map.of("tokens", tokenResponses)).build();
+    }
+
     @Path("/v1/frontend/auth/{accountId}/{tokenLink}")
     @Timed
     @Produces(APPLICATION_JSON)
@@ -174,7 +202,7 @@ public class PublicAuthResource {
                     @ApiResponse(responseCode = "404", description = "Token not found")
             }
     )
-    public Response getTokenByTokenLink(@Parameter(example = "1") @PathParam("accountId") String accountId,
+    public Response getTokenByTokenLink(@Parameter(example = "1") @PathParam("accountId") String accountId, 
                                         @Parameter(example = "a-token-link") @PathParam("tokenLink") String tokenLink) {
         return Response.ok(tokenService.findTokenBy(accountId, TokenLink.of(tokenLink))).build();    
     }

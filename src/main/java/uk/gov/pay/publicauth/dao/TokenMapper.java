@@ -2,6 +2,7 @@ package uk.gov.pay.publicauth.dao;
 
 import org.jdbi.v3.core.mapper.RowMapper;
 import org.jdbi.v3.core.statement.StatementContext;
+import uk.gov.pay.publicauth.model.ServiceMode;
 import uk.gov.pay.publicauth.model.TokenEntity;
 import uk.gov.pay.publicauth.model.TokenLink;
 import uk.gov.pay.publicauth.model.TokenPaymentType;
@@ -32,7 +33,9 @@ public class TokenMapper implements RowMapper<TokenEntity> {
                 .withTokenPaymentType(
                         Optional.ofNullable(rs.getString("token_type"))
                                 .map(TokenPaymentType::valueOf)
-                                .orElse(TokenPaymentType.CARD));
+                                .orElse(TokenPaymentType.CARD))
+                .withServiceExternalId(rs.getString("service_external_id"))
+                .withServiceMode(ServiceMode.valueOf(rs.getString("service_mode")));
 
         return tokenBuilder.build();
     }

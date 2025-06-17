@@ -31,7 +31,9 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.Is.is;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static uk.gov.pay.publicauth.model.TokenAccountType.LIVE;
 import static uk.gov.pay.publicauth.model.TokenPaymentType.CARD;
 import static uk.gov.pay.publicauth.model.TokenPaymentType.DIRECT_DEBIT;
 import static uk.gov.pay.publicauth.model.TokenSource.API;
@@ -129,6 +131,30 @@ class AuthTokenDaoIT {
     }
 
     @Test
+    void shouldFindActiveApiTokensByServiceAndMode() {
+        var createTokenRequest = new CreateTokenRequest(ACCOUNT_ID, TOKEN_DESCRIPTION, TEST_USER_NAME, CARD, API, LIVE, ServiceMode.LIVE, SERVICE_EXTERNAL_ID);
+        authTokenDao.storeToken(TokenHash.of(String.valueOf(TOKEN_HASH)), createTokenRequest);
+        ZonedDateTime now = databaseHelper.getCurrentTime();
+
+        List<TokenEntity> tokens = authTokenDao.findTokensBy(SERVICE_EXTERNAL_ID, ServiceMode.LIVE, ACTIVE, API);
+
+        assertThat(tokens.size(), is(1));
+
+        TokenEntity firstToken = tokens.getFirst();
+        assertNotNull(firstToken.getTokenLink());
+        assertThat(firstToken.getDescription(), is(TOKEN_DESCRIPTION));
+        assertThat(firstToken.getRevokedDate(), is(nullValue()));
+        assertThat(firstToken.getCreatedBy(), is(TEST_USER_NAME));
+        assertThat(firstToken.getTokenPaymentType(), is(CARD));
+        assertNull(firstToken.getLastUsedDate());
+        assertThat(firstToken.getServiceExternalId(), is(SERVICE_EXTERNAL_ID));
+        assertThat(firstToken.getServiceMode(), is(ServiceMode.LIVE));
+
+        ZonedDateTime tokenIssueTime = databaseHelper.issueTimestampForAccount(ACCOUNT_ID);
+        assertThat(tokenIssueTime, isCloseTo(now));
+    }
+
+    @Test
     void shouldReturnCardTokensIfTokenPaymentTypeIsNull() {
         ZonedDateTime inserted = databaseHelper.getCurrentTime();
         ZonedDateTime lastUsed = inserted.plusMinutes(30);
@@ -173,7 +199,7 @@ class AuthTokenDaoIT {
 
     @Test
     void shouldInsertNewToken() {
-        var createTokenRequest = new CreateTokenRequest("account-id", "description", "user", CARD, API, TokenAccountType.LIVE, ServiceMode.LIVE, SERVICE_EXTERNAL_ID);
+        var createTokenRequest = new CreateTokenRequest("account-id", "description", "user", CARD, API, LIVE, ServiceMode.LIVE, SERVICE_EXTERNAL_ID);
         authTokenDao.storeToken(TokenHash.of("token-hash"), createTokenRequest);
         Map<String, Object> tokenByHash = databaseHelper.getTokenByHash(TokenHash.of("token-hash"));
         ZonedDateTime now = databaseHelper.getCurrentTime();
@@ -309,7 +335,7 @@ class AuthTokenDaoIT {
     @Test
     void shouldErrorIfTriesToSaveTheSameTokenTwice() {
         databaseHelper.insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, TEST_USER_NAME);
-        var createTokenRequest = new CreateTokenRequest(ACCOUNT_ID, TOKEN_DESCRIPTION, "test@email.com", CARD, API, TokenAccountType.LIVE, ServiceMode.LIVE, SERVICE_EXTERNAL_ID);
+        var createTokenRequest = new CreateTokenRequest(ACCOUNT_ID, TOKEN_DESCRIPTION, "test@email.com", CARD, API, LIVE, ServiceMode.LIVE, SERVICE_EXTERNAL_ID);
         Assertions.assertThrows(RuntimeException.class, () -> {
             authTokenDao.storeToken(TOKEN_HASH, createTokenRequest);
         });

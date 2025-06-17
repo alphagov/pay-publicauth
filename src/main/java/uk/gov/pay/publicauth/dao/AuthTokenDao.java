@@ -56,7 +56,7 @@ public class AuthTokenDao {
     }
 
     public List<TokenEntity> findTokensBy(String accountId, TokenState tokenState, TokenSource tokenSource) {
-        String revokedClause = (tokenState.equals(TokenState.REVOKED)) ? "AND revoked IS NOT NULL " : "AND revoked IS NULL ";
+        String revokedClause = getRevokedClause(tokenState);
 
         return jdbi.withHandle(handle ->
                 handle.createQuery(TOKEN_SELECT +
@@ -65,6 +65,27 @@ public class AuthTokenDao {
                         revokedClause +
                         "ORDER BY issued DESC")
                         .bind("account_id", accountId)
+                        .bind("type", tokenSource)
+                        .map(new TokenMapper())
+                        .list());
+    }
+
+    private static String getRevokedClause(TokenState tokenState) {
+        return tokenState.equals(TokenState.REVOKED) ? "AND revoked IS NOT NULL " : "AND revoked IS NULL ";
+    }
+
+    public List<TokenEntity>  findTokensBy(String serviceExternalId, ServiceMode mode, TokenState tokenState, TokenSource tokenSource) {
+        String revokedClause = getRevokedClause(tokenState);
+
+        return jdbi.withHandle(handle ->
+                handle.createQuery(TOKEN_SELECT +
+                                "WHERE service_external_id = :service_external_id " +
+                                "AND type = :type " +
+                                "AND service_mode = :service_mode " +
+                                revokedClause +
+                                "ORDER BY issued DESC")
+                        .bind("service_external_id", serviceExternalId)
+                        .bind("service_mode", mode)
                         .bind("type", tokenSource)
                         .map(new TokenMapper())
                         .list());
