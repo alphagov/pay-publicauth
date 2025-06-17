@@ -4,6 +4,7 @@ import org.jdbi.v3.core.Jdbi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.gov.pay.publicauth.model.CreateTokenRequest;
+import uk.gov.pay.publicauth.model.ServiceMode;
 import uk.gov.pay.publicauth.model.TokenEntity;
 import uk.gov.pay.publicauth.model.TokenHash;
 import uk.gov.pay.publicauth.model.TokenLink;
@@ -120,6 +121,14 @@ public class AuthTokenDao {
         return jdbi.withHandle(handle ->
                 handle.createUpdate("UPDATE tokens SET revoked=(now() at time zone 'utc') WHERE account_id=:account_id AND revoked IS NULL")
                         .bind("account_id", accountId)
+                        .execute());
+    }
+    
+    public int revokeTokens(String serviceExternalId, ServiceMode mode) {
+        return jdbi.withHandle(handle ->
+                handle.createUpdate("UPDATE tokens SET revoked=(now() at time zone 'utc') WHERE service_external_id=:service_external_id AND service_mode=:service_mode AND revoked IS NULL")
+                        .bind("service_external_id", serviceExternalId)
+                        .bind("service_mode", mode)
                         .execute());
     }
 

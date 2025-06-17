@@ -20,6 +20,7 @@ import uk.gov.pay.publicauth.exception.TokenNotFoundException;
 import uk.gov.pay.publicauth.exception.ValidationException;
 import uk.gov.pay.publicauth.model.AuthResponse;
 import uk.gov.pay.publicauth.model.CreateTokenRequest;
+import uk.gov.pay.publicauth.model.ServiceMode;
 import uk.gov.pay.publicauth.model.TokenHash;
 import uk.gov.pay.publicauth.model.TokenLink;
 import uk.gov.pay.publicauth.model.TokenResponse;
@@ -119,6 +120,22 @@ public class PublicAuthResource {
     )
     public Response revokeTokensForAccount(@Parameter(example = "1") @PathParam("accountId") String accountId) {
         tokenService.revokeTokens(accountId);
+        return ok().build();
+    }
+
+    @Path("/v1/frontend/auth/service/{serviceExternalId}/mode/{mode}")
+    @Timed
+    @DELETE
+    @Operation(
+            summary = "Revokes all tokens associated with a service and mode. It is not possible to tell whether the " +
+                    "service actually exists (in connector), so this method currently does not return a 404.",
+            // TODO check wording
+            responses = {
+                    @ApiResponse(responseCode = "200")
+            }
+    )
+    public Response revokeTokensForServiceAndMode(@Parameter(example = "UPDATE") @PathParam("serviceExternalId") String serviceExternalId, @PathParam("mode") ServiceMode mode) {
+        tokenService.revokeTokens(serviceExternalId, mode);
         return ok().build();
     }
 

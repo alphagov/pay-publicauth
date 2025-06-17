@@ -14,6 +14,7 @@ import uk.gov.pay.publicauth.exception.TokenNotFoundException;
 import uk.gov.pay.publicauth.exception.TokenRevokedException;
 import uk.gov.pay.publicauth.model.AuthResponse;
 import uk.gov.pay.publicauth.model.CreateTokenRequest;
+import uk.gov.pay.publicauth.model.ServiceMode;
 import uk.gov.pay.publicauth.model.TokenEntity;
 import uk.gov.pay.publicauth.model.TokenHash;
 import uk.gov.pay.publicauth.model.TokenLink;
@@ -131,6 +132,12 @@ public class TokenService {
     public void revokeTokens(String accountId) {
         int numberOfTokensRevoked = authTokenDao.revokeTokens(accountId);
         LOGGER.info("Revoked " + numberOfTokensRevoked + " tokens from gateway account with id " + accountId);
+    }
+    
+    public void revokeTokens(String serviceExternalId, ServiceMode mode) {
+        int numberOfTokensRevoked = authTokenDao.revokeTokens(serviceExternalId, mode);
+        LOGGER.info("Revoked " + numberOfTokensRevoked + " tokens from service with id " + serviceExternalId + "in " + mode + " mode");
+    
     }
     
     /**
