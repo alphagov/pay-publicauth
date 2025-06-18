@@ -376,6 +376,32 @@ class AuthTokenDaoIT {
         assertThat(revokedTokensCount, is(2));
     }
 
+    @Test
+    void shouldRevokeTokensByServiceInLiveMode() {
+        var createTokenRequest = new CreateTokenRequest(ACCOUNT_ID, TOKEN_DESCRIPTION, TEST_USER_NAME, CARD, API, LIVE, ServiceMode.LIVE, SERVICE_EXTERNAL_ID);
+        var tokenLink = createTokenRequest.getTokenLink();
+        authTokenDao.storeToken(TokenHash.of(String.valueOf(TOKEN_HASH)), createTokenRequest);
+        
+        var revokedTokensCount = authTokenDao.revokeTokens(SERVICE_EXTERNAL_ID, ServiceMode.LIVE);
+
+        Optional<String> revokedInDb = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", tokenLink.toString());
+        assertThat(revokedInDb.isPresent(), is(true));
+        assertThat(revokedTokensCount, is(1));
+    }
+
+    @Test
+    void shouldRevokeTokensByServiceInTestMode() {
+        var createTokenRequest = new CreateTokenRequest(ACCOUNT_ID, TOKEN_DESCRIPTION, TEST_USER_NAME, CARD, API, LIVE, ServiceMode.TEST, SERVICE_EXTERNAL_ID);
+        var tokenLink = createTokenRequest.getTokenLink();
+        authTokenDao.storeToken(TokenHash.of(String.valueOf(TOKEN_HASH)), createTokenRequest);
+        
+        var revokedTokensCount = authTokenDao.revokeTokens(SERVICE_EXTERNAL_ID, ServiceMode.TEST);
+
+        Optional<String> revokedInDb = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", tokenLink.toString());
+        assertThat(revokedInDb.isPresent(), is(true));
+        assertThat(revokedTokensCount, is(1));
+    }
+
     private Matcher<ChronoZonedDateTime<?>> isCloseTo(ZonedDateTime now) {
         return both(greaterThan(now.minusSeconds(5))).and(lessThan(now.plusSeconds(5)));
     }
