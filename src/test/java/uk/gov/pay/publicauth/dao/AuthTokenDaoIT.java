@@ -363,6 +363,18 @@ class AuthTokenDaoIT {
             authTokenDao.storeToken(TOKEN_HASH, createTokenRequest);
         });
     }
+    
+    @Test
+    void shouldRevokeTokensByAccountId() {
+        databaseHelper.insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, TEST_USER_NAME);
+        databaseHelper.insertAccount(TOKEN_HASH_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, TEST_USER_NAME);
+        
+        var revokedTokensCount = authTokenDao.revokeTokens(ACCOUNT_ID);
+        
+        Optional<String> revokedInDb = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.toString());
+        assertThat(revokedInDb.isPresent(), is(true));
+        assertThat(revokedTokensCount, is(2));
+    }
 
     private Matcher<ChronoZonedDateTime<?>> isCloseTo(ZonedDateTime now) {
         return both(greaterThan(now.minusSeconds(5))).and(lessThan(now.plusSeconds(5)));
