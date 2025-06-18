@@ -119,7 +119,7 @@ class AuthTokenDaoIT {
 
         assertThat(tokens.size(), is(1));
 
-        TokenEntity firstToken = tokens.get(0);
+        TokenEntity firstToken = tokens.getFirst();
         assertThat(firstToken.getTokenLink(), is(TOKEN_LINK_2));
         assertThat(firstToken.getDescription(), is(TOKEN_DESCRIPTION_2));
         assertThat(firstToken.getRevokedDate(), is(nullValue()));
@@ -187,7 +187,7 @@ class AuthTokenDaoIT {
 
         assertThat(tokens.size(), is(1));
 
-        TokenEntity firstToken = tokens.get(0);
+        TokenEntity firstToken = tokens.getFirst();
         assertThat(firstToken.getTokenLink(), is(TOKEN_LINK_2));
         assertThat(firstToken.getDescription(), is(TOKEN_DESCRIPTION_2));
         assertThat(firstToken.getTokenSource(), is(API));
@@ -210,7 +210,7 @@ class AuthTokenDaoIT {
         List<TokenEntity> tokens = authTokenDao.findTokensBy(ACCOUNT_ID, REVOKED, API);
 
         assertThat(tokens.size(), is(1));
-        TokenEntity firstToken = tokens.get(0);
+        TokenEntity firstToken = tokens.getFirst();
         assertThat(firstToken.getTokenLink(), is(TOKEN_LINK));
         assertThat(firstToken.getDescription(), is(TOKEN_DESCRIPTION));
         assertThat(firstToken.getTokenSource(), is(API));
