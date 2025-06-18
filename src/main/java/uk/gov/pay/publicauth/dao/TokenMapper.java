@@ -35,7 +35,10 @@ public class TokenMapper implements RowMapper<TokenEntity> {
                                 .map(TokenPaymentType::valueOf)
                                 .orElse(TokenPaymentType.CARD))
                 .withServiceExternalId(rs.getString("service_external_id"))
-                .withServiceMode(ServiceMode.valueOf(rs.getString("service_mode")));
+                .withServiceMode(
+                        Optional.ofNullable(rs.getString("service_mode"))
+                                .map(ServiceMode::valueOf)
+                                .orElse(null));
 
         return tokenBuilder.build();
     }
