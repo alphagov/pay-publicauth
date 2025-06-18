@@ -12,7 +12,6 @@ import uk.gov.pay.publicauth.model.ServiceMode;
 import uk.gov.pay.publicauth.model.TokenEntity;
 import uk.gov.pay.publicauth.model.TokenHash;
 import uk.gov.pay.publicauth.model.TokenLink;
-import uk.gov.pay.publicauth.model.TokenAccountType;
 import uk.gov.pay.publicauth.utils.DatabaseTestHelper;
 import uk.gov.pay.publicauth.utils.DropwizardAppWithPostgresExtension;
 
@@ -131,7 +130,7 @@ class AuthTokenDaoIT {
     }
 
     @Test
-    void shouldFindActiveApiTokensByServiceAndMode() {
+    void shouldFindActiveApiTokensByServiceInLiveMode() {
         var createTokenRequest = new CreateTokenRequest(ACCOUNT_ID, TOKEN_DESCRIPTION, TEST_USER_NAME, CARD, API, LIVE, ServiceMode.LIVE, SERVICE_EXTERNAL_ID);
         authTokenDao.storeToken(TokenHash.of(String.valueOf(TOKEN_HASH)), createTokenRequest);
         ZonedDateTime now = databaseHelper.getCurrentTime();
@@ -149,6 +148,30 @@ class AuthTokenDaoIT {
         assertNull(firstToken.getLastUsedDate());
         assertThat(firstToken.getServiceExternalId(), is(SERVICE_EXTERNAL_ID));
         assertThat(firstToken.getServiceMode(), is(ServiceMode.LIVE));
+
+        ZonedDateTime tokenIssueTime = databaseHelper.issueTimestampForAccount(ACCOUNT_ID);
+        assertThat(tokenIssueTime, isCloseTo(now));
+    }
+
+    @Test
+    void shouldFindActiveApiTokensByServiceInTestMode() {
+        var createTokenRequest = new CreateTokenRequest(ACCOUNT_ID, TOKEN_DESCRIPTION, TEST_USER_NAME, CARD, API, LIVE, ServiceMode.TEST, SERVICE_EXTERNAL_ID);
+        authTokenDao.storeToken(TokenHash.of(String.valueOf(TOKEN_HASH)), createTokenRequest);
+        ZonedDateTime now = databaseHelper.getCurrentTime();
+
+        List<TokenEntity> tokens = authTokenDao.findTokensBy(SERVICE_EXTERNAL_ID, ServiceMode.TEST, ACTIVE, API);
+
+        assertThat(tokens.size(), is(1));
+
+        TokenEntity firstToken = tokens.getFirst();
+        assertNotNull(firstToken.getTokenLink());
+        assertThat(firstToken.getDescription(), is(TOKEN_DESCRIPTION));
+        assertThat(firstToken.getRevokedDate(), is(nullValue()));
+        assertThat(firstToken.getCreatedBy(), is(TEST_USER_NAME));
+        assertThat(firstToken.getTokenPaymentType(), is(CARD));
+        assertNull(firstToken.getLastUsedDate());
+        assertThat(firstToken.getServiceExternalId(), is(SERVICE_EXTERNAL_ID));
+        assertThat(firstToken.getServiceMode(), is(ServiceMode.TEST));
 
         ZonedDateTime tokenIssueTime = databaseHelper.issueTimestampForAccount(ACCOUNT_ID);
         assertThat(tokenIssueTime, isCloseTo(now));
