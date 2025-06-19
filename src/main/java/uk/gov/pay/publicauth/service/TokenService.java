@@ -133,6 +133,16 @@ public class TokenService {
         return authTokenDao.revokeSingleToken(accountId, tokenLink).map(localDateTime -> localDateTime.atZone(ZoneOffset.UTC))
                 .orElseThrow(() -> new TokenNotFoundException("Could not revoke token with token_link " + tokenLink));
     }
+    
+    public ZonedDateTime revokeToken(String serviceExternalId, ServiceMode mode, TokenHash tokenHash) {
+        return authTokenDao.revokeSingleToken(serviceExternalId, mode, tokenHash).map(localDateTime -> localDateTime.atZone(ZoneOffset.UTC))
+                .orElseThrow(() -> new TokenNotFoundException("Could not revoke token"));
+    }
+
+    public ZonedDateTime revokeToken(String serviceExternalId, ServiceMode mode, TokenLink tokenLink) {
+        return authTokenDao.revokeSingleToken(serviceExternalId, mode, tokenLink).map(localDateTime -> localDateTime.atZone(ZoneOffset.UTC))
+                .orElseThrow(() -> new TokenNotFoundException("Could not revoke token"));
+    }
 
     public void revokeTokens(String accountId) {
         int numberOfTokensRevoked = authTokenDao.revokeTokens(accountId);
