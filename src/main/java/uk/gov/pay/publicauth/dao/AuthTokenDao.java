@@ -138,6 +138,26 @@ public class AuthTokenDao {
                         .findFirst());
     }
 
+    public Optional<LocalDateTime> revokeSingleToken(String serviceExternalId, ServiceMode mode, TokenLink tokenLink) {
+        return Optional.ofNullable(jdbi.withHandle(handle ->
+                handle.createQuery("UPDATE tokens SET revoked=(now() at time zone 'utc') WHERE service_external_id=:service_external_id AND service_mode=:service_mode AND token_link=:token_link AND revoked IS NULL RETURNING revoked")
+                        .bind("service_external_id", serviceExternalId)
+                        .bind("service_mode", mode)
+                        .bind("token_link", tokenLink.toString())
+                        .mapTo(LocalDateTime.class)
+                        .first()));
+    }
+    
+    public Optional<LocalDateTime> revokeSingleToken(String serviceExternalId, ServiceMode mode, TokenHash tokenHash) {
+        return Optional.ofNullable(jdbi.withHandle(handle ->
+                handle.createQuery("UPDATE tokens SET revoked=(now() at time zone 'utc') WHERE service_external_id=:service_external_id AND service_mode=:service_mode AND token_hash=:token_hash AND revoked IS NULL RETURNING revoked")
+                        .bind("service_external_id", serviceExternalId)
+                        .bind("service_mode", mode)
+                        .bind("token_hash", tokenHash.getValue())
+                        .mapTo(LocalDateTime.class)
+                        .first()));
+    }
+
     public int revokeTokens(String accountId) {
         return jdbi.withHandle(handle ->
                 handle.createUpdate("UPDATE tokens SET revoked=(now() at time zone 'utc') WHERE account_id=:account_id AND revoked IS NULL")
