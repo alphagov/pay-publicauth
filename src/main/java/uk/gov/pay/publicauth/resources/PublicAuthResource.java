@@ -205,6 +205,25 @@ public class PublicAuthResource {
                                         @Parameter(example = "a-token-link") @PathParam("tokenLink") String tokenLink) {
         return Response.ok(tokenService.findTokenBy(accountId, TokenLink.of(tokenLink))).build();    
     }
+
+    @Path("v1/frontend/auth/service/{serviceExternalId}/mode/{mode}/{tokenLink} ")
+    @Timed
+    @Produces(APPLICATION_JSON)
+    @GET
+    @Operation(
+            summary = "Get a token by service, mode and token link.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "OK",
+                            content = @Content(schema = @Schema(implementation = TokenResponse.class))),
+                    @ApiResponse(responseCode = "404", description = "Token not found")
+            }
+    )
+    public Response getTokenByServiceAndTokenLink(@Parameter(example = SERVICE_EXTERNAL_ID_EXAMPLE) 
+                                                      @PathParam("serviceExternalId") String serviceExternalId,
+                                                  @PathParam("mode") ServiceMode mode,
+                                        @Parameter(example = "a-token-link") @PathParam("tokenLink") String tokenLink) {
+        return Response.ok(tokenService.findTokenBy(serviceExternalId, mode, TokenLink.of(tokenLink))).build();
+    }
     
     @Path("/v1/frontend/auth")
     @Timed
@@ -323,7 +342,7 @@ public class PublicAuthResource {
         List<String> missingFields = expectedFields
                 .stream()
                 .filter(expectedKey -> !payload.has(expectedKey))
-                .collect(Collectors.toList());
+                .toList();
         if (!missingFields.isEmpty()) {
             throw new ValidationException("Missing fields: " + missingFields);
         }

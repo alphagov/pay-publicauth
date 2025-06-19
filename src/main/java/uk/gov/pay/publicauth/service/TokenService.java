@@ -76,7 +76,12 @@ public class TokenService {
     
     public TokenResponse findTokenBy(String accountId, TokenLink tokenLink) {
         return authTokenDao.findTokenBy(accountId, tokenLink).map(TokenResponse::fromEntity)
-                .orElseThrow(() -> new TokenNotFoundException("Could not update description of token with token_link " + tokenLink));
+                .orElseThrow(() -> new TokenNotFoundException("Token does not exist"));
+    }
+    
+    public TokenResponse findTokenBy(String serviceExternalId, ServiceMode mode, TokenLink tokenLink) {
+        return authTokenDao.findTokenBy(serviceExternalId, mode, tokenLink).map(TokenResponse::fromEntity)
+                .orElseThrow(() -> new TokenNotFoundException("Token does not exist"));
     }
 
     /**

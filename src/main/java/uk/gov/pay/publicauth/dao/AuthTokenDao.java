@@ -54,6 +54,18 @@ public class AuthTokenDao {
                         .map(new TokenMapper())
                         .findFirst());
     }
+    
+    public Optional<TokenEntity> findTokenBy(String serviceExternalId, ServiceMode mode, TokenLink tokenLink) {
+        return jdbi.withHandle(handle ->
+                handle.createQuery(TOKEN_SELECT +
+                                "WHERE service_external_id = :service_external_id " +
+                                "AND service_mode = :service_mode")
+                        .bind("service_external_id", serviceExternalId)
+                        .bind("service_mode", mode)
+                        .bind("token_link", tokenLink.toString())
+                        .map(new TokenMapper())
+                        .findFirst());
+    }
 
     public List<TokenEntity> findTokensBy(String accountId, TokenState tokenState, TokenSource tokenSource) {
         String revokedClause = getRevokedClause(tokenState);
