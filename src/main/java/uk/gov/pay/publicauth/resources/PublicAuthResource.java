@@ -124,13 +124,12 @@ public class PublicAuthResource {
         return ok().build();
     }
 
-    @Path("/v1/frontend/auth/service/{serviceExternalId}/mode/{mode}")
+    @Path("/v1/frontend/auth/service/{serviceExternalId}/mode/{mode}/revoke-all")
     @Timed
     @DELETE
     @Operation(
             summary = "Revokes all tokens associated with a service and mode. It is not possible to tell whether the " +
                     "service actually exists (in connector), so this method currently does not return a 404.",
-            // TODO check wording
             responses = {
                     @ApiResponse(responseCode = "200")
             }
@@ -269,7 +268,42 @@ public class PublicAuthResource {
             ZonedDateTime revokedDate = tokenService.revokeToken(accountId, tokenLink);
             return buildRevokedTokenResponse(revokedDate);
         }
+    }
 
+    @Path("/v1/frontend/auth/service/{serviceExternalId}/mode/{mode}")
+    @Timed
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
+    @DELETE
+    @Operation(
+            summary = "Revokes the supplied token for this service and mode",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "OK",
+                            content = @Content(schema = @Schema(example = "{" +
+                                    "    \"revoked\": \"4 Apr 2022\"" +
+                                    "}"))),
+                    @ApiResponse(responseCode = "404", description = "Token not found")
+            }
+    )
+    public Response revokeSingleToken(@Parameter(example = SERVICE_EXTERNAL_ID_EXAMPLE) @PathParam("serviceExternalId") String serviceExternalId,
+                                      @PathParam("mode") ServiceMode mode,
+                                      @RequestBody(content = @Content(schema = @Schema(example = "{" +
+                                              "    \"token_link\": \"74813ca7-1829-4cad-bc0e-684a0288a308\"" +
+                                              "}")))
+                                      JsonNode payload) throws ValidationException, TokenNotFoundException {
+
+        validatePayloadHasFields(payload, Collections.emptyList(), asList(TOKEN_LINK_FIELD, TOKEN_FIELD));
+
+        if (payload.hasNonNull(TOKEN_FIELD)) {
+            return tokenService.extractEncryptedTokenFrom(payload.get(TOKEN_FIELD).asText())
+                    .map(token -> tokenService.revokeToken(serviceExternalId, mode, TokenHash.of(token.getName())))
+                    .map(this::buildRevokedTokenResponse)
+                    .orElseThrow(() -> new TokenNotFoundException("Could not extract encrypted token while revoking token"));
+        } else {
+            TokenLink tokenLink = TokenLink.of(payload.get(TOKEN_LINK_FIELD).asText());
+            ZonedDateTime revokedDate = tokenService.revokeToken(serviceExternalId, mode, tokenLink);
+            return buildRevokedTokenResponse(revokedDate);
+        }
     }
 
     private Response buildRevokedTokenResponse(ZonedDateTime revokedDate) {
