@@ -146,7 +146,7 @@ public class TokenService {
 
     public ZonedDateTime revokeToken(String serviceExternalId, ServiceMode mode, TokenLink tokenLink) {
         return authTokenDao.revokeSingleToken(serviceExternalId, mode, tokenLink).map(localDateTime -> localDateTime.atZone(ZoneOffset.UTC))
-                .orElseThrow(() -> new TokenNotFoundException("Could not revoke token"));
+                .orElseThrow(() -> new TokenNotFoundException("Could not revoke token with token_link " + tokenLink));
     }
 
     public void revokeTokens(String accountId) {
