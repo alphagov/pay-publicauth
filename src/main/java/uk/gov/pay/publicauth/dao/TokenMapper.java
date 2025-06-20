@@ -29,7 +29,12 @@ public class TokenMapper implements RowMapper<TokenEntity> {
                 .withRevokedDate(getZonedDateTime(rs, "revoked").orElse(null))
                 .withIssuedDate(getZonedDateTime(rs, "issued").orElse(null))
                 .withLastUsedDate(getZonedDateTime(rs, "last_used").orElse(null))
-                .withCreatedBy(rs.getString(("created_by")))
+                .withCreatedBy(rs.getString("created_by"))
+                .withServiceMode(
+                        Optional.ofNullable(rs.getString("service_mode"))
+                                .map(ServiceMode::valueOf)
+                                .orElse(null))
+                .withServiceExternalId(rs.getString("service_external_id"))
                 .withTokenPaymentType(
                         Optional.ofNullable(rs.getString("token_type"))
                                 .map(TokenPaymentType::valueOf)

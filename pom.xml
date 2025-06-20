@@ -7,9 +7,9 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <pay-java-commons.version>1.0.20250602101944</pay-java-commons.version>
+        <pay-java-commons.version>1.0.20250616112122</pay-java-commons.version>
         <prometheus.version>0.16.0</prometheus.version>
-        <swagger.version>2.2.32</swagger.version>
+        <swagger.version>2.2.33</swagger.version>
         <hamcrest.version>3.0</hamcrest.version>
     </properties>
 
@@ -99,7 +99,7 @@
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <version>42.7.6</version>
+            <version>42.7.7</version>
         </dependency>
         <dependency>
             <groupId>org.mindrot</groupId>

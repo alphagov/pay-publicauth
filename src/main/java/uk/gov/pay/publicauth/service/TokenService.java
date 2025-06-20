@@ -69,7 +69,7 @@ public class TokenService {
                         throw new TokenRevokedException(tokenEntity.getTokenLink());
                     }
                     authTokenDao.updateLastUsedTime(tokenHash);
-                    return new AuthResponse(tokenEntity.getAccountId(), tokenEntity.getTokenLink(), tokenEntity.getTokenPaymentType());
+                    return new AuthResponse(tokenEntity);
                 })
                 .orElseThrow(() -> new TokenInvalidException("Token does not exist"));
     }
