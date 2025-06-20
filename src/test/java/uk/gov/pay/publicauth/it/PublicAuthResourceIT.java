@@ -417,7 +417,7 @@ class PublicAuthResourceIT {
     
     
             //Retrieved in issued order from newest to oldest
-            Map<String, String> firstToken = retrievedTokens.get(0);
+            Map<String, String> firstToken = retrievedTokens.getFirst();
             assertThat(firstToken.size(), is(7));
             assertThat(firstToken.get("token_link"), is(TOKEN_LINK_2.toString()));
             assertThat(firstToken.get("type"), is(API.toString()));
@@ -430,6 +430,45 @@ class PublicAuthResourceIT {
     
             Map<String, String> secondToken = retrievedTokens.get(1);
             assertThat(secondToken.size(), is(7));
+            assertThat(secondToken.get("token_link"), is(TOKEN_LINK.toString()));
+            assertThat(firstToken.get("type"), is(API.toString()));
+            assertThat(secondToken.get("description"), is(TOKEN_DESCRIPTION));
+            assertThat(secondToken.containsKey("revoked"), is(false));
+            assertThat(secondToken.get("created_by"), is(CREATED_USER_NAME));
+            assertThat(secondToken.get("token_type"), is(CARD.toString()));
+            assertThat(secondToken.get("issued_date"), is(inserted.format(DATE_TIME_FORMAT)));
+            assertThat(secondToken.get("last_used"), is(lastUsed.format(DATE_TIME_FORMAT)));
+        }
+
+        @Test
+        public void respondWith200_ifTokensHaveBeenIssuedForTheService() {
+            ZonedDateTime inserted = ZonedDateTime.now(UTC);
+            ZonedDateTime lastUsed = inserted.plusHours(1);
+
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, API, ACCOUNT_ID, TOKEN_DESCRIPTION, null, CREATED_USER_NAME, lastUsed, CARD, ServiceMode.LIVE, SERVICE_EXTERNAL_ID);
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, API, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed, CARD, ServiceMode.LIVE, SERVICE_EXTERNAL_ID);
+            databaseHelper.insertAccount(TokenHash.of("TOKEN-3"), TokenLink.of("123456789101112131415161718192021224"), PRODUCTS, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed, CARD, ServiceMode.LIVE, SERVICE_EXTERNAL_ID);
+
+            List<Map<String, String>> retrievedTokens = getTokensFor(SERVICE_EXTERNAL_ID, ServiceMode.LIVE)
+                    .statusCode(200)
+                    .body("tokens", hasSize(2))
+                    .extract().path("tokens");
+
+
+            //Retrieved in issued order from newest to oldest
+            Map<String, String> firstToken = retrievedTokens.getFirst();
+            assertThat(firstToken.size(), is(9));
+            assertThat(firstToken.get("token_link"), is(TOKEN_LINK_2.toString()));
+            assertThat(firstToken.get("type"), is(API.toString()));
+            assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION_2));
+            assertThat(firstToken.containsKey("revoked"), is(false));
+            assertThat(firstToken.get("created_by"), is(CREATED_USER_NAME2));
+            assertThat(firstToken.get("token_type"), is(CARD.toString()));
+            assertThat(firstToken.get("issued_date"), is(inserted.format(DATE_TIME_FORMAT)));
+            assertThat(firstToken.get("last_used"), is(lastUsed.format(DATE_TIME_FORMAT)));
+
+            Map<String, String> secondToken = retrievedTokens.get(1);
+            assertThat(secondToken.size(), is(9));
             assertThat(secondToken.get("token_link"), is(TOKEN_LINK.toString()));
             assertThat(firstToken.get("type"), is(API.toString()));
             assertThat(secondToken.get("description"), is(TOKEN_DESCRIPTION));
@@ -456,7 +495,33 @@ class PublicAuthResourceIT {
     
     
             //Retrieved in issued order from newest to oldest
-            Map<String, String> firstToken = retrievedTokens.get(0);
+            Map<String, String> firstToken = retrievedTokens.getFirst();
+            assertThat(firstToken.get("token_link"), is(TOKEN_LINK.toString()));
+            assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION));
+            assertThat(firstToken.get("revoked"), is(revoked.format(DATE_TIME_FORMAT)));
+            assertThat(firstToken.get("created_by"), is(CREATED_USER_NAME));
+            assertThat(firstToken.get("token_type"), is(CARD.toString()));
+            assertThat(firstToken.get("last_used"), is(lastUsed.format(DATE_TIME_FORMAT)));
+            assertThat(firstToken.get("issued_date"), is(inserted.format(DATE_TIME_FORMAT)));
+        }
+
+        @Test
+        public void respondWith200_andRetrieveRevokedTokensForService() {
+            ZonedDateTime inserted = ZonedDateTime.now(UTC);
+            ZonedDateTime lastUsed = inserted.plusHours(1);
+            ZonedDateTime revoked = inserted.plusHours(2);
+
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, API, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, CREATED_USER_NAME, lastUsed, CARD, ServiceMode.LIVE, SERVICE_EXTERNAL_ID);
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, API, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed, CARD, ServiceMode.LIVE, SERVICE_EXTERNAL_ID);
+
+            List<Map<String, String>> retrievedTokens = getTokensFor(SERVICE_EXTERNAL_ID, ServiceMode.LIVE, "revoked")
+                    .statusCode(200)
+                    .body("tokens", hasSize(1))
+                    .extract().path("tokens");
+
+
+            //Retrieved in issued order from newest to oldest
+            Map<String, String> firstToken = retrievedTokens.getFirst();
             assertThat(firstToken.get("token_link"), is(TOKEN_LINK.toString()));
             assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION));
             assertThat(firstToken.get("revoked"), is(revoked.format(DATE_TIME_FORMAT)));
@@ -482,7 +547,7 @@ class PublicAuthResourceIT {
     
     
             //Retrieved in issued order from newest to oldest
-            Map<String, String> firstToken = retrievedTokens.get(0);
+            Map<String, String> firstToken = retrievedTokens.getFirst();
             assertThat(firstToken.get("token_link"), is(TOKEN_LINK_2.toString()));
             assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION_2));
             assertThat(firstToken.containsKey("revoked"), is(false));
@@ -514,7 +579,31 @@ class PublicAuthResourceIT {
                     .extract().path("tokens");
     
             //Retrieved in issued order from newest to oldest
-            Map<String, String> firstToken = retrievedTokens.get(0);
+            Map<String, String> firstToken = retrievedTokens.getFirst();
+            assertThat(firstToken.get("token_link"), is(TOKEN_LINK_2.toString()));
+            assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION_2));
+            assertThat(firstToken.containsKey("revoked"), is(false));
+            assertThat(firstToken.get("created_by"), is(CREATED_USER_NAME2));
+            assertThat(firstToken.get("token_type"), is(CARD.toString()));
+            assertThat(firstToken.get("last_used"), is(lastUsed.format(DATE_TIME_FORMAT)));
+            assertThat(firstToken.get("issued_date"), is(inserted.format(DATE_TIME_FORMAT)));
+        }
+
+        @Test
+        public void respondWith200_andRetrieveActiveTokensForService() {
+            ZonedDateTime inserted = ZonedDateTime.now(UTC);
+            ZonedDateTime lastUsed = inserted.plusHours(1);
+            ZonedDateTime revoked = inserted.plusHours(2);
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, API, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, CREATED_USER_NAME, lastUsed, CARD, ServiceMode.LIVE, SERVICE_EXTERNAL_ID);
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, API, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed, CARD, ServiceMode.LIVE, SERVICE_EXTERNAL_ID);
+
+            List<Map<String, String>> retrievedTokens = getTokensFor(SERVICE_EXTERNAL_ID, ServiceMode.LIVE, "active")
+                    .statusCode(200)
+                    .body("tokens", hasSize(1))
+                    .extract().path("tokens");
+
+            //Retrieved in issued order from newest to oldest
+            Map<String, String> firstToken = retrievedTokens.getFirst();
             assertThat(firstToken.get("token_link"), is(TOKEN_LINK_2.toString()));
             assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION_2));
             assertThat(firstToken.containsKey("revoked"), is(false));
@@ -538,7 +627,31 @@ class PublicAuthResourceIT {
                     .extract().path("tokens");
     
             //Retrieved in issued order from newest to oldest
-            Map<String, String> firstToken = retrievedTokens.get(0);
+            Map<String, String> firstToken = retrievedTokens.getFirst();
+            assertThat(firstToken.get("token_link"), is(TOKEN_LINK_2.toString()));
+            assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION_2));
+            assertThat(firstToken.containsKey("revoked"), is(false));
+            assertThat(firstToken.get("created_by"), is(CREATED_USER_NAME2));
+            assertThat(firstToken.get("token_type"), is(CARD.toString()));
+            assertThat(firstToken.get("last_used"), is(lastUsed.format(DATE_TIME_FORMAT)));
+            assertThat(firstToken.get("issued_date"), is(inserted.format(DATE_TIME_FORMAT)));
+        }
+
+        @Test
+        public void respondWith200_andRetrieveActiveTokensForServiceIfNoQueryParamIsSpecified() {
+            ZonedDateTime inserted = ZonedDateTime.now(UTC);
+            ZonedDateTime lastUsed = inserted.plusHours(1);
+            ZonedDateTime revoked = inserted.plusHours(2);
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, API, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, CREATED_USER_NAME, lastUsed, CARD, ServiceMode.LIVE, SERVICE_EXTERNAL_ID);
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, API, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed, CARD, ServiceMode.LIVE, SERVICE_EXTERNAL_ID);
+
+            List<Map<String, String>> retrievedTokens = getTokensForWithNoQueryParam(SERVICE_EXTERNAL_ID, ServiceMode.LIVE)
+                    .statusCode(200)
+                    .body("tokens", hasSize(1))
+                    .extract().path("tokens");
+
+            //Retrieved in issued order from newest to oldest
+            Map<String, String> firstToken = retrievedTokens.getFirst();
             assertThat(firstToken.get("token_link"), is(TOKEN_LINK_2.toString()));
             assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION_2));
             assertThat(firstToken.containsKey("revoked"), is(false));
@@ -555,13 +668,38 @@ class PublicAuthResourceIT {
             ZonedDateTime revoked = inserted.plusHours(2);
             databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, CREATED_USER_NAME, lastUsed);
             databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed);
+            
             List<Map<String, String>> retrievedTokens = getTokensFor(ACCOUNT_ID, "something")
                     .statusCode(200)
                     .body("tokens", hasSize(1))
                     .extract().path("tokens");
     
             //Retrieved in issued order from newest to oldest
-            Map<String, String> firstToken = retrievedTokens.get(0);
+            Map<String, String> firstToken = retrievedTokens.getFirst();
+            assertThat(firstToken.get("token_link"), is(TOKEN_LINK_2.toString()));
+            assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION_2));
+            assertThat(firstToken.containsKey("revoked"), is(false));
+            assertThat(firstToken.get("created_by"), is(CREATED_USER_NAME2));
+            assertThat(firstToken.get("token_type"), is(CARD.toString()));
+            assertThat(firstToken.get("last_used"), is(lastUsed.format(DATE_TIME_FORMAT)));
+            assertThat(firstToken.get("issued_date"), is(inserted.format(DATE_TIME_FORMAT)));
+        }
+
+        @Test
+        public void respondWith200_andRetrieveActiveTokensForServiceIfUnknownQueryParamIsSpecified() {
+            ZonedDateTime inserted = ZonedDateTime.now(UTC);
+            ZonedDateTime lastUsed = inserted.plusHours(1);
+            ZonedDateTime revoked = inserted.plusHours(2);
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, API, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, CREATED_USER_NAME, lastUsed, CARD, ServiceMode.LIVE, SERVICE_EXTERNAL_ID);
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, API, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed, CARD, ServiceMode.LIVE, SERVICE_EXTERNAL_ID);
+            
+            List<Map<String, String>> retrievedTokens = getTokensFor(SERVICE_EXTERNAL_ID, ServiceMode.LIVE,"something")
+                    .statusCode(200)
+                    .body("tokens", hasSize(1))
+                    .extract().path("tokens");
+
+            //Retrieved in issued order from newest to oldest
+            Map<String, String> firstToken = retrievedTokens.getFirst();
             assertThat(firstToken.get("token_link"), is(TOKEN_LINK_2.toString()));
             assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION_2));
             assertThat(firstToken.containsKey("revoked"), is(false));
@@ -587,11 +725,36 @@ class PublicAuthResourceIT {
                     .get(FRONTEND_AUTH_PATH + "/" + accountId)
                     .then();
         }
-
+        
         private ValidatableResponse getTokensForWithNoQueryParam(String accountId) {
             return given().port(localPort)
                     .accept(JSON)
                     .get(FRONTEND_AUTH_PATH + "/" + accountId)
+                    .then();
+        }
+
+        private ValidatableResponse getTokensFor(String serviceExternalId, ServiceMode mode) {
+            return getTokensFor(serviceExternalId, mode, "active");
+        }
+
+        private ValidatableResponse getTokensFor(String serviceExternalId, ServiceMode mode, String tokenState) {
+            return getTokensFor(serviceExternalId,  mode, tokenState, API.toString());
+        }
+
+
+        private ValidatableResponse getTokensFor(String serviceExternalId, ServiceMode mode, String tokenState, String type) {
+            return given().port(localPort)
+                    .accept(JSON)
+                    .param("state", tokenState)
+                    .param("type", type)
+                    .get(FRONTEND_AUTH_PATH + "/service/" + serviceExternalId + "/mode/" + mode.toString())
+                    .then();
+        }
+
+        private ValidatableResponse getTokensForWithNoQueryParam(String serviceExternalId, ServiceMode mode) {
+            return given().port(localPort)
+                    .accept(JSON)
+                    .get(FRONTEND_AUTH_PATH + "/service/" + serviceExternalId + "/mode/" + mode.toString())
                     .then();
         }
     }
