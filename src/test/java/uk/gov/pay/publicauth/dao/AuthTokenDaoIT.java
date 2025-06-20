@@ -12,7 +12,6 @@ import uk.gov.pay.publicauth.model.ServiceMode;
 import uk.gov.pay.publicauth.model.TokenEntity;
 import uk.gov.pay.publicauth.model.TokenHash;
 import uk.gov.pay.publicauth.model.TokenLink;
-import uk.gov.pay.publicauth.model.TokenAccountType;
 import uk.gov.pay.publicauth.utils.DatabaseTestHelper;
 import uk.gov.pay.publicauth.utils.DropwizardAppWithPostgresExtension;
 
@@ -32,6 +31,8 @@ import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static uk.gov.pay.publicauth.model.TokenAccountType.LIVE;
+import static uk.gov.pay.publicauth.model.TokenAccountType.TEST;
 import static uk.gov.pay.publicauth.model.TokenPaymentType.CARD;
 import static uk.gov.pay.publicauth.model.TokenPaymentType.DIRECT_DEBIT;
 import static uk.gov.pay.publicauth.model.TokenSource.API;
@@ -64,7 +65,7 @@ class AuthTokenDaoIT {
     }
 
     @Test
-    void shouldfindATokenByHash() {
+    void shouldFindATokenByHash() {
         databaseHelper.insertAccount(TOKEN_HASH, TOKEN_LINK, API, ACCOUNT_ID, TOKEN_DESCRIPTION, null, TEST_USER_NAME, null, DIRECT_DEBIT);
         Optional<TokenEntity> tokenInfo = authTokenDao.findTokenByHash(TOKEN_HASH);
         assertThat(tokenInfo.get().getAccountId(), is(ACCOUNT_ID));
@@ -72,7 +73,7 @@ class AuthTokenDaoIT {
     }
 
     @Test
-    void shouldfindATokenByHash_returnsCardWhenPaymentTypeIsNull() {
+    void shouldFindATokenByHash_returnsCardWhenPaymentTypeIsNull() {
         databaseHelper.insertAccount(TOKEN_HASH, TOKEN_LINK, API, ACCOUNT_ID, TOKEN_DESCRIPTION, null, TEST_USER_NAME, null, null);
         Optional<TokenEntity> tokenInfo = authTokenDao.findTokenByHash(TOKEN_HASH);
         assertThat(tokenInfo.get().getAccountId(), is(ACCOUNT_ID));
@@ -118,7 +119,7 @@ class AuthTokenDaoIT {
 
         assertThat(tokens.size(), is(1));
 
-        TokenEntity firstToken = tokens.get(0);
+        TokenEntity firstToken = tokens.getFirst();
         assertThat(firstToken.getTokenLink(), is(TOKEN_LINK_2));
         assertThat(firstToken.getDescription(), is(TOKEN_DESCRIPTION_2));
         assertThat(firstToken.getRevokedDate(), is(nullValue()));
@@ -126,6 +127,38 @@ class AuthTokenDaoIT {
         assertThat(firstToken.getTokenPaymentType(), is(DIRECT_DEBIT));
         assertThat(firstToken.getLastUsedDate(), is(lastUsed));
         assertThat(firstToken.getIssuedDate(), isCloseTo(inserted));
+    }
+
+    @Test
+    void shouldFindApiTokensByServiceInLiveMode() {
+        var createTokenRequest = new CreateTokenRequest(ACCOUNT_ID, TOKEN_DESCRIPTION, TEST_USER_NAME, CARD, API, LIVE, ServiceMode.LIVE, SERVICE_EXTERNAL_ID);
+        var createTokenRequest2 = new CreateTokenRequest(ACCOUNT_ID, TOKEN_DESCRIPTION_2, TEST_USER_NAME, CARD, API, LIVE, ServiceMode.LIVE, SERVICE_EXTERNAL_ID);
+        authTokenDao.storeToken(TOKEN_HASH, createTokenRequest);
+        authTokenDao.storeToken(TOKEN_HASH_2, createTokenRequest2);
+        ZonedDateTime now = databaseHelper.getCurrentTime();
+
+        List<TokenEntity> tokens = authTokenDao.findTokensBy(SERVICE_EXTERNAL_ID, ServiceMode.LIVE, ACTIVE, API);
+
+        assertThat(tokens.size(), is(2));
+
+        ZonedDateTime tokenIssueTime = databaseHelper.issueTimestampForAccount(ACCOUNT_ID);
+        assertThat(tokenIssueTime, isCloseTo(now));
+    }
+
+    @Test
+    void shouldFindApiTokensByServiceInTestMode() {
+        var createTokenRequest = new CreateTokenRequest(ACCOUNT_ID, TOKEN_DESCRIPTION, TEST_USER_NAME, CARD, API, TEST, ServiceMode.TEST, SERVICE_EXTERNAL_ID);
+        var createTokenRequest2 = new CreateTokenRequest(ACCOUNT_ID, TOKEN_DESCRIPTION_2, TEST_USER_NAME, CARD, API, TEST, ServiceMode.TEST, SERVICE_EXTERNAL_ID);
+        authTokenDao.storeToken(TOKEN_HASH, createTokenRequest);
+        authTokenDao.storeToken(TOKEN_HASH_2, createTokenRequest2);
+        ZonedDateTime now = databaseHelper.getCurrentTime();
+
+        List<TokenEntity> tokens = authTokenDao.findTokensBy(SERVICE_EXTERNAL_ID, ServiceMode.TEST, ACTIVE, API);
+
+        assertThat(tokens.size(), is(2));
+
+        ZonedDateTime tokenIssueTime = databaseHelper.issueTimestampForAccount(ACCOUNT_ID);
+        assertThat(tokenIssueTime, isCloseTo(now));
     }
 
     @Test
@@ -138,7 +171,7 @@ class AuthTokenDaoIT {
 
         assertThat(tokens.size(), is(1));
 
-        TokenEntity firstToken = tokens.get(0);
+        TokenEntity firstToken = tokens.getFirst();
         assertThat(firstToken.getTokenLink(), is(TOKEN_LINK_2));
         assertThat(firstToken.getDescription(), is(TOKEN_DESCRIPTION_2));
         assertThat(firstToken.getTokenSource(), is(API));
@@ -161,7 +194,7 @@ class AuthTokenDaoIT {
         List<TokenEntity> tokens = authTokenDao.findTokensBy(ACCOUNT_ID, REVOKED, API);
 
         assertThat(tokens.size(), is(1));
-        TokenEntity firstToken = tokens.get(0);
+        TokenEntity firstToken = tokens.getFirst();
         assertThat(firstToken.getTokenLink(), is(TOKEN_LINK));
         assertThat(firstToken.getDescription(), is(TOKEN_DESCRIPTION));
         assertThat(firstToken.getTokenSource(), is(API));
@@ -173,7 +206,7 @@ class AuthTokenDaoIT {
 
     @Test
     void shouldInsertNewToken() {
-        var createTokenRequest = new CreateTokenRequest("account-id", "description", "user", CARD, API, TokenAccountType.LIVE, ServiceMode.LIVE, SERVICE_EXTERNAL_ID);
+        var createTokenRequest = new CreateTokenRequest("account-id", "description", "user", CARD, API, LIVE, ServiceMode.LIVE, SERVICE_EXTERNAL_ID);
         authTokenDao.storeToken(TokenHash.of("token-hash"), createTokenRequest);
         Map<String, Object> tokenByHash = databaseHelper.getTokenByHash(TokenHash.of("token-hash"));
         ZonedDateTime now = databaseHelper.getCurrentTime();
@@ -216,6 +249,59 @@ class AuthTokenDaoIT {
         assertThat(token.getRevokedDate(), is(nullValue()));
         assertThat(token.getIssuedDate(), isCloseTo(now));
         assertThat(token.getLastUsedDate(), isCloseTo(now));
+    }
+
+    @Test
+    void shouldFindTokenByAccountAndTokenLink() {
+        ZonedDateTime now = databaseHelper.getCurrentTime();
+        databaseHelper.insertAccount(TOKEN_HASH, TOKEN_LINK, PRODUCTS, ACCOUNT_ID, TOKEN_DESCRIPTION, null, TEST_USER_NAME, now, CARD);
+        Optional<TokenEntity> tokenMayBe = authTokenDao.findTokenBy(ACCOUNT_ID, TOKEN_LINK);
+        TokenEntity token = tokenMayBe.get();
+
+        assertThat(TOKEN_LINK, is(token.getTokenLink()));
+        assertThat(TOKEN_DESCRIPTION, is(token.getDescription()));
+        assertThat(TEST_USER_NAME, is(token.getCreatedBy()));
+        assertThat(token.getTokenPaymentType(), is(CARD));
+        assertThat(token.getTokenSource(), is(PRODUCTS));
+        assertThat(token.getRevokedDate(), is(nullValue()));
+        assertThat(token.getIssuedDate(), isCloseTo(now));
+        assertThat(token.getLastUsedDate(), isCloseTo(now));
+    }
+
+    @Test
+    void shouldFindTokenByServiceAndTokenLinkInLiveMode() {
+        ZonedDateTime now = databaseHelper.getCurrentTime();
+        var createTokenRequest = new CreateTokenRequest(ACCOUNT_ID, TOKEN_DESCRIPTION, TEST_USER_NAME, CARD, API, LIVE, ServiceMode.LIVE, SERVICE_EXTERNAL_ID);
+        var tokenLink = createTokenRequest.getTokenLink();
+        authTokenDao.storeToken(TokenHash.of(String.valueOf(tokenLink)), createTokenRequest);
+        Optional<TokenEntity> tokenMayBe = authTokenDao.findTokenBy(SERVICE_EXTERNAL_ID, ServiceMode.LIVE, tokenLink);
+        TokenEntity token = tokenMayBe.get();
+
+        assertThat(tokenLink, is(token.getTokenLink()));
+        assertThat(TOKEN_DESCRIPTION, is(token.getDescription()));
+        assertThat(TEST_USER_NAME, is(token.getCreatedBy()));
+        assertThat(token.getTokenPaymentType(), is(CARD));
+        assertThat(token.getTokenSource(), is(API));
+        assertThat(token.getRevokedDate(), is(nullValue()));
+        assertThat(token.getIssuedDate(), isCloseTo(now));
+    }
+
+    @Test
+    void shouldFindTokenByServiceAndTokenLinkInTestMode() {
+        ZonedDateTime now = databaseHelper.getCurrentTime();
+        var createTokenRequest = new CreateTokenRequest(ACCOUNT_ID, TOKEN_DESCRIPTION, TEST_USER_NAME, CARD, API, TEST, ServiceMode.TEST, SERVICE_EXTERNAL_ID);
+        var tokenLink = createTokenRequest.getTokenLink();
+        authTokenDao.storeToken(TokenHash.of(String.valueOf(tokenLink)), createTokenRequest);
+        Optional<TokenEntity> tokenMayBe = authTokenDao.findTokenBy(SERVICE_EXTERNAL_ID, ServiceMode.TEST, tokenLink);
+        TokenEntity token = tokenMayBe.get();
+
+        assertThat(tokenLink, is(token.getTokenLink()));
+        assertThat(TOKEN_DESCRIPTION, is(token.getDescription()));
+        assertThat(TEST_USER_NAME, is(token.getCreatedBy()));
+        assertThat(token.getTokenPaymentType(), is(CARD));
+        assertThat(token.getTokenSource(), is(API));
+        assertThat(token.getRevokedDate(), is(nullValue()));
+        assertThat(token.getIssuedDate(), isCloseTo(now));
     }
 
     @Test
@@ -268,6 +354,38 @@ class AuthTokenDaoIT {
     }
 
     @Test
+    void shouldRevokeASingleTokenByServiceAndTokenLinkInLiveMode() {
+        var createTokenRequest = new CreateTokenRequest(ACCOUNT_ID, TOKEN_DESCRIPTION, TEST_USER_NAME, CARD, API, LIVE, ServiceMode.LIVE, SERVICE_EXTERNAL_ID);
+        var tokenLink = createTokenRequest.getTokenLink();
+        authTokenDao.storeToken(TokenHash.of(String.valueOf(tokenLink)), createTokenRequest);
+
+        Optional<LocalDateTime> revokedDate = authTokenDao.revokeSingleToken(SERVICE_EXTERNAL_ID, ServiceMode.LIVE, tokenLink);
+
+        var actual = revokedDate.get().atZone(UTC);
+
+        assertThat(actual, isCloseTo(ZonedDateTime.now(UTC)));
+
+        Optional<String> revokedInDb = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", tokenLink.toString());
+        assertThat(revokedInDb.isPresent(), is(true));
+    }
+
+    @Test
+    void shouldRevokeASingleTokenByServiceAndTokenLinkInTestMode() {
+        var createTokenRequest = new CreateTokenRequest(ACCOUNT_ID, TOKEN_DESCRIPTION, TEST_USER_NAME, CARD, API, TEST, ServiceMode.TEST, SERVICE_EXTERNAL_ID);
+        var tokenLink = createTokenRequest.getTokenLink();
+        authTokenDao.storeToken(TokenHash.of(String.valueOf(tokenLink)), createTokenRequest);
+
+        Optional<LocalDateTime> revokedDate = authTokenDao.revokeSingleToken(SERVICE_EXTERNAL_ID, ServiceMode.TEST, tokenLink);
+
+        var actual = revokedDate.get().atZone(UTC);
+
+        assertThat(actual, isCloseTo(ZonedDateTime.now(UTC)));
+
+        Optional<String> revokedInDb = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", tokenLink.toString());
+        assertThat(revokedInDb.isPresent(), is(true));
+    }
+    
+    @Test
     void shouldRevokeASingleTokenByTokenHash() {
         databaseHelper.insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, TEST_USER_NAME);
 
@@ -278,6 +396,40 @@ class AuthTokenDaoIT {
         assertThat(actual, isCloseTo(ZonedDateTime.now(UTC)));
 
         Optional<String> revokedInDb = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.toString());
+        assertThat(revokedInDb.isPresent(), is(true));
+    }
+
+    @Test
+    void shouldRevokeASingleTokenByServiceAndTokenHashInLiveMode() {
+        var createTokenRequest = new CreateTokenRequest(ACCOUNT_ID, TOKEN_DESCRIPTION, TEST_USER_NAME, CARD, API, LIVE, ServiceMode.LIVE, SERVICE_EXTERNAL_ID);
+        var tokenLink = createTokenRequest.getTokenLink();
+        var tokenHash = TokenHash.of(String.valueOf(tokenLink));
+        authTokenDao.storeToken(tokenHash, createTokenRequest);
+
+        Optional<LocalDateTime> revokedDate = authTokenDao.revokeSingleToken(SERVICE_EXTERNAL_ID, ServiceMode.LIVE, tokenHash);
+
+        var actual = revokedDate.get().atZone(UTC);
+
+        assertThat(actual, isCloseTo(ZonedDateTime.now(UTC)));
+
+        Optional<String> revokedInDb = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", tokenLink.toString());
+        assertThat(revokedInDb.isPresent(), is(true));
+    }
+
+    @Test
+    void shouldRevokeASingleTokenByServiceAndTokenHashInTestMode() {
+        var createTokenRequest = new CreateTokenRequest(ACCOUNT_ID, TOKEN_DESCRIPTION, TEST_USER_NAME, CARD, API, TEST, ServiceMode.TEST, SERVICE_EXTERNAL_ID);
+        var tokenLink = createTokenRequest.getTokenLink();
+        var tokenHash = TokenHash.of(String.valueOf(tokenLink));
+        authTokenDao.storeToken(tokenHash, createTokenRequest);
+
+        Optional<LocalDateTime> revokedDate = authTokenDao.revokeSingleToken(SERVICE_EXTERNAL_ID, ServiceMode.TEST, tokenLink);
+
+        var actual = revokedDate.get().atZone(UTC);
+
+        assertThat(actual, isCloseTo(ZonedDateTime.now(UTC)));
+
+        Optional<String> revokedInDb = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", tokenLink.toString());
         assertThat(revokedInDb.isPresent(), is(true));
     }
 
@@ -309,10 +461,63 @@ class AuthTokenDaoIT {
     @Test
     void shouldErrorIfTriesToSaveTheSameTokenTwice() {
         databaseHelper.insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, TEST_USER_NAME);
-        var createTokenRequest = new CreateTokenRequest(ACCOUNT_ID, TOKEN_DESCRIPTION, "test@email.com", CARD, API, TokenAccountType.LIVE, ServiceMode.LIVE, SERVICE_EXTERNAL_ID);
+        var createTokenRequest = new CreateTokenRequest(ACCOUNT_ID, TOKEN_DESCRIPTION, "test@email.com", CARD, API, LIVE, ServiceMode.LIVE, SERVICE_EXTERNAL_ID);
         Assertions.assertThrows(RuntimeException.class, () -> {
             authTokenDao.storeToken(TOKEN_HASH, createTokenRequest);
         });
+    }
+    
+    @Test
+    void shouldRevokeTokensByAccountId() {
+        databaseHelper.insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, TEST_USER_NAME);
+        databaseHelper.insertAccount(TOKEN_HASH_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, TEST_USER_NAME);
+        
+        var revokedTokensCount = authTokenDao.revokeTokens(ACCOUNT_ID);
+        
+        Optional<String> revokedInDb = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.toString());
+        Optional<String> revokedInDb2 = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK_2.toString());
+        
+        assertThat(revokedInDb.isPresent(), is(true));
+        assertThat(revokedInDb2.isPresent(), is(true));
+        assertThat(revokedTokensCount, is(2));
+    }
+
+    @Test
+    void shouldRevokeTokensByServiceInLiveMode() {
+        var createTokenRequest = new CreateTokenRequest(ACCOUNT_ID, TOKEN_DESCRIPTION, TEST_USER_NAME, CARD, API, LIVE, ServiceMode.LIVE, SERVICE_EXTERNAL_ID);
+        var createTokenRequest2 = new CreateTokenRequest(ACCOUNT_ID, TOKEN_DESCRIPTION_2, TEST_USER_NAME, CARD, API, LIVE, ServiceMode.LIVE, SERVICE_EXTERNAL_ID);
+        var tokenLink = createTokenRequest.getTokenLink();
+        var tokenLink2 = createTokenRequest2.getTokenLink();
+        authTokenDao.storeToken(TOKEN_HASH, createTokenRequest);
+        authTokenDao.storeToken(TOKEN_HASH_2, createTokenRequest2);
+        
+        var revokedTokensCount = authTokenDao.revokeTokens(SERVICE_EXTERNAL_ID, ServiceMode.LIVE);
+
+        Optional<String> revokedInDb = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", tokenLink.toString());
+        Optional<String> revokedInDb2 = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", tokenLink2.toString());
+       
+        assertThat(revokedInDb.isPresent(), is(true));
+        assertThat(revokedInDb2.isPresent(), is(true));
+        assertThat(revokedTokensCount, is(2));
+    }
+
+    @Test
+    void shouldRevokeTokensByServiceInTestMode() {
+        var createTokenRequest = new CreateTokenRequest(ACCOUNT_ID, TOKEN_DESCRIPTION, TEST_USER_NAME, CARD, API, TEST, ServiceMode.TEST, SERVICE_EXTERNAL_ID);
+        var createTokenRequest2 = new CreateTokenRequest(ACCOUNT_ID, TOKEN_DESCRIPTION_2, TEST_USER_NAME, CARD, API, TEST, ServiceMode.TEST, SERVICE_EXTERNAL_ID);
+        var tokenLink = createTokenRequest.getTokenLink();
+        var tokenLink2 = createTokenRequest2.getTokenLink();
+        authTokenDao.storeToken(TOKEN_HASH, createTokenRequest);
+        authTokenDao.storeToken(TOKEN_HASH_2, createTokenRequest2);
+
+        var revokedTokensCount = authTokenDao.revokeTokens(SERVICE_EXTERNAL_ID, ServiceMode.TEST);
+
+        Optional<String> revokedInDb = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", tokenLink.toString());
+        Optional<String> revokedInDb2 = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", tokenLink2.toString());
+
+        assertThat(revokedInDb.isPresent(), is(true));
+        assertThat(revokedInDb2.isPresent(), is(true));
+        assertThat(revokedTokensCount, is(2));
     }
 
     private Matcher<ChronoZonedDateTime<?>> isCloseTo(ZonedDateTime now) {
