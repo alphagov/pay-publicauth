@@ -766,7 +766,7 @@ class PublicAuthResourceIT {
         public void respondWith400_ifNotProvidingDescription_whenUpdating() {
             databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
     
-            updateTokenDescription("{\"token_link\" : \"" + TOKEN_LINK.toString() + "\"}")
+            updateTokenDescription("{\"token_link\" : \"" + TOKEN_LINK + "\"}")
                     .statusCode(400)
                     .body("message", is("Missing fields: [description]"));
     
@@ -823,7 +823,7 @@ class PublicAuthResourceIT {
             databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
             ZonedDateTime nowFromDB = ZonedDateTime.now(UTC);
     
-            updateTokenDescription("{\"token_link\" : \"" + TOKEN_LINK.toString() + "\", \"description\" : \"" + TOKEN_DESCRIPTION_2 + "\"}")
+            updateTokenDescription("{\"token_link\" : \"" + TOKEN_LINK + "\", \"description\" : \"" + TOKEN_DESCRIPTION_2 + "\"}")
                     .statusCode(200)
                     .body("token_link", is(TOKEN_LINK.toString()))
                     .body("description", is(TOKEN_DESCRIPTION_2))
@@ -838,7 +838,7 @@ class PublicAuthResourceIT {
     
         @Test
         public void respondWith404_ifUpdatingDescriptionOfNonExistingToken() {
-            updateTokenDescription("{\"token_link\" : \"" + TOKEN_LINK.toString() + "\", \"description\" : \"" + TOKEN_DESCRIPTION_2 + "\"}")
+            updateTokenDescription("{\"token_link\" : \"" + TOKEN_LINK + "\", \"description\" : \"" + TOKEN_DESCRIPTION_2 + "\"}")
                     .statusCode(404)
                     .body("message", is("Could not update description of token with token_link " + TOKEN_LINK));
     
@@ -850,7 +850,7 @@ class PublicAuthResourceIT {
         public void respondWith404_butDoNotUpdateRevokedTokens() {
             databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, ZonedDateTime.now(), CREATED_USER_NAME);
     
-            updateTokenDescription("{\"token_link\" : \"" + TOKEN_LINK.toString() + "\", \"description\" : \"" + TOKEN_DESCRIPTION_2 + "\"}")
+            updateTokenDescription("{\"token_link\" : \"" + TOKEN_LINK + "\", \"description\" : \"" + TOKEN_DESCRIPTION_2 + "\"}")
                     .statusCode(404)
                     .body("message", is("Could not update description of token with token_link " + TOKEN_LINK));
     
@@ -974,7 +974,7 @@ class PublicAuthResourceIT {
             databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
             databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, ACCOUNT_ID_2, TOKEN_DESCRIPTION, CREATED_USER_NAME);
     
-            revokeSingleToken(ACCOUNT_ID, "{\"token_link\" : \"" + TOKEN_LINK_2.toString() + "\"}")
+            revokeSingleToken(ACCOUNT_ID, "{\"token_link\" : \"" + TOKEN_LINK_2 + "\"}")
                     .statusCode(404)
                     .body("message", is("Could not revoke token with token_link " + TOKEN_LINK_2));
     
@@ -1003,7 +1003,7 @@ class PublicAuthResourceIT {
         public void respondWith404_whenRevokingTokenAlreadyRevoked() {
             databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, ZonedDateTime.now(), CREATED_USER_NAME);
     
-            revokeSingleToken(ACCOUNT_ID, "{\"token_link\" : \"" + TOKEN_LINK.toString() + "\"}")
+            revokeSingleToken(ACCOUNT_ID, "{\"token_link\" : \"" + TOKEN_LINK + "\"}")
                     .statusCode(404)
                     .body("message", is("Could not revoke token with token_link " + TOKEN_LINK));
     
