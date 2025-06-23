@@ -1042,6 +1042,45 @@ class PublicAuthResourceIT {
             Optional<String> tokenLinkInDb = databaseHelper.lookupColumnForTokenTable("token_link", "token_link", TOKEN_LINK.toString());
             assertThat(tokenLinkInDb.isPresent(), is(false));
         }
+        
+        @Test
+        public void respondWith200_whenAllTokensAreRevokedByAccount() {
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, API, ACCOUNT_ID, TOKEN_DESCRIPTION, null, CREATED_USER_NAME, null, CARD, SERVICE_MODE, SERVICE_EXTERNAL_ID);
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, API, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME, null, CARD, SERVICE_MODE, SERVICE_EXTERNAL_ID);
+
+            revokeTokens(ACCOUNT_ID)
+                    .statusCode(200);
+
+            Optional<String> token1RevokedInDb = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.toString());
+            assertThat(token1RevokedInDb.isPresent(), is(true));
+            Optional<String> token2RevokedInDb = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK_2.toString());
+            assertThat(token2RevokedInDb.isPresent(), is(true));
+        }
+
+        @Test
+        public void respondWith200_whenAllTokensAreRevokedAndAccountDoesNotExist() {
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, API, ACCOUNT_ID_2, TOKEN_DESCRIPTION, null, CREATED_USER_NAME, null, CARD, SERVICE_MODE, SERVICE_EXTERNAL_ID);
+
+            revokeTokens(ACCOUNT_ID)
+                    .statusCode(200);
+
+            Optional<String> tokenRevokedInDb = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.toString());
+            assertThat(tokenRevokedInDb.isPresent(), is(false));
+        }
+        
+        @Test
+        public void respondWith200_whenAllTokensAreRevokedByService() {
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, API, ACCOUNT_ID, TOKEN_DESCRIPTION, null, CREATED_USER_NAME, null, CARD, SERVICE_MODE, SERVICE_EXTERNAL_ID);
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, API, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME, null, CARD, SERVICE_MODE, SERVICE_EXTERNAL_ID);
+
+            revokeTokens(SERVICE_EXTERNAL_ID, SERVICE_MODE)
+                    .statusCode(200);
+
+            Optional<String> token1RevokedInDb = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.toString());
+            assertThat(token1RevokedInDb.isPresent(), is(true));
+            Optional<String> token2RevokedInDb = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK_2.toString());
+            assertThat(token2RevokedInDb.isPresent(), is(true));
+        }
 
         @Test
         public void respondWith200_whenAllTokensAreRevokedAndServiceDoesNotExist() {
@@ -1052,20 +1091,6 @@ class PublicAuthResourceIT {
 
             Optional<String> tokenRevokedInDb = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.toString());
             assertThat(tokenRevokedInDb.isPresent(), is(false));
-        }
-        
-        @Test
-        public void respondWith200_whenAllTokensAreRevokedByService() {
-            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, API, ACCOUNT_ID, TOKEN_DESCRIPTION, null, CREATED_USER_NAME, null, CARD, SERVICE_MODE, "SERVICE_EXTERNAL_ID");
-            databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, API, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME, null, CARD, SERVICE_MODE, SERVICE_EXTERNAL_ID);
-
-            revokeTokens(SERVICE_EXTERNAL_ID, SERVICE_MODE)
-                    .statusCode(200);
-
-            Optional<String> token1RevokedInDb = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.toString());
-            assertThat(token1RevokedInDb.isPresent(), is(true));
-            Optional<String> token2RevokedInDb = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK_2.toString());
-            assertThat(token2RevokedInDb.isPresent(), is(true));
         }
 
         private ValidatableResponse revokeSingleToken(String accountId, String body) {
@@ -1083,6 +1108,14 @@ class PublicAuthResourceIT {
                     .contentType(JSON)
                     .body(body)
                     .delete(FRONTEND_AUTH_PATH + "/service/" + serviceExternalId + "/mode/" + mode)
+                    .then();
+        }
+        
+        private ValidatableResponse revokeTokens(String accountId) {
+            return given().port(localPort)
+                    .accept(JSON)
+                    .contentType(JSON)
+                    .delete(FRONTEND_AUTH_PATH + "/" + accountId + "/revoke-all")
                     .then();
         }
         
