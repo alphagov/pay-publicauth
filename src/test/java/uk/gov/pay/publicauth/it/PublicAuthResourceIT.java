@@ -740,8 +740,7 @@ class PublicAuthResourceIT {
         private ValidatableResponse getTokensFor(String serviceExternalId, ServiceMode mode, String tokenState) {
             return getTokensFor(serviceExternalId,  mode, tokenState, API.toString());
         }
-
-
+        
         private ValidatableResponse getTokensFor(String serviceExternalId, ServiceMode mode, String tokenState, String type) {
             return given().port(localPort)
                     .accept(JSON)
