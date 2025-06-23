@@ -1019,8 +1019,8 @@ class PublicAuthResourceIT {
                     .statusCode(404)
                     .body("message", is("Could not revoke token with token_link " + TOKEN_LINK));
 
-            Optional<String> token1RevokedInDb = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.toString());
-            assertThat(token1RevokedInDb.isPresent(), is(true));
+            Optional<String> revokedInDb = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.toString());
+            assertThat(revokedInDb.isPresent(), is(true));
         }
     
         @Test
@@ -1029,8 +1029,8 @@ class PublicAuthResourceIT {
                     .statusCode(404)
                     .body("message", is("Could not revoke token with token_link " + TOKEN_LINK));
     
-            Optional<String> tokenLinkdInDb = databaseHelper.lookupColumnForTokenTable("token_link", "token_link", TOKEN_LINK.toString());
-            assertThat(tokenLinkdInDb.isPresent(), is(false));
+            Optional<String> tokenLinkInDb = databaseHelper.lookupColumnForTokenTable("token_link", "token_link", TOKEN_LINK.toString());
+            assertThat(tokenLinkInDb.isPresent(), is(false));
         }
 
         @Test
@@ -1039,8 +1039,33 @@ class PublicAuthResourceIT {
                     .statusCode(404)
                     .body("message", is("Could not revoke token with token_link " + TOKEN_LINK));
 
-            Optional<String> tokenLinkdInDb = databaseHelper.lookupColumnForTokenTable("token_link", "token_link", TOKEN_LINK.toString());
-            assertThat(tokenLinkdInDb.isPresent(), is(false));
+            Optional<String> tokenLinkInDb = databaseHelper.lookupColumnForTokenTable("token_link", "token_link", TOKEN_LINK.toString());
+            assertThat(tokenLinkInDb.isPresent(), is(false));
+        }
+
+        @Test
+        public void respondWith200_whenAllTokensAreRevokedAndServiceDoesNotExist() {
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, API, ACCOUNT_ID, TOKEN_DESCRIPTION, null, CREATED_USER_NAME, null, CARD, SERVICE_MODE, "7487ab8b6529-15fb514cead18c1c38c");
+            
+            revokeTokens(SERVICE_EXTERNAL_ID, SERVICE_MODE)
+                    .statusCode(200);
+
+            Optional<String> tokenRevokedInDb = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.toString());
+            assertThat(tokenRevokedInDb.isPresent(), is(false));
+        }
+        
+        @Test
+        public void respondWith200_whenAllTokensAreRevokedByService() {
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, API, ACCOUNT_ID, TOKEN_DESCRIPTION, null, CREATED_USER_NAME, null, CARD, SERVICE_MODE, "SERVICE_EXTERNAL_ID");
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, API, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME, null, CARD, SERVICE_MODE, SERVICE_EXTERNAL_ID);
+
+            revokeTokens(SERVICE_EXTERNAL_ID, SERVICE_MODE)
+                    .statusCode(200);
+
+            Optional<String> token1RevokedInDb = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.toString());
+            assertThat(token1RevokedInDb.isPresent(), is(true));
+            Optional<String> token2RevokedInDb = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK_2.toString());
+            assertThat(token2RevokedInDb.isPresent(), is(true));
         }
 
         private ValidatableResponse revokeSingleToken(String accountId, String body) {
@@ -1058,6 +1083,14 @@ class PublicAuthResourceIT {
                     .contentType(JSON)
                     .body(body)
                     .delete(FRONTEND_AUTH_PATH + "/service/" + serviceExternalId + "/mode/" + mode)
+                    .then();
+        }
+        
+        private ValidatableResponse revokeTokens(String serviceExternalId, ServiceMode mode) {
+            return given().port(localPort)
+                    .accept(JSON)
+                    .contentType(JSON)
+                    .delete(FRONTEND_AUTH_PATH + "/service/" + serviceExternalId + "/mode/" + mode + "/revoke-all")
                     .then();
         }
     }
