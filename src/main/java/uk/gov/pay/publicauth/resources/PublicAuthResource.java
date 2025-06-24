@@ -135,8 +135,8 @@ public class PublicAuthResource {
     )
     public Response revokeTokensForServiceAndMode(@Parameter(example = SERVICE_EXTERNAL_ID_EXAMPLE) 
                                                       @PathParam("serviceExternalId") String serviceExternalId, 
-                                                  @PathParam("mode") ServiceMode mode) {
-        tokenService.revokeTokens(serviceExternalId, mode);
+                                                  @PathParam("mode") ServiceMode serviceMode) {
+        tokenService.revokeTokens(serviceExternalId, serviceMode);
         return ok().build();
     }
 
@@ -163,7 +163,7 @@ public class PublicAuthResource {
         return ok(Map.of("tokens", tokenResponses)).build();
     }
 
-    @Path("/v1/frontend/auth/service/{serviceExternalId}/mode/{mode}")
+    @Path("/v1/frontend/auth/service/{serviceExternalId}/mode/{serviceMode}")
     @Timed
     @Produces(APPLICATION_JSON)
     @GET
@@ -179,12 +179,12 @@ public class PublicAuthResource {
     )
     public Response getIssuedTokensForServiceAndMode(@Parameter(example = SERVICE_EXTERNAL_ID_EXAMPLE) 
                                                          @PathParam("serviceExternalId") String serviceExternalId, 
-                                                     @PathParam("mode") ServiceMode mode,
+                                                     @PathParam("serviceMode") ServiceMode serviceMode,
                                               @Parameter(example = "REVOKED") @QueryParam("state") TokenState state,
                                               @Parameter(example = "API") @QueryParam("type") TokenSource type) {
         state = Optional.ofNullable(state).orElse(ACTIVE);
         type = Optional.ofNullable(type).orElse(API);
-        List<TokenResponse> tokenResponses = tokenService.findTokensBy(serviceExternalId, mode, state, type);
+        List<TokenResponse> tokenResponses = tokenService.findTokensBy(serviceExternalId, serviceMode, state, type);
         return ok(Map.of("tokens", tokenResponses)).build();
     }
 
@@ -205,7 +205,7 @@ public class PublicAuthResource {
         return Response.ok(tokenService.findTokenBy(accountId, TokenLink.of(tokenLink))).build();    
     }
 
-    @Path("v1/frontend/auth/service/{serviceExternalId}/mode/{mode}/{tokenLink} ")
+    @Path("v1/frontend/auth/service/{serviceExternalId}/mode/{serviceMode}/{tokenLink} ")
     @Timed
     @Produces(APPLICATION_JSON)
     @GET
@@ -219,9 +219,9 @@ public class PublicAuthResource {
     )
     public Response getTokenByServiceAndTokenLink(@Parameter(example = SERVICE_EXTERNAL_ID_EXAMPLE) 
                                                       @PathParam("serviceExternalId") String serviceExternalId,
-                                                  @PathParam("mode") ServiceMode mode,
+                                                  @PathParam("serviceMode") ServiceMode serviceMode,
                                         @Parameter(example = "a-token-link") @PathParam("tokenLink") String tokenLink) {
-        return Response.ok(tokenService.findTokenBy(serviceExternalId, mode, TokenLink.of(tokenLink))).build();
+        return Response.ok(tokenService.findTokenBy(serviceExternalId, serviceMode, TokenLink.of(tokenLink))).build();
     }
     
     @Path("/v1/frontend/auth")
@@ -288,7 +288,7 @@ public class PublicAuthResource {
         }
     }
 
-    @Path("/v1/frontend/auth/service/{serviceExternalId}/mode/{mode}")
+    @Path("/v1/frontend/auth/service/{serviceExternalId}/mode/{serviceMode}")
     @Timed
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
@@ -304,7 +304,7 @@ public class PublicAuthResource {
             }
     )
     public Response revokeSingleToken(@Parameter(example = SERVICE_EXTERNAL_ID_EXAMPLE) @PathParam("serviceExternalId") String serviceExternalId,
-                                      @PathParam("mode") ServiceMode mode,
+                                      @PathParam("serviceMode") ServiceMode serviceMode,
                                       @RequestBody(content = @Content(schema = @Schema(example = "{" +
                                               "    \"token_link\": \"74813ca7-1829-4cad-bc0e-684a0288a308\"" +
                                               "}")))
@@ -314,12 +314,12 @@ public class PublicAuthResource {
 
         if (payload.hasNonNull(TOKEN_FIELD)) {
             return tokenService.extractEncryptedTokenFrom(payload.get(TOKEN_FIELD).asText())
-                    .map(token -> tokenService.revokeToken(serviceExternalId, mode, TokenHash.of(token.getName())))
+                    .map(token -> tokenService.revokeToken(serviceExternalId, serviceMode, TokenHash.of(token.getName())))
                     .map(this::buildRevokedTokenResponse)
                     .orElseThrow(() -> new TokenNotFoundException("Could not extract encrypted token while revoking token"));
         } else {
             TokenLink tokenLink = TokenLink.of(payload.get(TOKEN_LINK_FIELD).asText());
-            ZonedDateTime revokedDate = tokenService.revokeToken(serviceExternalId, mode, tokenLink);
+            ZonedDateTime revokedDate = tokenService.revokeToken(serviceExternalId, serviceMode, tokenLink);
             return buildRevokedTokenResponse(revokedDate);
         }
     }

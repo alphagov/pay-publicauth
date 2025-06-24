@@ -55,13 +55,13 @@ public class AuthTokenDao {
                         .findFirst());
     }
     
-    public Optional<TokenEntity> findTokenBy(String serviceExternalId, ServiceMode mode, TokenLink tokenLink) {
+    public Optional<TokenEntity> findTokenBy(String serviceExternalId, ServiceMode serviceMode, TokenLink tokenLink) {
         return jdbi.withHandle(handle ->
                 handle.createQuery(TOKEN_SELECT +
                                 "WHERE service_external_id = :service_external_id " +
                                 "AND service_mode = :service_mode")
                         .bind("service_external_id", serviceExternalId)
-                        .bind("service_mode", mode)
+                        .bind("service_mode", serviceMode)
                         .bind("token_link", tokenLink.toString())
                         .map(new TokenMapper())
                         .findFirst());
@@ -86,7 +86,7 @@ public class AuthTokenDao {
         return tokenState.equals(TokenState.REVOKED) ? "AND revoked IS NOT NULL " : "AND revoked IS NULL ";
     }
 
-    public List<TokenEntity>  findTokensBy(String serviceExternalId, ServiceMode mode, TokenState tokenState, TokenSource tokenSource) {
+    public List<TokenEntity>  findTokensBy(String serviceExternalId, ServiceMode serviceMode, TokenState tokenState, TokenSource tokenSource) {
         String revokedClause = getRevokedClause(tokenState);
 
         return jdbi.withHandle(handle ->
@@ -97,7 +97,7 @@ public class AuthTokenDao {
                                 revokedClause +
                                 "ORDER BY issued DESC")
                         .bind("service_external_id", serviceExternalId)
-                        .bind("service_mode", mode)
+                        .bind("service_mode", serviceMode)
                         .bind("type", tokenSource)
                         .map(new TokenMapper())
                         .list());
@@ -150,21 +150,21 @@ public class AuthTokenDao {
                         .findFirst());
     }
     
-    public Optional<LocalDateTime> revokeSingleToken(String serviceExternalId, ServiceMode mode, TokenHash tokenHash) {
+    public Optional<LocalDateTime> revokeSingleToken(String serviceExternalId, ServiceMode serviceMode, TokenHash tokenHash) {
         return Optional.ofNullable(jdbi.withHandle(handle ->
                 handle.createQuery("UPDATE tokens SET revoked=(now() at time zone 'utc') WHERE service_external_id=:service_external_id AND service_mode=:service_mode AND token_hash=:token_hash AND revoked IS NULL RETURNING revoked")
                         .bind("service_external_id", serviceExternalId)
-                        .bind("service_mode", mode)
+                        .bind("service_mode", serviceMode)
                         .bind("token_hash", tokenHash.getValue())
                         .mapTo(LocalDateTime.class)
                         .first()));
     }
 
-    public Optional<LocalDateTime> revokeSingleToken(String serviceExternalId, ServiceMode mode, TokenLink tokenLink) {
+    public Optional<LocalDateTime> revokeSingleToken(String serviceExternalId, ServiceMode serviceMode, TokenLink tokenLink) {
         return jdbi.withHandle(handle ->
                 handle.createQuery("UPDATE tokens SET revoked=(now() at time zone 'utc') WHERE service_external_id=:service_external_id AND service_mode=:service_mode AND token_link=:token_link AND revoked IS NULL RETURNING revoked")
                         .bind("service_external_id", serviceExternalId)
-                        .bind("service_mode", mode)
+                        .bind("service_mode", serviceMode)
                         .bind("token_link", tokenLink.toString())
                         .mapTo(LocalDateTime.class)
                         .findFirst());
@@ -177,11 +177,11 @@ public class AuthTokenDao {
                         .execute());
     }
     
-    public int revokeTokens(String serviceExternalId, ServiceMode mode) {
+    public int revokeTokens(String serviceExternalId, ServiceMode serviceMode) {
         return jdbi.withHandle(handle ->
                 handle.createUpdate("UPDATE tokens SET revoked=(now() at time zone 'utc') WHERE service_external_id=:service_external_id AND service_mode=:service_mode AND revoked IS NULL")
                         .bind("service_external_id", serviceExternalId)
-                        .bind("service_mode", mode)
+                        .bind("service_mode", serviceMode)
                         .execute());
     }
 
