@@ -417,7 +417,7 @@ class PublicAuthResourceIT {
     
     
             //Retrieved in issued order from newest to oldest
-            Map<String, String> firstToken = retrievedTokens.get(0);
+            Map<String, String> firstToken = retrievedTokens.getFirst();
             assertThat(firstToken.size(), is(7));
             assertThat(firstToken.get("token_link"), is(TOKEN_LINK_2.toString()));
             assertThat(firstToken.get("type"), is(API.toString()));
@@ -430,6 +430,45 @@ class PublicAuthResourceIT {
     
             Map<String, String> secondToken = retrievedTokens.get(1);
             assertThat(secondToken.size(), is(7));
+            assertThat(secondToken.get("token_link"), is(TOKEN_LINK.toString()));
+            assertThat(firstToken.get("type"), is(API.toString()));
+            assertThat(secondToken.get("description"), is(TOKEN_DESCRIPTION));
+            assertThat(secondToken.containsKey("revoked"), is(false));
+            assertThat(secondToken.get("created_by"), is(CREATED_USER_NAME));
+            assertThat(secondToken.get("token_type"), is(CARD.toString()));
+            assertThat(secondToken.get("issued_date"), is(inserted.format(DATE_TIME_FORMAT)));
+            assertThat(secondToken.get("last_used"), is(lastUsed.format(DATE_TIME_FORMAT)));
+        }
+
+        @Test
+        public void respondWith200_ifTokensHaveBeenIssuedForTheService() {
+            ZonedDateTime inserted = ZonedDateTime.now(UTC);
+            ZonedDateTime lastUsed = inserted.plusHours(1);
+
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, API, ACCOUNT_ID, TOKEN_DESCRIPTION, null, CREATED_USER_NAME, lastUsed, CARD, SERVICE_MODE, SERVICE_EXTERNAL_ID);
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, API, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed, CARD, SERVICE_MODE, SERVICE_EXTERNAL_ID);
+            databaseHelper.insertAccount(TokenHash.of("TOKEN-3"), TokenLink.of("123456789101112131415161718192021224"), PRODUCTS, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed, CARD, SERVICE_MODE, SERVICE_EXTERNAL_ID);
+
+            List<Map<String, String>> retrievedTokens = getTokensFor(SERVICE_EXTERNAL_ID, SERVICE_MODE)
+                    .statusCode(200)
+                    .body("tokens", hasSize(2))
+                    .extract().path("tokens");
+
+
+            //Retrieved in issued order from newest to oldest
+            Map<String, String> firstToken = retrievedTokens.getFirst();
+            assertThat(firstToken.size(), is(9));
+            assertThat(firstToken.get("token_link"), is(TOKEN_LINK_2.toString()));
+            assertThat(firstToken.get("type"), is(API.toString()));
+            assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION_2));
+            assertThat(firstToken.containsKey("revoked"), is(false));
+            assertThat(firstToken.get("created_by"), is(CREATED_USER_NAME2));
+            assertThat(firstToken.get("token_type"), is(CARD.toString()));
+            assertThat(firstToken.get("issued_date"), is(inserted.format(DATE_TIME_FORMAT)));
+            assertThat(firstToken.get("last_used"), is(lastUsed.format(DATE_TIME_FORMAT)));
+
+            Map<String, String> secondToken = retrievedTokens.get(1);
+            assertThat(secondToken.size(), is(9));
             assertThat(secondToken.get("token_link"), is(TOKEN_LINK.toString()));
             assertThat(firstToken.get("type"), is(API.toString()));
             assertThat(secondToken.get("description"), is(TOKEN_DESCRIPTION));
@@ -456,7 +495,33 @@ class PublicAuthResourceIT {
     
     
             //Retrieved in issued order from newest to oldest
-            Map<String, String> firstToken = retrievedTokens.get(0);
+            Map<String, String> firstToken = retrievedTokens.getFirst();
+            assertThat(firstToken.get("token_link"), is(TOKEN_LINK.toString()));
+            assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION));
+            assertThat(firstToken.get("revoked"), is(revoked.format(DATE_TIME_FORMAT)));
+            assertThat(firstToken.get("created_by"), is(CREATED_USER_NAME));
+            assertThat(firstToken.get("token_type"), is(CARD.toString()));
+            assertThat(firstToken.get("last_used"), is(lastUsed.format(DATE_TIME_FORMAT)));
+            assertThat(firstToken.get("issued_date"), is(inserted.format(DATE_TIME_FORMAT)));
+        }
+
+        @Test
+        public void respondWith200_andRetrieveRevokedTokensForService() {
+            ZonedDateTime inserted = ZonedDateTime.now(UTC);
+            ZonedDateTime lastUsed = inserted.plusHours(1);
+            ZonedDateTime revoked = inserted.plusHours(2);
+
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, API, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, CREATED_USER_NAME, lastUsed, CARD, SERVICE_MODE, SERVICE_EXTERNAL_ID);
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, API, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed, CARD, SERVICE_MODE, SERVICE_EXTERNAL_ID);
+
+            List<Map<String, String>> retrievedTokens = getTokensFor(SERVICE_EXTERNAL_ID, SERVICE_MODE, "revoked")
+                    .statusCode(200)
+                    .body("tokens", hasSize(1))
+                    .extract().path("tokens");
+
+
+            //Retrieved in issued order from newest to oldest
+            Map<String, String> firstToken = retrievedTokens.getFirst();
             assertThat(firstToken.get("token_link"), is(TOKEN_LINK.toString()));
             assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION));
             assertThat(firstToken.get("revoked"), is(revoked.format(DATE_TIME_FORMAT)));
@@ -482,7 +547,7 @@ class PublicAuthResourceIT {
     
     
             //Retrieved in issued order from newest to oldest
-            Map<String, String> firstToken = retrievedTokens.get(0);
+            Map<String, String> firstToken = retrievedTokens.getFirst();
             assertThat(firstToken.get("token_link"), is(TOKEN_LINK_2.toString()));
             assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION_2));
             assertThat(firstToken.containsKey("revoked"), is(false));
@@ -514,7 +579,31 @@ class PublicAuthResourceIT {
                     .extract().path("tokens");
     
             //Retrieved in issued order from newest to oldest
-            Map<String, String> firstToken = retrievedTokens.get(0);
+            Map<String, String> firstToken = retrievedTokens.getFirst();
+            assertThat(firstToken.get("token_link"), is(TOKEN_LINK_2.toString()));
+            assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION_2));
+            assertThat(firstToken.containsKey("revoked"), is(false));
+            assertThat(firstToken.get("created_by"), is(CREATED_USER_NAME2));
+            assertThat(firstToken.get("token_type"), is(CARD.toString()));
+            assertThat(firstToken.get("last_used"), is(lastUsed.format(DATE_TIME_FORMAT)));
+            assertThat(firstToken.get("issued_date"), is(inserted.format(DATE_TIME_FORMAT)));
+        }
+
+        @Test
+        public void respondWith200_andRetrieveActiveTokensForService() {
+            ZonedDateTime inserted = ZonedDateTime.now(UTC);
+            ZonedDateTime lastUsed = inserted.plusHours(1);
+            ZonedDateTime revoked = inserted.plusHours(2);
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, API, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, CREATED_USER_NAME, lastUsed, CARD, SERVICE_MODE, SERVICE_EXTERNAL_ID);
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, API, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed, CARD, SERVICE_MODE, SERVICE_EXTERNAL_ID);
+
+            List<Map<String, String>> retrievedTokens = getTokensFor(SERVICE_EXTERNAL_ID, SERVICE_MODE, "active")
+                    .statusCode(200)
+                    .body("tokens", hasSize(1))
+                    .extract().path("tokens");
+
+            //Retrieved in issued order from newest to oldest
+            Map<String, String> firstToken = retrievedTokens.getFirst();
             assertThat(firstToken.get("token_link"), is(TOKEN_LINK_2.toString()));
             assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION_2));
             assertThat(firstToken.containsKey("revoked"), is(false));
@@ -538,7 +627,31 @@ class PublicAuthResourceIT {
                     .extract().path("tokens");
     
             //Retrieved in issued order from newest to oldest
-            Map<String, String> firstToken = retrievedTokens.get(0);
+            Map<String, String> firstToken = retrievedTokens.getFirst();
+            assertThat(firstToken.get("token_link"), is(TOKEN_LINK_2.toString()));
+            assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION_2));
+            assertThat(firstToken.containsKey("revoked"), is(false));
+            assertThat(firstToken.get("created_by"), is(CREATED_USER_NAME2));
+            assertThat(firstToken.get("token_type"), is(CARD.toString()));
+            assertThat(firstToken.get("last_used"), is(lastUsed.format(DATE_TIME_FORMAT)));
+            assertThat(firstToken.get("issued_date"), is(inserted.format(DATE_TIME_FORMAT)));
+        }
+
+        @Test
+        public void respondWith200_andRetrieveActiveTokensForServiceIfNoQueryParamIsSpecified() {
+            ZonedDateTime inserted = ZonedDateTime.now(UTC);
+            ZonedDateTime lastUsed = inserted.plusHours(1);
+            ZonedDateTime revoked = inserted.plusHours(2);
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, API, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, CREATED_USER_NAME, lastUsed, CARD, SERVICE_MODE, SERVICE_EXTERNAL_ID);
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, API, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed, CARD, SERVICE_MODE, SERVICE_EXTERNAL_ID);
+
+            List<Map<String, String>> retrievedTokens = getTokensForWithNoQueryParam(SERVICE_EXTERNAL_ID, SERVICE_MODE)
+                    .statusCode(200)
+                    .body("tokens", hasSize(1))
+                    .extract().path("tokens");
+
+            //Retrieved in issued order from newest to oldest
+            Map<String, String> firstToken = retrievedTokens.getFirst();
             assertThat(firstToken.get("token_link"), is(TOKEN_LINK_2.toString()));
             assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION_2));
             assertThat(firstToken.containsKey("revoked"), is(false));
@@ -555,13 +668,38 @@ class PublicAuthResourceIT {
             ZonedDateTime revoked = inserted.plusHours(2);
             databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, CREATED_USER_NAME, lastUsed);
             databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed);
+            
             List<Map<String, String>> retrievedTokens = getTokensFor(ACCOUNT_ID, "something")
                     .statusCode(200)
                     .body("tokens", hasSize(1))
                     .extract().path("tokens");
     
             //Retrieved in issued order from newest to oldest
-            Map<String, String> firstToken = retrievedTokens.get(0);
+            Map<String, String> firstToken = retrievedTokens.getFirst();
+            assertThat(firstToken.get("token_link"), is(TOKEN_LINK_2.toString()));
+            assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION_2));
+            assertThat(firstToken.containsKey("revoked"), is(false));
+            assertThat(firstToken.get("created_by"), is(CREATED_USER_NAME2));
+            assertThat(firstToken.get("token_type"), is(CARD.toString()));
+            assertThat(firstToken.get("last_used"), is(lastUsed.format(DATE_TIME_FORMAT)));
+            assertThat(firstToken.get("issued_date"), is(inserted.format(DATE_TIME_FORMAT)));
+        }
+
+        @Test
+        public void respondWith200_andRetrieveActiveTokensForServiceIfUnknownQueryParamIsSpecified() {
+            ZonedDateTime inserted = ZonedDateTime.now(UTC);
+            ZonedDateTime lastUsed = inserted.plusHours(1);
+            ZonedDateTime revoked = inserted.plusHours(2);
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, API, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, CREATED_USER_NAME, lastUsed, CARD, SERVICE_MODE, SERVICE_EXTERNAL_ID);
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, API, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed, CARD, SERVICE_MODE, SERVICE_EXTERNAL_ID);
+            
+            List<Map<String, String>> retrievedTokens = getTokensFor(SERVICE_EXTERNAL_ID, SERVICE_MODE,"something")
+                    .statusCode(200)
+                    .body("tokens", hasSize(1))
+                    .extract().path("tokens");
+
+            //Retrieved in issued order from newest to oldest
+            Map<String, String> firstToken = retrievedTokens.getFirst();
             assertThat(firstToken.get("token_link"), is(TOKEN_LINK_2.toString()));
             assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION_2));
             assertThat(firstToken.containsKey("revoked"), is(false));
@@ -587,11 +725,35 @@ class PublicAuthResourceIT {
                     .get(FRONTEND_AUTH_PATH + "/" + accountId)
                     .then();
         }
-
+        
         private ValidatableResponse getTokensForWithNoQueryParam(String accountId) {
             return given().port(localPort)
                     .accept(JSON)
                     .get(FRONTEND_AUTH_PATH + "/" + accountId)
+                    .then();
+        }
+
+        private ValidatableResponse getTokensFor(String serviceExternalId, ServiceMode mode) {
+            return getTokensFor(serviceExternalId, mode, "active");
+        }
+
+        private ValidatableResponse getTokensFor(String serviceExternalId, ServiceMode mode, String tokenState) {
+            return getTokensFor(serviceExternalId,  mode, tokenState, API.toString());
+        }
+        
+        private ValidatableResponse getTokensFor(String serviceExternalId, ServiceMode mode, String tokenState, String type) {
+            return given().port(localPort)
+                    .accept(JSON)
+                    .param("state", tokenState)
+                    .param("type", type)
+                    .get(FRONTEND_AUTH_PATH + "/service/" + serviceExternalId + "/mode/" + mode.toString())
+                    .then();
+        }
+
+        private ValidatableResponse getTokensForWithNoQueryParam(String serviceExternalId, ServiceMode mode) {
+            return given().port(localPort)
+                    .accept(JSON)
+                    .get(FRONTEND_AUTH_PATH + "/service/" + serviceExternalId + "/mode/" + mode.toString())
                     .then();
         }
     }
@@ -603,7 +765,7 @@ class PublicAuthResourceIT {
         public void respondWith400_ifNotProvidingDescription_whenUpdating() {
             databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
     
-            updateTokenDescription("{\"token_link\" : \"" + TOKEN_LINK.toString() + "\"}")
+            updateTokenDescription("{\"token_link\" : \"" + TOKEN_LINK + "\"}")
                     .statusCode(400)
                     .body("message", is("Missing fields: [description]"));
     
@@ -660,7 +822,7 @@ class PublicAuthResourceIT {
             databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
             ZonedDateTime nowFromDB = ZonedDateTime.now(UTC);
     
-            updateTokenDescription("{\"token_link\" : \"" + TOKEN_LINK.toString() + "\", \"description\" : \"" + TOKEN_DESCRIPTION_2 + "\"}")
+            updateTokenDescription("{\"token_link\" : \"" + TOKEN_LINK + "\", \"description\" : \"" + TOKEN_DESCRIPTION_2 + "\"}")
                     .statusCode(200)
                     .body("token_link", is(TOKEN_LINK.toString()))
                     .body("description", is(TOKEN_DESCRIPTION_2))
@@ -675,7 +837,7 @@ class PublicAuthResourceIT {
     
         @Test
         public void respondWith404_ifUpdatingDescriptionOfNonExistingToken() {
-            updateTokenDescription("{\"token_link\" : \"" + TOKEN_LINK.toString() + "\", \"description\" : \"" + TOKEN_DESCRIPTION_2 + "\"}")
+            updateTokenDescription("{\"token_link\" : \"" + TOKEN_LINK + "\", \"description\" : \"" + TOKEN_DESCRIPTION_2 + "\"}")
                     .statusCode(404)
                     .body("message", is("Could not update description of token with token_link " + TOKEN_LINK));
     
@@ -687,7 +849,7 @@ class PublicAuthResourceIT {
         public void respondWith404_butDoNotUpdateRevokedTokens() {
             databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, ZonedDateTime.now(), CREATED_USER_NAME);
     
-            updateTokenDescription("{\"token_link\" : \"" + TOKEN_LINK.toString() + "\", \"description\" : \"" + TOKEN_DESCRIPTION_2 + "\"}")
+            updateTokenDescription("{\"token_link\" : \"" + TOKEN_LINK + "\", \"description\" : \"" + TOKEN_DESCRIPTION_2 + "\"}")
                     .statusCode(404)
                     .body("message", is("Could not update description of token with token_link " + TOKEN_LINK));
     
@@ -719,7 +881,19 @@ class PublicAuthResourceIT {
             Optional<String> revokedInDb = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.toString());
             assertThat(revokedInDb.isPresent(), is(false));
         }
-    
+
+        @Test
+        public void respondWith400_ifNotProvidingBody_whenRevokingATokenByService() {
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, API, ACCOUNT_ID, TOKEN_DESCRIPTION, null, CREATED_USER_NAME, null, CARD, SERVICE_MODE, SERVICE_EXTERNAL_ID);
+
+            revokeSingleToken(SERVICE_EXTERNAL_ID, SERVICE_MODE, "")
+                    .statusCode(400)
+                    .body("message", is("Body cannot be empty"));
+
+            Optional<String> revokedInDb = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.toString());
+            assertThat(revokedInDb.isPresent(), is(false));
+        }
+
         @Test
         public void respondWith400_ifProvidingEmptyBody_whenRevokingAToken() {
             databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
@@ -728,6 +902,18 @@ class PublicAuthResourceIT {
                     .statusCode(400)
                     .body("message", is("At least one of these fields must be present: [token_link, token]"));
     
+            Optional<String> revokedInDb = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.toString());
+            assertThat(revokedInDb.isPresent(), is(false));
+        }
+
+        @Test
+        public void respondWith400_ifProvidingEmptyBody_whenRevokingATokenByService() {
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, API, ACCOUNT_ID, TOKEN_DESCRIPTION, null, CREATED_USER_NAME, null, CARD, SERVICE_MODE, SERVICE_EXTERNAL_ID);
+
+            revokeSingleToken(SERVICE_EXTERNAL_ID, SERVICE_MODE, "{}")
+                    .statusCode(400)
+                    .body("message", is("At least one of these fields must be present: [token_link, token]"));
+
             Optional<String> revokedInDb = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.toString());
             assertThat(revokedInDb.isPresent(), is(false));
         }
@@ -743,15 +929,41 @@ class PublicAuthResourceIT {
             Optional<String> revokedInDb = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.toString());
             assertThat(revokedInDb.isPresent(), is(true));
         }
+
+        @Test
+        public void respondWith200_whenSingleTokenIsRevokedByTokenLinkAndService() {
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, API, ACCOUNT_ID, TOKEN_DESCRIPTION, null, CREATED_USER_NAME, null, CARD, SERVICE_MODE, SERVICE_EXTERNAL_ID);
+            
+            revokeSingleToken(SERVICE_EXTERNAL_ID, SERVICE_MODE, "{\"token_link\" : \"" + TOKEN_LINK + "\"}")
+                    .statusCode(200)
+                    .body("revoked", is(ZonedDateTime.now(UTC).format(DateTimeFormatter.ofPattern("dd MMM yyyy"))));
+
+            Optional<String> revokedInDb = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.toString());
+            assertThat(revokedInDb.isPresent(), is(true));
+        }
     
         @Test
         public void respondWith200_whenSingleTokenIsRevokedByToken() {
             databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
             String fullBearerToken = BEARER_TOKEN + "qgs2ot3itqer7ag9mvvbs8snqb5jfas3";
+            
             revokeSingleToken(ACCOUNT_ID, "{\"token\" : \"" + fullBearerToken + "\"}")
                     .statusCode(200)
                     .body("revoked", is(ZonedDateTime.now(UTC).format(DateTimeFormatter.ofPattern("dd MMM yyyy"))));
     
+            Optional<String> revokedInDb = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.toString());
+            assertThat(revokedInDb.isPresent(), is(true));
+        }
+
+        @Test
+        public void respondWith200_whenSingleTokenIsRevokedByTokenAndService() {
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, API, ACCOUNT_ID, TOKEN_DESCRIPTION, null, CREATED_USER_NAME, null, CARD, SERVICE_MODE, SERVICE_EXTERNAL_ID);
+            String fullBearerToken = BEARER_TOKEN + "qgs2ot3itqer7ag9mvvbs8snqb5jfas3";
+            
+            revokeSingleToken(SERVICE_EXTERNAL_ID, SERVICE_MODE, "{\"token\" : \"" + fullBearerToken + "\"}")
+                    .statusCode(200)
+                    .body("revoked", is(ZonedDateTime.now(UTC).format(DateTimeFormatter.ofPattern("dd MMM yyyy"))));
+
             Optional<String> revokedInDb = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.toString());
             assertThat(revokedInDb.isPresent(), is(true));
         }
@@ -761,10 +973,25 @@ class PublicAuthResourceIT {
             databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
             databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, ACCOUNT_ID_2, TOKEN_DESCRIPTION, CREATED_USER_NAME);
     
-            revokeSingleToken(ACCOUNT_ID, "{\"token_link\" : \"" + TOKEN_LINK_2.toString() + "\"}")
+            revokeSingleToken(ACCOUNT_ID, "{\"token_link\" : \"" + TOKEN_LINK_2 + "\"}")
                     .statusCode(404)
                     .body("message", is("Could not revoke token with token_link " + TOKEN_LINK_2));
     
+            Optional<String> token1RevokedInDb = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.toString());
+            assertThat(token1RevokedInDb.isPresent(), is(false));
+            Optional<String> token2RevokedInDb = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK_2.toString());
+            assertThat(token2RevokedInDb.isPresent(), is(false));
+        }
+
+        @Test
+        public void respondWith404_whenRevokingTokenForAnotherService() {
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, API, ACCOUNT_ID, TOKEN_DESCRIPTION, null, CREATED_USER_NAME, null, CARD, SERVICE_MODE, SERVICE_EXTERNAL_ID);
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, API, ACCOUNT_ID_2, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, null, CARD, SERVICE_MODE, "cd1b871207a94a7fa157dee678146abc");
+
+            revokeSingleToken(SERVICE_EXTERNAL_ID, SERVICE_MODE,"{\"token_link\" : \"" + TOKEN_LINK_2 + "\"}")
+                    .statusCode(404)
+                    .body("message", is("Could not revoke token with token_link " + TOKEN_LINK_2));
+
             Optional<String> token1RevokedInDb = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.toString());
             assertThat(token1RevokedInDb.isPresent(), is(false));
             Optional<String> token2RevokedInDb = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK_2.toString());
@@ -775,22 +1002,94 @@ class PublicAuthResourceIT {
         public void respondWith404_whenRevokingTokenAlreadyRevoked() {
             databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, ZonedDateTime.now(), CREATED_USER_NAME);
     
-            revokeSingleToken(ACCOUNT_ID, "{\"token_link\" : \"" + TOKEN_LINK.toString() + "\"}")
+            revokeSingleToken(ACCOUNT_ID, "{\"token_link\" : \"" + TOKEN_LINK + "\"}")
                     .statusCode(404)
                     .body("message", is("Could not revoke token with token_link " + TOKEN_LINK));
     
             Optional<String> token1RevokedInDb = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.toString());
             assertThat(token1RevokedInDb.isPresent(), is(true));
         }
+
+        @Test
+        public void respondWith404_whenRevokingTokenAlreadyRevokedByService() {
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, API, ACCOUNT_ID, TOKEN_DESCRIPTION, ZonedDateTime.now(), CREATED_USER_NAME, null, CARD, SERVICE_MODE, SERVICE_EXTERNAL_ID);
+
+            revokeSingleToken(SERVICE_EXTERNAL_ID, SERVICE_MODE,"{\"token_link\" : \"" + TOKEN_LINK + "\"}")
+                    .statusCode(404)
+                    .body("message", is("Could not revoke token with token_link " + TOKEN_LINK));
+
+            Optional<String> revokedInDb = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.toString());
+            assertThat(revokedInDb.isPresent(), is(true));
+        }
     
         @Test
         public void respondWith404_whenTokenDoesNotExist() {
-            revokeSingleToken(ACCOUNT_ID, "{\"token_link\" : \"" + TOKEN_LINK.toString() + "\"}")
+            revokeSingleToken(ACCOUNT_ID, "{\"token_link\" : \"" + TOKEN_LINK + "\"}")
                     .statusCode(404)
                     .body("message", is("Could not revoke token with token_link " + TOKEN_LINK));
     
-            Optional<String> tokenLinkdInDb = databaseHelper.lookupColumnForTokenTable("token_link", "token_link", TOKEN_LINK.toString());
-            assertThat(tokenLinkdInDb.isPresent(), is(false));
+            Optional<String> tokenLinkInDb = databaseHelper.lookupColumnForTokenTable("token_link", "token_link", TOKEN_LINK.toString());
+            assertThat(tokenLinkInDb.isPresent(), is(false));
+        }
+
+        @Test
+        public void respondWith404_whenTokenDoesNotExistByService() {
+            revokeSingleToken(SERVICE_EXTERNAL_ID, "{\"token_link\" : \"" + TOKEN_LINK + "\"}")
+                    .statusCode(404)
+                    .body("message", is("Could not revoke token with token_link " + TOKEN_LINK));
+
+            Optional<String> tokenLinkInDb = databaseHelper.lookupColumnForTokenTable("token_link", "token_link", TOKEN_LINK.toString());
+            assertThat(tokenLinkInDb.isPresent(), is(false));
+        }
+        
+        @Test
+        public void respondWith200_whenAllTokensAreRevokedByAccount() {
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, API, ACCOUNT_ID, TOKEN_DESCRIPTION, null, CREATED_USER_NAME, null, CARD, SERVICE_MODE, SERVICE_EXTERNAL_ID);
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, API, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME, null, CARD, SERVICE_MODE, SERVICE_EXTERNAL_ID);
+
+            revokeTokens(ACCOUNT_ID)
+                    .statusCode(200);
+
+            Optional<String> token1RevokedInDb = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.toString());
+            assertThat(token1RevokedInDb.isPresent(), is(true));
+            Optional<String> token2RevokedInDb = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK_2.toString());
+            assertThat(token2RevokedInDb.isPresent(), is(true));
+        }
+
+        @Test
+        public void respondWith200_whenAllTokensAreRevokedAndAccountDoesNotExist() {
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, API, ACCOUNT_ID_2, TOKEN_DESCRIPTION, null, CREATED_USER_NAME, null, CARD, SERVICE_MODE, SERVICE_EXTERNAL_ID);
+
+            revokeTokens(ACCOUNT_ID)
+                    .statusCode(200);
+
+            Optional<String> tokenRevokedInDb = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.toString());
+            assertThat(tokenRevokedInDb.isPresent(), is(false));
+        }
+        
+        @Test
+        public void respondWith200_whenAllTokensAreRevokedByService() {
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, API, ACCOUNT_ID, TOKEN_DESCRIPTION, null, CREATED_USER_NAME, null, CARD, SERVICE_MODE, SERVICE_EXTERNAL_ID);
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, API, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME, null, CARD, SERVICE_MODE, SERVICE_EXTERNAL_ID);
+
+            revokeTokens(SERVICE_EXTERNAL_ID, SERVICE_MODE)
+                    .statusCode(200);
+
+            Optional<String> token1RevokedInDb = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.toString());
+            assertThat(token1RevokedInDb.isPresent(), is(true));
+            Optional<String> token2RevokedInDb = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK_2.toString());
+            assertThat(token2RevokedInDb.isPresent(), is(true));
+        }
+
+        @Test
+        public void respondWith200_whenAllTokensAreRevokedAndServiceDoesNotExist() {
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, API, ACCOUNT_ID, TOKEN_DESCRIPTION, null, CREATED_USER_NAME, null, CARD, SERVICE_MODE, "7487ab8b6529-15fb514cead18c1c38c");
+            
+            revokeTokens(SERVICE_EXTERNAL_ID, SERVICE_MODE)
+                    .statusCode(200);
+
+            Optional<String> tokenRevokedInDb = databaseHelper.lookupColumnForTokenTable("revoked", "token_link", TOKEN_LINK.toString());
+            assertThat(tokenRevokedInDb.isPresent(), is(false));
         }
 
         private ValidatableResponse revokeSingleToken(String accountId, String body) {
@@ -799,6 +1098,31 @@ class PublicAuthResourceIT {
                     .contentType(JSON)
                     .body(body)
                     .delete(FRONTEND_AUTH_PATH + "/" + accountId)
+                    .then();
+        }
+
+        private ValidatableResponse revokeSingleToken(String serviceExternalId, ServiceMode mode, String body) {
+            return given().port(localPort)
+                    .accept(JSON)
+                    .contentType(JSON)
+                    .body(body)
+                    .delete(FRONTEND_AUTH_PATH + "/service/" + serviceExternalId + "/mode/" + mode)
+                    .then();
+        }
+        
+        private ValidatableResponse revokeTokens(String accountId) {
+            return given().port(localPort)
+                    .accept(JSON)
+                    .contentType(JSON)
+                    .delete(FRONTEND_AUTH_PATH + "/" + accountId + "/revoke-all")
+                    .then();
+        }
+        
+        private ValidatableResponse revokeTokens(String serviceExternalId, ServiceMode mode) {
+            return given().port(localPort)
+                    .accept(JSON)
+                    .contentType(JSON)
+                    .delete(FRONTEND_AUTH_PATH + "/service/" + serviceExternalId + "/mode/" + mode + "/revoke-all")
                     .then();
         }
     }

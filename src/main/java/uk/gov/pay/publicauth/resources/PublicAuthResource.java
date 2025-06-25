@@ -20,6 +20,7 @@ import uk.gov.pay.publicauth.exception.TokenNotFoundException;
 import uk.gov.pay.publicauth.exception.ValidationException;
 import uk.gov.pay.publicauth.model.AuthResponse;
 import uk.gov.pay.publicauth.model.CreateTokenRequest;
+import uk.gov.pay.publicauth.model.ServiceMode;
 import uk.gov.pay.publicauth.model.TokenHash;
 import uk.gov.pay.publicauth.model.TokenLink;
 import uk.gov.pay.publicauth.model.TokenResponse;
@@ -46,11 +47,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
-import static java.util.Arrays.asList;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static jakarta.ws.rs.core.Response.ok;
+import static java.util.Arrays.asList;
 import static uk.gov.pay.publicauth.model.TokenSource.API;
 import static uk.gov.pay.publicauth.model.TokenState.ACTIVE;
 
@@ -65,6 +65,7 @@ public class PublicAuthResource {
     private static final String TOKEN_FIELD = "token";
     private static final String DESCRIPTION_FIELD = "description";
     private static final String REVOKED_DATE_FORMAT_PATTERN = "dd MMM yyyy";
+    private static final String SERVICE_EXTERNAL_ID_EXAMPLE = "7d19aff33f8948deb97ed16b2912dcd3";
 
     private final TokenService tokenService;
 
@@ -122,6 +123,23 @@ public class PublicAuthResource {
         return ok().build();
     }
 
+    @Path("/v1/frontend/auth/service/{serviceExternalId}/mode/{serviceMode}/revoke-all")
+    @Timed
+    @DELETE
+    @Operation(
+            summary = "Revokes all tokens associated with a service and mode. It is not possible to tell whether the " +
+                    "service actually exists (in connector), so this method currently does not return a 404.",
+            responses = {
+                    @ApiResponse(responseCode = "200")
+            }
+    )
+    public Response revokeTokensForServiceAndMode(@Parameter(example = SERVICE_EXTERNAL_ID_EXAMPLE)
+                                                  @PathParam("serviceExternalId") String serviceExternalId,
+                                                  @PathParam("serviceMode") ServiceMode serviceMode) {
+        tokenService.revokeTokens(serviceExternalId, serviceMode);
+        return ok().build();
+    }
+
     @Path("/v1/frontend/auth/{accountId}")
     @Timed
     @Produces(APPLICATION_JSON)
@@ -145,6 +163,31 @@ public class PublicAuthResource {
         return ok(Map.of("tokens", tokenResponses)).build();
     }
 
+    @Path("/v1/frontend/auth/service/{serviceExternalId}/mode/{serviceMode}")
+    @Timed
+    @Produces(APPLICATION_JSON)
+    @GET
+    @Operation(
+            summary = "Retrieves generated tokens for service and mode.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "OK",
+                            content = @Content(schemaProperties = @SchemaProperty(name = "tokens",
+                                    array = @ArraySchema(schema = @Schema(name = "tokens",
+                                            implementation = TokenResponse.class, type = "array"))))),
+                    @ApiResponse(responseCode = "422", description = "Invalid or missing required parameters")
+            }
+    )
+    public Response getIssuedTokensForServiceAndMode(@Parameter(example = SERVICE_EXTERNAL_ID_EXAMPLE)
+                                                     @PathParam("serviceExternalId") String serviceExternalId,
+                                                     @PathParam("serviceMode") ServiceMode serviceMode,
+                                                     @Parameter(example = "REVOKED") @QueryParam("state") TokenState state,
+                                                     @Parameter(example = "API") @QueryParam("type") TokenSource type) {
+        state = Optional.ofNullable(state).orElse(ACTIVE);
+        type = Optional.ofNullable(type).orElse(API);
+        List<TokenResponse> tokenResponses = tokenService.findTokensBy(serviceExternalId, serviceMode, state, type);
+        return ok(Map.of("tokens", tokenResponses)).build();
+    }
+
     @Path("/v1/frontend/auth/{accountId}/{tokenLink}")
     @Timed
     @Produces(APPLICATION_JSON)
@@ -159,9 +202,28 @@ public class PublicAuthResource {
     )
     public Response getTokenByTokenLink(@Parameter(example = "1") @PathParam("accountId") String accountId,
                                         @Parameter(example = "a-token-link") @PathParam("tokenLink") String tokenLink) {
-        return Response.ok(tokenService.findTokenBy(accountId, TokenLink.of(tokenLink))).build();    
+        return Response.ok(tokenService.findTokenBy(accountId, TokenLink.of(tokenLink))).build();
     }
-    
+
+    @Path("v1/frontend/auth/service/{serviceExternalId}/mode/{serviceMode}/{tokenLink} ")
+    @Timed
+    @Produces(APPLICATION_JSON)
+    @GET
+    @Operation(
+            summary = "Get a token by service, mode and token link.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "OK",
+                            content = @Content(schema = @Schema(implementation = TokenResponse.class))),
+                    @ApiResponse(responseCode = "404", description = "Token not found")
+            }
+    )
+    public Response getTokenByServiceAndTokenLink(@Parameter(example = SERVICE_EXTERNAL_ID_EXAMPLE)
+                                                  @PathParam("serviceExternalId") String serviceExternalId,
+                                                  @PathParam("serviceMode") ServiceMode serviceMode,
+                                                  @Parameter(example = "a-token-link") @PathParam("tokenLink") String tokenLink) {
+        return Response.ok(tokenService.findTokenBy(serviceExternalId, serviceMode, TokenLink.of(tokenLink))).build();
+    }
+
     @Path("/v1/frontend/auth")
     @Timed
     @Consumes(APPLICATION_JSON)
@@ -224,7 +286,42 @@ public class PublicAuthResource {
             ZonedDateTime revokedDate = tokenService.revokeToken(accountId, tokenLink);
             return buildRevokedTokenResponse(revokedDate);
         }
+    }
 
+    @Path("/v1/frontend/auth/service/{serviceExternalId}/mode/{serviceMode}")
+    @Timed
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
+    @DELETE
+    @Operation(operationId = "revokeSingleTokenByServiceAndMode",
+            summary = "Revokes the supplied token for this service and mode",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "OK",
+                            content = @Content(schema = @Schema(example = "{" +
+                                    "    \"revoked\": \"4 Apr 2022\"" +
+                                    "}"))),
+                    @ApiResponse(responseCode = "404", description = "Token not found")
+            }
+    )
+    public Response revokeSingleToken(@Parameter(example = SERVICE_EXTERNAL_ID_EXAMPLE) @PathParam("serviceExternalId") String serviceExternalId,
+                                      @PathParam("serviceMode") ServiceMode serviceMode,
+                                      @RequestBody(content = @Content(schema = @Schema(example = "{" +
+                                              "    \"token_link\": \"74813ca7-1829-4cad-bc0e-684a0288a308\"" +
+                                              "}")))
+                                      JsonNode payload) throws ValidationException, TokenNotFoundException {
+
+        validatePayloadHasFields(payload, Collections.emptyList(), asList(TOKEN_LINK_FIELD, TOKEN_FIELD));
+
+        if (payload.hasNonNull(TOKEN_FIELD)) {
+            return tokenService.extractEncryptedTokenFrom(payload.get(TOKEN_FIELD).asText())
+                    .map(token -> tokenService.revokeToken(serviceExternalId, serviceMode, TokenHash.of(token.getName())))
+                    .map(this::buildRevokedTokenResponse)
+                    .orElseThrow(() -> new TokenNotFoundException("Could not extract encrypted token while revoking token"));
+        } else {
+            TokenLink tokenLink = TokenLink.of(payload.get(TOKEN_LINK_FIELD).asText());
+            ZonedDateTime revokedDate = tokenService.revokeToken(serviceExternalId, serviceMode, tokenLink);
+            return buildRevokedTokenResponse(revokedDate);
+        }
     }
 
     private Response buildRevokedTokenResponse(ZonedDateTime revokedDate) {
@@ -244,7 +341,7 @@ public class PublicAuthResource {
         List<String> missingFields = expectedFields
                 .stream()
                 .filter(expectedKey -> !payload.has(expectedKey))
-                .collect(Collectors.toList());
+                .toList();
         if (!missingFields.isEmpty()) {
             throw new ValidationException("Missing fields: " + missingFields);
         }

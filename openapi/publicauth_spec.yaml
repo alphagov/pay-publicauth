@@ -90,6 +90,159 @@ paths:
       summary: Updates the description of an existing dev token.
       tags:
       - Auth
+  /v1/frontend/auth/service/{serviceExternalId}/mode/{serviceMode}:
+    delete:
+      operationId: revokeSingleTokenByServiceAndMode
+      parameters:
+      - example: 7d19aff33f8948deb97ed16b2912dcd3
+        in: path
+        name: serviceExternalId
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: serviceMode
+        required: true
+        schema:
+          type: string
+          enum:
+          - LIVE
+          - TEST
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: string
+              example:
+                token_link: 74813ca7-1829-4cad-bc0e-684a0288a308
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: string
+                example:
+                  revoked: 4 Apr 2022
+          description: OK
+        "404":
+          description: Token not found
+      summary: Revokes the supplied token for this service and mode
+      tags:
+      - Auth
+    get:
+      operationId: getIssuedTokensForServiceAndMode
+      parameters:
+      - example: 7d19aff33f8948deb97ed16b2912dcd3
+        in: path
+        name: serviceExternalId
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: serviceMode
+        required: true
+        schema:
+          type: string
+          enum:
+          - LIVE
+          - TEST
+      - example: REVOKED
+        in: query
+        name: state
+        schema:
+          type: string
+          enum:
+          - REVOKED
+          - ACTIVE
+      - example: API
+        in: query
+        name: type
+        schema:
+          type: string
+          enum:
+          - API
+          - PRODUCTS
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tokens:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/TokenResponse"
+          description: OK
+        "422":
+          description: Invalid or missing required parameters
+      summary: Retrieves generated tokens for service and mode.
+      tags:
+      - Auth
+  /v1/frontend/auth/service/{serviceExternalId}/mode/{serviceMode}/revoke-all:
+    delete:
+      operationId: revokeTokensForServiceAndMode
+      parameters:
+      - example: 7d19aff33f8948deb97ed16b2912dcd3
+        in: path
+        name: serviceExternalId
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: serviceMode
+        required: true
+        schema:
+          type: string
+          enum:
+          - LIVE
+          - TEST
+      responses:
+        default:
+          content:
+            '*/*': {}
+          description: default response
+      summary: "Revokes all tokens associated with a service and mode. It is not possible\
+        \ to tell whether the service actually exists (in connector), so this method\
+        \ currently does not return a 404."
+      tags:
+      - Auth
+  '/v1/frontend/auth/service/{serviceExternalId}/mode/{serviceMode}/{tokenLink} ':
+    get:
+      operationId: getTokenByServiceAndTokenLink
+      parameters:
+      - example: 7d19aff33f8948deb97ed16b2912dcd3
+        in: path
+        name: serviceExternalId
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: serviceMode
+        required: true
+        schema:
+          type: string
+          enum:
+          - LIVE
+          - TEST
+      - example: a-token-link
+        in: path
+        name: tokenLink
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+          description: OK
+        "404":
+          description: Token not found
+      summary: "Get a token by service, mode and token link."
+      tags:
+      - Auth
   /v1/frontend/auth/{accountId}:
     delete:
       operationId: revokeSingleToken

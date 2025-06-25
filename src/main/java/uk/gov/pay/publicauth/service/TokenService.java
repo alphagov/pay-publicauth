@@ -14,16 +14,15 @@ import uk.gov.pay.publicauth.exception.TokenNotFoundException;
 import uk.gov.pay.publicauth.exception.TokenRevokedException;
 import uk.gov.pay.publicauth.model.AuthResponse;
 import uk.gov.pay.publicauth.model.CreateTokenRequest;
-import uk.gov.pay.publicauth.model.TokenEntity;
+import uk.gov.pay.publicauth.model.ServiceMode;
+import uk.gov.pay.publicauth.model.TokenAccountType;
 import uk.gov.pay.publicauth.model.TokenHash;
 import uk.gov.pay.publicauth.model.TokenLink;
 import uk.gov.pay.publicauth.model.TokenResponse;
 import uk.gov.pay.publicauth.model.TokenSource;
 import uk.gov.pay.publicauth.model.TokenState;
 import uk.gov.pay.publicauth.model.Tokens;
-import uk.gov.pay.publicauth.model.TokenAccountType;
 
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -77,7 +76,12 @@ public class TokenService {
     
     public TokenResponse findTokenBy(String accountId, TokenLink tokenLink) {
         return authTokenDao.findTokenBy(accountId, tokenLink).map(TokenResponse::fromEntity)
-                .orElseThrow(() -> new TokenNotFoundException("Could not update description of token with token_link " + tokenLink));
+                .orElseThrow(() -> new TokenNotFoundException("Token does not exist"));
+    }
+    
+    public TokenResponse findTokenBy(String serviceExternalId, ServiceMode serviceMode, TokenLink tokenLink) {
+        return authTokenDao.findTokenBy(serviceExternalId, serviceMode, tokenLink).map(TokenResponse::fromEntity)
+                .orElseThrow(() -> new TokenNotFoundException("Token does not exist"));
     }
 
     /**
@@ -107,6 +111,13 @@ public class TokenService {
                 .collect(Collectors.toList());
     }
 
+    public List<TokenResponse> findTokensBy(String serviceExternalId, ServiceMode serviceMode, TokenState tokenState, TokenSource tokenSource) {
+        return authTokenDao.findTokensBy(serviceExternalId, serviceMode, tokenState, tokenSource)
+                .stream()
+                .map(TokenResponse::fromEntity)
+                .collect(Collectors.toList());
+    }
+
     public TokenResponse updateTokenDescription(TokenLink tokenLink, String description) {
         if (authTokenDao.updateTokenDescription(tokenLink, description)) {
             LOGGER.info("Updated description of token with token_link {}", tokenLink);
@@ -127,10 +138,25 @@ public class TokenService {
         return authTokenDao.revokeSingleToken(accountId, tokenLink).map(localDateTime -> localDateTime.atZone(ZoneOffset.UTC))
                 .orElseThrow(() -> new TokenNotFoundException("Could not revoke token with token_link " + tokenLink));
     }
+    
+    public ZonedDateTime revokeToken(String serviceExternalId, ServiceMode serviceMode, TokenHash tokenHash) {
+        return authTokenDao.revokeSingleToken(serviceExternalId, serviceMode, tokenHash).map(localDateTime -> localDateTime.atZone(ZoneOffset.UTC))
+                .orElseThrow(() -> new TokenNotFoundException("Could not revoke token"));
+    }
+
+    public ZonedDateTime revokeToken(String serviceExternalId, ServiceMode serviceMode, TokenLink tokenLink) {
+        return authTokenDao.revokeSingleToken(serviceExternalId, serviceMode, tokenLink).map(localDateTime -> localDateTime.atZone(ZoneOffset.UTC))
+                .orElseThrow(() -> new TokenNotFoundException("Could not revoke token with token_link " + tokenLink));
+    }
 
     public void revokeTokens(String accountId) {
         int numberOfTokensRevoked = authTokenDao.revokeTokens(accountId);
         LOGGER.info("Revoked " + numberOfTokensRevoked + " tokens from gateway account with id " + accountId);
+    }
+    
+    public void revokeTokens(String serviceExternalId, ServiceMode serviceMode) {
+        int numberOfTokensRevoked = authTokenDao.revokeTokens(serviceExternalId, serviceMode);
+        LOGGER.info("Revoked " + numberOfTokensRevoked + " tokens from service with id " + serviceExternalId + "in " + serviceMode + " mode");
     }
     
     /**
