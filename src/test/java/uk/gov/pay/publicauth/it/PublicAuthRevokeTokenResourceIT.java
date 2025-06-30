@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.slf4j.LoggerFactory;
+import uk.gov.pay.publicauth.model.ServiceMode;
 import uk.gov.pay.publicauth.service.TokenService;
 import uk.gov.pay.publicauth.utils.DropwizardAppWithPostgresExtension;
 
@@ -32,6 +33,8 @@ public class PublicAuthRevokeTokenResourceIT {
     private Integer applicationPort;
     private Appender<ILoggingEvent> mockAppender = mock(Appender.class);
     private ArgumentCaptor<LoggingEvent> loggingEventArgumentCaptor = ArgumentCaptor.forClass(LoggingEvent.class);
+    private static final ServiceMode SERVICE_MODE = ServiceMode.TEST;
+    private static final String SERVICE_EXTERNAL_ID = "cd1b871207a94a7fa157dee678146acd";
 
     @BeforeEach
     public void setup(Integer port) {
@@ -45,20 +48,32 @@ public class PublicAuthRevokeTokenResourceIT {
     public void revokeAllTokensForAnAccountSuccessfully() {
         String accountId = "1";
         
-        Map<String, String> token1 = Map.of("account_id", accountId,
+        Map<String, String> token1 = Map.of(
+                "account_id", accountId,
                 "description", "Bellatrix's token",
                 "token_account_type", "live",
-                "created_by", "bellatrix@lestrange.hp");
+                "created_by", "bellatrix@lestrange.hp",
+                "service_external_id", SERVICE_EXTERNAL_ID,
+                "service_mode", SERVICE_MODE.toString()
+        );
         
-        Map<String, String> token2 = Map.of("account_id", accountId,
+        Map<String, String> token2 = Map.of(
+                "account_id", accountId,
                 "description", "Sirius's token",
                 "token_account_type", "test",
-                "created_by", "sirius@black.hp");
+                "created_by", "sirius@black.hp",
+                "service_external_id", SERVICE_EXTERNAL_ID,
+                "service_mode", SERVICE_MODE.toString()
+        );
 
-        Map<String, String> token3 = Map.of("account_id", "2",
+        Map<String, String> token3 = Map.of(
+                "account_id", "2",
                 "description", "Buckbeak's token",
                 "token_account_type", "test",
-                "created_by", "buck@beak.hp");
+                "created_by", "buck@beak.hp",
+                "service_external_id", SERVICE_EXTERNAL_ID,
+                "service_mode", SERVICE_MODE.toString()
+        );
         
         createToken(token1);
         createToken(token2);

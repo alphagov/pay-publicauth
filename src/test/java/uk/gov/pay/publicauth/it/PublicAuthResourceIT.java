@@ -71,22 +71,38 @@ class PublicAuthResourceIT {
     private static final String CREATED_USER_NAME2 = "user-name-2";
     private static final ServiceMode SERVICE_MODE = ServiceMode.TEST;
     private static final String SERVICE_EXTERNAL_ID = "cd1b871207a94a7fa157dee678146acd";
-    private final Map<String, String> validTokenPayload = Map.of("account_id", ACCOUNT_ID,
-                    "description", TOKEN_DESCRIPTION,
-                    "token_account_type", "live",
-                    "created_by", USER_EMAIL);
-    private final Map<String, String> validDirectDebitTokenPayload = Map.of("account_id", ACCOUNT_ID,
-                    "description", TOKEN_DESCRIPTION,
-                    "token_type", DIRECT_DEBIT.toString(),
-                    "created_by", USER_EMAIL);
-    private final Map<String, String> validProductsTokenPayload = Map.of("account_id", ACCOUNT_ID,
-                    "description", TOKEN_DESCRIPTION,
-                    "type", PRODUCTS.toString(),
-                    "created_by", USER_EMAIL);
-    private final Map<String, String> validTokenPayloadWithTokenAccountType = Map.of("account_id", ACCOUNT_ID,
-                    "token_account_type", "test",
-                    "description", TOKEN_DESCRIPTION,
-                    "created_by", USER_EMAIL);
+    private final Map<String, String> validTokenPayload = Map.of(
+            "account_id", ACCOUNT_ID,
+            "description", TOKEN_DESCRIPTION,
+            "token_account_type", "live",
+            "created_by", USER_EMAIL,
+            "service_external_id", SERVICE_EXTERNAL_ID,
+            "service_mode", SERVICE_MODE.toString()
+    );
+    private final Map<String, String> validDirectDebitTokenPayload = Map.of(
+            "account_id", ACCOUNT_ID,
+            "description", TOKEN_DESCRIPTION,
+            "token_type", DIRECT_DEBIT.toString(),
+            "created_by", USER_EMAIL,
+            "service_external_id", SERVICE_EXTERNAL_ID,
+            "service_mode", SERVICE_MODE.toString()
+    );
+    private final Map<String, String> validProductsTokenPayload = Map.of(
+            "account_id", ACCOUNT_ID,
+            "description", TOKEN_DESCRIPTION,
+            "type", PRODUCTS.toString(),
+            "created_by", USER_EMAIL,
+            "service_external_id", SERVICE_EXTERNAL_ID,
+            "service_mode", SERVICE_MODE.toString()
+    );
+    private final Map<String, String> validTokenPayloadWithTokenAccountType = Map.of(
+            "account_id", ACCOUNT_ID,
+            "token_account_type", "test",
+            "description", TOKEN_DESCRIPTION,
+            "created_by", USER_EMAIL,
+            "service_external_id", SERVICE_EXTERNAL_ID,
+            "service_mode", SERVICE_MODE.toString()
+    );
 
     private DatabaseTestHelper databaseHelper;
     private Integer localPort;
@@ -291,26 +307,45 @@ class PublicAuthResourceIT {
         }
     
         @Test
-        public void respondWith422_ifAccountAndDescriptionAreMissing() {
+        public void respondWith422_ifRequestBodyIsEmpty() {
             createTokenFor(Map.of())
                     .statusCode(422)
-                    .body("errors.size()", is(3))
+                    .body("errors.size()", is(5))
                     .body("errors", containsInAnyOrder(
                             "description must not be null",
                             "createdBy must not be null",
-                            "accountId must not be null"));
+                            "accountId must not be null",
+                            "serviceExternalId must not be null",
+                            "serviceMode must not be null"
+                    ));
         }
     
         @Test
         public void respondWith422_ifAccountIsMissing() {
-            createTokenFor(Map.of("description", ACCOUNT_ID, "created_by", "some-user"))
+            createTokenFor(
+                    Map.of(
+                            "description", TOKEN_DESCRIPTION,
+                            "token_account_type", "live",
+                            "created_by", USER_EMAIL,
+                            "service_external_id", SERVICE_EXTERNAL_ID,
+                            "service_mode", SERVICE_MODE.toString()
+                    )
+            )
                     .statusCode(422)
                     .body("errors", equalTo(List.of("accountId must not be null")));
         }
     
         @Test
         public void respondWith422_ifDescriptionIsMissing() {
-            createTokenFor(Map.of("account_id", ACCOUNT_ID, "created_by", "some-user"))
+            createTokenFor(
+                    Map.of(
+                            "account_id", ACCOUNT_ID,
+                            "token_account_type", "live",
+                            "created_by", USER_EMAIL,
+                            "service_external_id", SERVICE_EXTERNAL_ID,
+                            "service_mode", SERVICE_MODE.toString()
+                    )
+            )
                     .statusCode(422)
                     .body("errors", equalTo(List.of("description must not be null")));
         }
@@ -324,6 +359,39 @@ class PublicAuthResourceIT {
                     .post(FRONTEND_AUTH_PATH)
                     .then().statusCode(422)
                     .body("errors", equalTo(List.of("The request body must not be null")));
+        }
+
+        @Test
+        public void respondWith422_ifServiceExternalIdIsMissing() {
+            given().port(localPort)
+                    .accept(JSON)
+                    .contentType(JSON)
+                    .body(Map.of(
+                            "account_id", ACCOUNT_ID,
+                            "description", TOKEN_DESCRIPTION,
+                            "token_account_type", "live",
+                            "created_by", USER_EMAIL,
+                            "service_mode", SERVICE_MODE.toString()
+                    ))
+                    .post(FRONTEND_AUTH_PATH)
+                    .then().statusCode(422)
+                    .body("errors", equalTo(List.of("serviceExternalId must not be null")));
+        }
+        @Test
+        public void respondWith422_ifServiceModeIsMissing() {
+            given().port(localPort)
+                    .accept(JSON)
+                    .contentType(JSON)
+                    .body(Map.of(
+                            "account_id", ACCOUNT_ID,
+                            "description", TOKEN_DESCRIPTION,
+                            "token_account_type", "live",
+                            "created_by", USER_EMAIL,
+                            "service_external_id", SERVICE_EXTERNAL_ID
+                    ))
+                    .post(FRONTEND_AUTH_PATH)
+                    .then().statusCode(422)
+                    .body("errors", equalTo(List.of("serviceMode must not be null")));
         }
 
         @Test

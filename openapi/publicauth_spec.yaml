@@ -445,6 +445,8 @@ components:
       - account_id
       - created_by
       - description
+      - service_external_id
+      - service_mode
     JsonNode:
       type: object
     TokenResponse:
