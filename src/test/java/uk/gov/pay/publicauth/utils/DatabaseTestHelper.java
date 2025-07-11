@@ -25,24 +25,20 @@ public class DatabaseTestHelper {
         this.jdbi = jdbi;
     }
 
-    public void insertAccount(TokenHash tokenHash, TokenLink randomTokenLink, String accountId, String description, String createdBy) {
-        insertAccount(tokenHash, randomTokenLink, accountId, description, null, createdBy, ZonedDateTime.now(UTC));
+    public void insertAccount(TokenHash tokenHash, TokenLink randomTokenLink, String accountId, String description, String createdBy, ServiceMode serviceMode, String serviceExternalId) {
+        insertAccount(tokenHash, randomTokenLink, accountId, description, null, createdBy, ZonedDateTime.now(UTC), serviceMode, serviceExternalId);
     }
 
-    public void insertAccount(TokenHash tokenHash, TokenLink randomTokenLink, String accountId, String description, ZonedDateTime revoked, String createdBy) {
-        insertAccount(tokenHash, randomTokenLink, accountId, description, revoked, createdBy, ZonedDateTime.now(UTC));
+    public void insertAccount(TokenHash tokenHash, TokenLink randomTokenLink, String accountId, String description, ZonedDateTime revoked, String createdBy, ServiceMode serviceMode, String serviceExternalId) {
+        insertAccount(tokenHash, randomTokenLink, accountId, description, revoked, createdBy, ZonedDateTime.now(UTC), serviceMode, serviceExternalId);
     }
 
-    public void insertAccount(TokenHash tokenHash, TokenLink randomTokenLink, String accountId, String description, ZonedDateTime revoked, String createdBy, ZonedDateTime lastUsed) {
-        insertAccount(tokenHash, randomTokenLink, API, accountId, description, revoked, createdBy, lastUsed, CARD);
+    public void insertAccount(TokenHash tokenHash, TokenLink randomTokenLink, String accountId, String description, ZonedDateTime revoked, String createdBy, ZonedDateTime lastUsed, ServiceMode serviceMode, String serviceExternalId) {
+        insertAccount(tokenHash, randomTokenLink, API, accountId, description, revoked, createdBy, lastUsed, CARD, serviceMode, serviceExternalId);
     }
 
-    public void insertAccount(TokenHash tokenHash, TokenLink randomTokenLink, TokenSource tokenSource, String accountId, String description, ZonedDateTime revoked, String createdBy, ZonedDateTime lastUsed) {
-        insertAccount(tokenHash, randomTokenLink, tokenSource, accountId, description, revoked, createdBy, lastUsed, CARD);
-    }
-
-    public void insertAccount(TokenHash tokenHash, TokenLink randomTokenLink, TokenSource tokenSource, String accountId, String description, ZonedDateTime revoked, String createdBy, ZonedDateTime lastUsed, TokenPaymentType tokenPaymentType) {
-        insertAccount(tokenHash, randomTokenLink, tokenSource, accountId, description, revoked, createdBy, lastUsed, tokenPaymentType, null, null);
+    public void insertAccount(TokenHash tokenHash, TokenLink randomTokenLink, TokenSource tokenSource, String accountId, String description, ZonedDateTime revoked, String createdBy, ZonedDateTime lastUsed, ServiceMode serviceMode, String serviceExternalId) {
+        insertAccount(tokenHash, randomTokenLink, tokenSource, accountId, description, revoked, createdBy, lastUsed, CARD, serviceMode, serviceExternalId);
     }
     
     public void insertAccount(TokenHash tokenHash, TokenLink randomTokenLink, TokenSource tokenSource, String accountId, String description, ZonedDateTime revoked, String createdBy, ZonedDateTime lastUsed, TokenPaymentType tokenPaymentType, ServiceMode serviceMode, String serviceExternalId) {
