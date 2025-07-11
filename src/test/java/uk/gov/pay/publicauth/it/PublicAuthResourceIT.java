@@ -118,7 +118,7 @@ class PublicAuthResourceIT {
         
         @Test
         void respondWith200_whenAuthWithValidToken() {
-            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME, ServiceMode.TEST, SERVICE_EXTERNAL_ID);
             String apiKey = BEARER_TOKEN + encodedHmacValueOf(BEARER_TOKEN);
             tokenResponse(apiKey)
                     .statusCode(200)
@@ -147,7 +147,7 @@ class PublicAuthResourceIT {
         @Test
         void respondWith401_whenAuthWithRevokedToken() {
             databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION,
-                    ZonedDateTime.now(UTC), CREATED_USER_NAME);
+                    ZonedDateTime.now(UTC), CREATED_USER_NAME, ServiceMode.TEST, SERVICE_EXTERNAL_ID);
             String apiKey = BEARER_TOKEN + encodedHmacValueOf(BEARER_TOKEN);
             ZonedDateTime lastUsedPreAuth = databaseHelper.getDateTimeColumn("last_used", ACCOUNT_ID);
             tokenResponse(apiKey)
@@ -179,7 +179,7 @@ class PublicAuthResourceIT {
         @Test
         public void respondWith401_whenAuthHeaderIsBasicEvenWithValidToken() {
 
-            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME, ServiceMode.TEST, SERVICE_EXTERNAL_ID);
 
             String apiKey = BEARER_TOKEN + encodedHmacValueOf(BEARER_TOKEN);
 
@@ -428,7 +428,7 @@ class PublicAuthResourceIT {
         
         @Test
         void get_token_by_tokenLink_should_return_200_if_token_exists() {
-            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, null, CREATED_USER_NAME, null);
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, null, CREATED_USER_NAME, null, ServiceMode.LIVE, SERVICE_EXTERNAL_ID);
 
             given().port(localPort)
                     .accept(JSON)
@@ -474,9 +474,9 @@ class PublicAuthResourceIT {
             ZonedDateTime inserted = ZonedDateTime.now(UTC);
             ZonedDateTime lastUsed = inserted.plusHours(1);
     
-            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, null, CREATED_USER_NAME, lastUsed);
-            databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, API, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed, DIRECT_DEBIT);
-            databaseHelper.insertAccount(TokenHash.of("TOKEN-3"), TokenLink.of("123456789101112131415161718192021224"), PRODUCTS, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed, CARD);
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, null, CREATED_USER_NAME, lastUsed, SERVICE_MODE, SERVICE_EXTERNAL_ID);
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, API, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed, DIRECT_DEBIT, SERVICE_MODE, SERVICE_EXTERNAL_ID);
+            databaseHelper.insertAccount(TokenHash.of("TOKEN-3"), TokenLink.of("123456789101112131415161718192021224"), PRODUCTS, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed, CARD, SERVICE_MODE, SERVICE_EXTERNAL_ID);
     
             List<Map<String, String>> retrievedTokens = getTokensFor(ACCOUNT_ID)
                     .statusCode(200)
@@ -486,7 +486,7 @@ class PublicAuthResourceIT {
     
             //Retrieved in issued order from newest to oldest
             Map<String, String> firstToken = retrievedTokens.getFirst();
-            assertThat(firstToken.size(), is(7));
+            assertThat(firstToken.size(), is(9));
             assertThat(firstToken.get("token_link"), is(TOKEN_LINK_2.toString()));
             assertThat(firstToken.get("type"), is(API.toString()));
             assertThat(firstToken.get("description"), is(TOKEN_DESCRIPTION_2));
@@ -497,7 +497,7 @@ class PublicAuthResourceIT {
             assertThat(firstToken.get("last_used"), is(lastUsed.format(DATE_TIME_FORMAT)));
     
             Map<String, String> secondToken = retrievedTokens.get(1);
-            assertThat(secondToken.size(), is(7));
+            assertThat(secondToken.size(), is(9));
             assertThat(secondToken.get("token_link"), is(TOKEN_LINK.toString()));
             assertThat(firstToken.get("type"), is(API.toString()));
             assertThat(secondToken.get("description"), is(TOKEN_DESCRIPTION));
@@ -553,8 +553,8 @@ class PublicAuthResourceIT {
             ZonedDateTime lastUsed = inserted.plusHours(1);
             ZonedDateTime revoked = inserted.plusHours(2);
     
-            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, CREATED_USER_NAME, lastUsed);
-            databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed);
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, CREATED_USER_NAME, lastUsed, SERVICE_MODE, SERVICE_EXTERNAL_ID);
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed, SERVICE_MODE, SERVICE_EXTERNAL_ID);
     
             List<Map<String, String>> retrievedTokens = getTokensFor(ACCOUNT_ID, "revoked")
                     .statusCode(200)
@@ -604,9 +604,9 @@ class PublicAuthResourceIT {
             ZonedDateTime inserted = ZonedDateTime.now(UTC);
             ZonedDateTime lastUsed = inserted.plusHours(1);
     
-            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, PRODUCTS, ACCOUNT_ID, TOKEN_DESCRIPTION, null, CREATED_USER_NAME, lastUsed, DIRECT_DEBIT);
-            databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, PRODUCTS, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed);
-            databaseHelper.insertAccount(TokenHash.of("TOKEN-3"), TokenLink.of("123456789101112131415161718192021224"), API, ACCOUNT_ID, TOKEN_DESCRIPTION, null, CREATED_USER_NAME2, lastUsed, CARD);
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, PRODUCTS, ACCOUNT_ID, TOKEN_DESCRIPTION, null, CREATED_USER_NAME, lastUsed, DIRECT_DEBIT, SERVICE_MODE, SERVICE_EXTERNAL_ID);
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, PRODUCTS, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed, SERVICE_MODE, SERVICE_EXTERNAL_ID);
+            databaseHelper.insertAccount(TokenHash.of("TOKEN-3"), TokenLink.of("123456789101112131415161718192021224"), API, ACCOUNT_ID, TOKEN_DESCRIPTION, null, CREATED_USER_NAME2, lastUsed, CARD, SERVICE_MODE, SERVICE_EXTERNAL_ID);
     
             List<Map<String, String>> retrievedTokens = getTokensFor(ACCOUNT_ID, "active", "products")
                     .statusCode(200)
@@ -638,8 +638,8 @@ class PublicAuthResourceIT {
             ZonedDateTime inserted = ZonedDateTime.now(UTC);
             ZonedDateTime lastUsed = inserted.plusHours(1);
             ZonedDateTime revoked = inserted.plusHours(2);
-            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, CREATED_USER_NAME, lastUsed);
-            databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed);
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, CREATED_USER_NAME, lastUsed, SERVICE_MODE, SERVICE_EXTERNAL_ID);
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed, SERVICE_MODE, SERVICE_EXTERNAL_ID);
     
             List<Map<String, String>> retrievedTokens = getTokensFor(ACCOUNT_ID, "active")
                     .statusCode(200)
@@ -686,8 +686,8 @@ class PublicAuthResourceIT {
             ZonedDateTime inserted = ZonedDateTime.now(UTC);
             ZonedDateTime lastUsed = inserted.plusHours(1);
             ZonedDateTime revoked = inserted.plusHours(2);
-            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, CREATED_USER_NAME, lastUsed);
-            databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed);
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, CREATED_USER_NAME, lastUsed, SERVICE_MODE, SERVICE_EXTERNAL_ID);
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed, SERVICE_MODE, SERVICE_EXTERNAL_ID);
     
             List<Map<String, String>> retrievedTokens = getTokensForWithNoQueryParam(ACCOUNT_ID)
                     .statusCode(200)
@@ -734,8 +734,8 @@ class PublicAuthResourceIT {
             ZonedDateTime inserted = ZonedDateTime.now(UTC);
             ZonedDateTime lastUsed = inserted.plusHours(1);
             ZonedDateTime revoked = inserted.plusHours(2);
-            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, CREATED_USER_NAME, lastUsed);
-            databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed);
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, CREATED_USER_NAME, lastUsed, SERVICE_MODE, SERVICE_EXTERNAL_ID);
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed, SERVICE_MODE, SERVICE_EXTERNAL_ID);
             
             List<Map<String, String>> retrievedTokens = getTokensFor(ACCOUNT_ID, "something")
                     .statusCode(200)
@@ -831,7 +831,7 @@ class PublicAuthResourceIT {
         
         @Test
         public void respondWith400_ifNotProvidingDescription_whenUpdating() {
-            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME, SERVICE_MODE, SERVICE_EXTERNAL_ID);
     
             updateTokenDescription("{\"token_link\" : \"" + TOKEN_LINK + "\"}")
                     .statusCode(400)
@@ -845,7 +845,7 @@ class PublicAuthResourceIT {
     
         @Test
         public void respondWith400_ifNotProvidingTokenLink_whenUpdating() {
-            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME, SERVICE_MODE, SERVICE_EXTERNAL_ID);
     
             updateTokenDescription("{\"description\" : \"" + TOKEN_DESCRIPTION + "\"}")
                     .statusCode(400)
@@ -859,7 +859,7 @@ class PublicAuthResourceIT {
     
         @Test
         public void respondWith400_ifNotProvidingTokenLinkNorDescription_whenUpdating() {
-            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME, SERVICE_MODE, SERVICE_EXTERNAL_ID);
     
             updateTokenDescription("{}")
                     .statusCode(400)
@@ -873,7 +873,7 @@ class PublicAuthResourceIT {
     
         @Test
         public void respondWith400_ifNotProvidingBody_whenUpdating() {
-            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME, SERVICE_MODE, SERVICE_EXTERNAL_ID);
     
             updateTokenDescription("")
                     .statusCode(400)
@@ -887,7 +887,7 @@ class PublicAuthResourceIT {
     
         @Test
         public void respondWith200_ifUpdatingDescriptionOfExistingToken() {
-            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME, SERVICE_MODE, SERVICE_EXTERNAL_ID);
             ZonedDateTime nowFromDB = ZonedDateTime.now(UTC);
     
             updateTokenDescription("{\"token_link\" : \"" + TOKEN_LINK + "\", \"description\" : \"" + TOKEN_DESCRIPTION_2 + "\"}")
@@ -915,7 +915,7 @@ class PublicAuthResourceIT {
     
         @Test
         public void respondWith404_butDoNotUpdateRevokedTokens() {
-            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, ZonedDateTime.now(), CREATED_USER_NAME);
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, ZonedDateTime.now(), CREATED_USER_NAME, SERVICE_MODE, SERVICE_EXTERNAL_ID);
     
             updateTokenDescription("{\"token_link\" : \"" + TOKEN_LINK + "\", \"description\" : \"" + TOKEN_DESCRIPTION_2 + "\"}")
                     .statusCode(404)
@@ -940,7 +940,7 @@ class PublicAuthResourceIT {
         
         @Test
         public void respondWith400_ifNotProvidingBody_whenRevokingAToken() {
-            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME, SERVICE_MODE, SERVICE_EXTERNAL_ID);
     
             revokeSingleToken(ACCOUNT_ID, "")
                     .statusCode(400)
@@ -964,7 +964,7 @@ class PublicAuthResourceIT {
 
         @Test
         public void respondWith400_ifProvidingEmptyBody_whenRevokingAToken() {
-            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, API, ACCOUNT_ID, TOKEN_DESCRIPTION, null, CREATED_USER_NAME, null, CARD, SERVICE_MODE, SERVICE_EXTERNAL_ID);
     
             revokeSingleToken(ACCOUNT_ID, "{}")
                     .statusCode(400)
@@ -988,7 +988,7 @@ class PublicAuthResourceIT {
     
         @Test
         public void respondWith200_whenSingleTokenIsRevokedByTokenLink() {
-            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME, SERVICE_MODE, SERVICE_EXTERNAL_ID);
     
             revokeSingleToken(ACCOUNT_ID, "{\"token_link\" : \"" + TOKEN_LINK + "\"}")
                     .statusCode(200)
@@ -1012,7 +1012,7 @@ class PublicAuthResourceIT {
     
         @Test
         public void respondWith200_whenSingleTokenIsRevokedByToken() {
-            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME, SERVICE_MODE, SERVICE_EXTERNAL_ID);
             String fullBearerToken = BEARER_TOKEN + "qgs2ot3itqer7ag9mvvbs8snqb5jfas3";
             
             revokeSingleToken(ACCOUNT_ID, "{\"token\" : \"" + fullBearerToken + "\"}")
@@ -1038,8 +1038,8 @@ class PublicAuthResourceIT {
     
         @Test
         public void respondWith404_whenRevokingTokenForAnotherAccount() {
-            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME);
-            databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, ACCOUNT_ID_2, TOKEN_DESCRIPTION, CREATED_USER_NAME);
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME, SERVICE_MODE, SERVICE_EXTERNAL_ID);
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, ACCOUNT_ID_2, TOKEN_DESCRIPTION, CREATED_USER_NAME, SERVICE_MODE, SERVICE_EXTERNAL_ID);
     
             revokeSingleToken(ACCOUNT_ID, "{\"token_link\" : \"" + TOKEN_LINK_2 + "\"}")
                     .statusCode(404)
@@ -1068,7 +1068,7 @@ class PublicAuthResourceIT {
     
         @Test
         public void respondWith404_whenRevokingTokenAlreadyRevoked() {
-            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, ZonedDateTime.now(), CREATED_USER_NAME);
+            databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, ZonedDateTime.now(), CREATED_USER_NAME, SERVICE_MODE, SERVICE_EXTERNAL_ID);
     
             revokeSingleToken(ACCOUNT_ID, "{\"token_link\" : \"" + TOKEN_LINK + "\"}")
                     .statusCode(404)
