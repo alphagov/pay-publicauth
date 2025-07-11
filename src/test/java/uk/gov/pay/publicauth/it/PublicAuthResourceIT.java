@@ -713,7 +713,7 @@ class PublicAuthResourceIT {
             databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, API, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, CREATED_USER_NAME, lastUsed, CARD, SERVICE_MODE, SERVICE_EXTERNAL_ID);
             databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, API, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed, CARD, SERVICE_MODE, SERVICE_EXTERNAL_ID);
 
-            List<Map<String, String>> retrievedTokens = getTokensForServiceWithNoQueryParam()
+            List<Map<String, String>> retrievedTokens = getTokensByServiceWithNoQueryParam()
                     .statusCode(200)
                     .body("tokens", hasSize(1))
                     .extract().path("tokens");
@@ -801,7 +801,7 @@ class PublicAuthResourceIT {
                     .then();
         }
 
-        private ValidatableResponse getTokensForServiceWithNoQueryParam() {
+        private ValidatableResponse getTokensByServiceWithNoQueryParam() {
             return given().port(localPort)
                     .accept(JSON)
                     .get(FRONTEND_AUTH_PATH + "/service/" + SERVICE_EXTERNAL_ID + "/mode/" + SERVICE_MODE)
