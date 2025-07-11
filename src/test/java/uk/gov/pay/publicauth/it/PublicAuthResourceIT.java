@@ -119,7 +119,7 @@ class PublicAuthResourceIT {
         @Test
         void respondWith200_whenAuthWithValidToken() {
             databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME, ServiceMode.TEST, SERVICE_EXTERNAL_ID);
-            String apiKey = BEARER_TOKEN + encodedHmacValueOf();
+            String apiKey = BEARER_TOKEN + encodedHmacValueOf(BEARER_TOKEN);
             tokenResponse(apiKey)
                     .statusCode(200)
                     .body("account_id", is(ACCOUNT_ID))
@@ -132,7 +132,7 @@ class PublicAuthResourceIT {
         @Test
         void respondWith200_serviceMode_serviceExternalId_whenAuthWithValidToken() {
             databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, TokenSource.API, ACCOUNT_ID, TOKEN_DESCRIPTION, null, CREATED_USER_NAME, null, TokenPaymentType.CARD, SERVICE_MODE, SERVICE_EXTERNAL_ID);
-            String apiKey = BEARER_TOKEN + encodedHmacValueOf();
+            String apiKey = BEARER_TOKEN + encodedHmacValueOf(BEARER_TOKEN);
             tokenResponse(apiKey)
                     .statusCode(200)
                     .body("account_id", is(ACCOUNT_ID))
@@ -148,7 +148,7 @@ class PublicAuthResourceIT {
         void respondWith401_whenAuthWithRevokedToken() {
             databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION,
                     ZonedDateTime.now(UTC), CREATED_USER_NAME, ServiceMode.TEST, SERVICE_EXTERNAL_ID);
-            String apiKey = BEARER_TOKEN + encodedHmacValueOf();
+            String apiKey = BEARER_TOKEN + encodedHmacValueOf(BEARER_TOKEN);
             ZonedDateTime lastUsedPreAuth = databaseHelper.getDateTimeColumn("last_used", ACCOUNT_ID);
             tokenResponse(apiKey)
                     .statusCode(401)
@@ -162,7 +162,7 @@ class PublicAuthResourceIT {
     
         @Test
         public void respondWith401_whenAuthWithNonExistentToken() {
-            String apiKey = BEARER_TOKEN + encodedHmacValueOf();
+            String apiKey = BEARER_TOKEN + encodedHmacValueOf(BEARER_TOKEN);
             tokenResponse(apiKey)
                     .statusCode(401)
                     .body("error_identifier", is(AUTH_TOKEN_INVALID.toString()));
@@ -181,7 +181,7 @@ class PublicAuthResourceIT {
 
             databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, CREATED_USER_NAME, ServiceMode.TEST, SERVICE_EXTERNAL_ID);
 
-            String apiKey = BEARER_TOKEN + encodedHmacValueOf();
+            String apiKey = BEARER_TOKEN + encodedHmacValueOf(BEARER_TOKEN);
 
             given().port(localPort)
                     .header(AUTHORIZATION, "Basic " + apiKey)
@@ -202,8 +202,8 @@ class PublicAuthResourceIT {
             return both(greaterThan(now.minusSeconds(5))).and(lessThan(now.plusSeconds(5)));
         }
 
-        private String encodedHmacValueOf() {
-            return BaseEncoding.base32Hex().lowerCase().omitPadding().encode(new HmacUtils(HmacAlgorithms.HMAC_SHA_1, "qwer9yuhgf").hmac(BEARER_TOKEN));
+        private String encodedHmacValueOf(String input) {
+            return BaseEncoding.base32Hex().lowerCase().omitPadding().encode(new HmacUtils(HmacAlgorithms.HMAC_SHA_1, "qwer9yuhgf").hmac(input));
         }
     }
     
@@ -421,7 +421,7 @@ class PublicAuthResourceIT {
         
         @Test
         public void respondWith200_andEmptyList_ifNoTokensHaveBeenIssuedForTheAccount() {
-            getTokensFor()
+            getActiveTokens()
                     .statusCode(200)
                     .body("tokens", hasSize(0));
         }
@@ -478,7 +478,7 @@ class PublicAuthResourceIT {
             databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, API, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed, DIRECT_DEBIT, SERVICE_MODE, SERVICE_EXTERNAL_ID);
             databaseHelper.insertAccount(TokenHash.of("TOKEN-3"), TokenLink.of("123456789101112131415161718192021224"), PRODUCTS, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed, CARD, SERVICE_MODE, SERVICE_EXTERNAL_ID);
     
-            List<Map<String, String>> retrievedTokens = getTokensFor()
+            List<Map<String, String>> retrievedTokens = getActiveTokens()
                     .statusCode(200)
                     .body("tokens", hasSize(2))
                     .extract().path("tokens");
@@ -517,7 +517,7 @@ class PublicAuthResourceIT {
             databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, API, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed, CARD, SERVICE_MODE, SERVICE_EXTERNAL_ID);
             databaseHelper.insertAccount(TokenHash.of("TOKEN-3"), TokenLink.of("123456789101112131415161718192021224"), PRODUCTS, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed, CARD, SERVICE_MODE, SERVICE_EXTERNAL_ID);
 
-            List<Map<String, String>> retrievedTokens = getTokensForMode()
+            List<Map<String, String>> retrievedTokens = getActiveTokens()
                     .statusCode(200)
                     .body("tokens", hasSize(2))
                     .extract().path("tokens");
@@ -556,7 +556,7 @@ class PublicAuthResourceIT {
             databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, CREATED_USER_NAME, lastUsed, SERVICE_MODE, SERVICE_EXTERNAL_ID);
             databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed, SERVICE_MODE, SERVICE_EXTERNAL_ID);
     
-            List<Map<String, String>> retrievedTokens = getTokensFor("revoked")
+            List<Map<String, String>> retrievedTokens = getTokensByState("revoked")
                     .statusCode(200)
                     .body("tokens", hasSize(1))
                     .extract().path("tokens");
@@ -582,7 +582,7 @@ class PublicAuthResourceIT {
             databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, API, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, CREATED_USER_NAME, lastUsed, CARD, SERVICE_MODE, SERVICE_EXTERNAL_ID);
             databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, API, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed, CARD, SERVICE_MODE, SERVICE_EXTERNAL_ID);
 
-            List<Map<String, String>> retrievedTokens = getTokensForModeAndState("revoked")
+            List<Map<String, String>> retrievedTokens = getTokensByState("revoked")
                     .statusCode(200)
                     .body("tokens", hasSize(1))
                     .extract().path("tokens");
@@ -608,7 +608,7 @@ class PublicAuthResourceIT {
             databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, PRODUCTS, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed, SERVICE_MODE, SERVICE_EXTERNAL_ID);
             databaseHelper.insertAccount(TokenHash.of("TOKEN-3"), TokenLink.of("123456789101112131415161718192021224"), API, ACCOUNT_ID, TOKEN_DESCRIPTION, null, CREATED_USER_NAME2, lastUsed, CARD, SERVICE_MODE, SERVICE_EXTERNAL_ID);
     
-            List<Map<String, String>> retrievedTokens = getTokensFor("active", "products")
+            List<Map<String, String>> retrievedTokens = getTokensByStateAndType("active", "products")
                     .statusCode(200)
                     .body("tokens", hasSize(2))
                     .extract().path("tokens");
@@ -641,7 +641,7 @@ class PublicAuthResourceIT {
             databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, CREATED_USER_NAME, lastUsed, SERVICE_MODE, SERVICE_EXTERNAL_ID);
             databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed, SERVICE_MODE, SERVICE_EXTERNAL_ID);
     
-            List<Map<String, String>> retrievedTokens = getTokensFor("active")
+            List<Map<String, String>> retrievedTokens = getTokensByState("active")
                     .statusCode(200)
                     .body("tokens", hasSize(1))
                     .extract().path("tokens");
@@ -665,7 +665,7 @@ class PublicAuthResourceIT {
             databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, API, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, CREATED_USER_NAME, lastUsed, CARD, SERVICE_MODE, SERVICE_EXTERNAL_ID);
             databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, API, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed, CARD, SERVICE_MODE, SERVICE_EXTERNAL_ID);
 
-            List<Map<String, String>> retrievedTokens = getTokensForModeAndState("active")
+            List<Map<String, String>> retrievedTokens = getTokensByState("active")
                     .statusCode(200)
                     .body("tokens", hasSize(1))
                     .extract().path("tokens");
@@ -689,7 +689,7 @@ class PublicAuthResourceIT {
             databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, CREATED_USER_NAME, lastUsed, SERVICE_MODE, SERVICE_EXTERNAL_ID);
             databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed, SERVICE_MODE, SERVICE_EXTERNAL_ID);
     
-            List<Map<String, String>> retrievedTokens = getTokensAccountForWithNoQueryParam()
+            List<Map<String, String>> retrievedTokens = getTokensByAccountWithNoQueryParam()
                     .statusCode(200)
                     .body("tokens", hasSize(1))
                     .extract().path("tokens");
@@ -737,7 +737,7 @@ class PublicAuthResourceIT {
             databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, CREATED_USER_NAME, lastUsed, SERVICE_MODE, SERVICE_EXTERNAL_ID);
             databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed, SERVICE_MODE, SERVICE_EXTERNAL_ID);
             
-            List<Map<String, String>> retrievedTokens = getTokensFor("something")
+            List<Map<String, String>> retrievedTokens = getTokensByState("something")
                     .statusCode(200)
                     .body("tokens", hasSize(1))
                     .extract().path("tokens");
@@ -761,7 +761,7 @@ class PublicAuthResourceIT {
             databaseHelper.insertAccount(HASHED_BEARER_TOKEN, TOKEN_LINK, API, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, CREATED_USER_NAME, lastUsed, CARD, SERVICE_MODE, SERVICE_EXTERNAL_ID);
             databaseHelper.insertAccount(HASHED_BEARER_TOKEN_2, TOKEN_LINK_2, API, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, CREATED_USER_NAME2, lastUsed, CARD, SERVICE_MODE, SERVICE_EXTERNAL_ID);
             
-            List<Map<String, String>> retrievedTokens = getTokensForModeAndState("something")
+            List<Map<String, String>> retrievedTokens = getTokensByState("something")
                     .statusCode(200)
                     .body("tokens", hasSize(1))
                     .extract().path("tokens");
@@ -777,15 +777,15 @@ class PublicAuthResourceIT {
             assertThat(firstToken.get("issued_date"), is(inserted.format(DATE_TIME_FORMAT)));
         }
 
-        private ValidatableResponse getTokensFor() {
-            return getTokensFor("active");
+        private ValidatableResponse getActiveTokens() {
+            return getTokensByState("active");
         }
 
-        private ValidatableResponse getTokensFor(String tokenState) {
-            return getTokensFor(tokenState, API.toString());
+        private ValidatableResponse getTokensByState(String tokenState) {
+            return getTokensByStateAndType(tokenState, API.toString());
         }
 
-        private ValidatableResponse getTokensFor(String tokenState, String type) {
+        private ValidatableResponse getTokensByStateAndType(String tokenState, String type) {
             return given().port(localPort)
                     .accept(JSON)
                     .param("state", tokenState)
@@ -794,27 +794,10 @@ class PublicAuthResourceIT {
                     .then();
         }
         
-        private ValidatableResponse getTokensAccountForWithNoQueryParam() {
+        private ValidatableResponse getTokensByAccountWithNoQueryParam() {
             return given().port(localPort)
                     .accept(JSON)
                     .get(FRONTEND_AUTH_PATH + "/" + ACCOUNT_ID)
-                    .then();
-        }
-
-        private ValidatableResponse getTokensForMode() {
-            return getTokensForModeAndState("active");
-        }
-
-        private ValidatableResponse getTokensForModeAndState(String tokenState) {
-            return getTokensForModeStateAndType(tokenState, API.toString());
-        }
-        
-        private ValidatableResponse getTokensForModeStateAndType(String tokenState, String type) {
-            return given().port(localPort)
-                    .accept(JSON)
-                    .param("state", tokenState)
-                    .param("type", type)
-                    .get(FRONTEND_AUTH_PATH + "/service/" + SERVICE_EXTERNAL_ID + "/mode/" + SERVICE_MODE)
                     .then();
         }
 
