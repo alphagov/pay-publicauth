@@ -806,15 +806,15 @@ class PublicAuthResourceIT {
         }
 
         private ValidatableResponse getTokensForModeAndState(String tokenState) {
-            return getTokensFor(SERVICE_MODE, tokenState, API.toString());
+            return getTokensForModeStateAndType(tokenState, API.toString());
         }
         
-        private ValidatableResponse getTokensFor(ServiceMode mode, String tokenState, String type) {
+        private ValidatableResponse getTokensForModeStateAndType(String tokenState, String type) {
             return given().port(localPort)
                     .accept(JSON)
                     .param("state", tokenState)
                     .param("type", type)
-                    .get(FRONTEND_AUTH_PATH + "/service/" + SERVICE_EXTERNAL_ID + "/mode/" + mode.toString())
+                    .get(FRONTEND_AUTH_PATH + "/service/" + SERVICE_EXTERNAL_ID + "/mode/" + SERVICE_MODE)
                     .then();
         }
 
