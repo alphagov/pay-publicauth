@@ -165,10 +165,5 @@
         </addColumn>
     </changeSet>
 
-    <changeSet id="set service_mode and service_external_id as non-nullable" author="">
-        <addNotNullConstraint tableName="tokens" columnName="service_mode"/>
-        <addNotNullConstraint tableName="tokens" columnName="service_external_id"/>
-    </changeSet>
-
 
 </databaseChangeLog>
