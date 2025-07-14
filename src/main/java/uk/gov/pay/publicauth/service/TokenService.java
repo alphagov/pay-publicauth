@@ -58,7 +58,8 @@ public class TokenService {
     public String createTokenForAccount(CreateTokenRequest createTokenRequest) {
         Tokens tokens = issueTokens(createTokenRequest);
         authTokenDao.storeToken(tokens.getHashedToken(), createTokenRequest);
-        LOGGER.info("Created token with token_link {}", createTokenRequest.getTokenLink());
+        LOGGER.info("Created token for gateway account ID {} with token link {}", createTokenRequest.getAccountId(), 
+                createTokenRequest.getTokenLink());
         return tokens.getApiKey();
     }
 
@@ -135,6 +136,7 @@ public class TokenService {
     }
     
     public ZonedDateTime revokeToken(String accountId, TokenLink tokenLink) {
+        LOGGER.info("Revoked token for gateway account ID {} with token link {}", accountId, tokenLink);
         return authTokenDao.revokeSingleToken(accountId, tokenLink).map(localDateTime -> localDateTime.atZone(ZoneOffset.UTC))
                 .orElseThrow(() -> new TokenNotFoundException("Could not revoke token with token_link " + tokenLink));
     }
@@ -151,12 +153,12 @@ public class TokenService {
 
     public void revokeTokens(String accountId) {
         int numberOfTokensRevoked = authTokenDao.revokeTokens(accountId);
-        LOGGER.info("Revoked " + numberOfTokensRevoked + " tokens from gateway account with id " + accountId);
+        LOGGER.info("Revoked {} tokens from gateway account with id {}", numberOfTokensRevoked, accountId);
     }
     
     public void revokeTokens(String serviceExternalId, ServiceMode serviceMode) {
         int numberOfTokensRevoked = authTokenDao.revokeTokens(serviceExternalId, serviceMode);
-        LOGGER.info("Revoked " + numberOfTokensRevoked + " tokens from service with id " + serviceExternalId + "in " + serviceMode + " mode");
+        LOGGER.info("Revoked {} tokens from service with id {} in {} mode", numberOfTokensRevoked, serviceExternalId, serviceMode);
     }
     
     /**
