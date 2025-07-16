@@ -65,7 +65,7 @@ class AuthTokenDaoIT {
 
     @Test
     void shouldFindATokenByHash() {
-        databaseHelper.insertAccount(TOKEN_HASH, TOKEN_LINK, API, ACCOUNT_ID, TOKEN_DESCRIPTION, null, TEST_USER_NAME, null, DIRECT_DEBIT);
+        databaseHelper.insertAccount(TOKEN_HASH, TOKEN_LINK, API, ACCOUNT_ID, TOKEN_DESCRIPTION, null, TEST_USER_NAME, null, DIRECT_DEBIT, ServiceMode.TEST, SERVICE_EXTERNAL_ID);
         Optional<TokenEntity> tokenInfo = authTokenDao.findTokenByHash(TOKEN_HASH);
         assertThat(tokenInfo.get().getAccountId(), is(ACCOUNT_ID));
         assertThat(tokenInfo.get().getTokenPaymentType(), is(DIRECT_DEBIT));
@@ -73,7 +73,7 @@ class AuthTokenDaoIT {
 
     @Test
     void shouldFindATokenByHash_returnsCardWhenPaymentTypeIsNull() {
-        databaseHelper.insertAccount(TOKEN_HASH, TOKEN_LINK, API, ACCOUNT_ID, TOKEN_DESCRIPTION, null, TEST_USER_NAME, null, null);
+        databaseHelper.insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, null, TEST_USER_NAME, ServiceMode.TEST, SERVICE_EXTERNAL_ID);
         Optional<TokenEntity> tokenInfo = authTokenDao.findTokenByHash(TOKEN_HASH);
         assertThat(tokenInfo.get().getAccountId(), is(ACCOUNT_ID));
         assertThat(tokenInfo.get().getTokenPaymentType(), is(CARD));
@@ -87,7 +87,7 @@ class AuthTokenDaoIT {
 
     @Test
     void shouldUpdateLastUsedTime() {
-        databaseHelper.insertAccount(TOKEN_HASH, TOKEN_LINK, API, ACCOUNT_ID, TOKEN_DESCRIPTION, null, TEST_USER_NAME, null, CARD);
+        databaseHelper.insertAccount(TOKEN_HASH, TOKEN_LINK, API, ACCOUNT_ID, TOKEN_DESCRIPTION, null, TEST_USER_NAME, null, ServiceMode.TEST, SERVICE_EXTERNAL_ID);
         ZonedDateTime now = databaseHelper.getCurrentTime();
 
         Optional<TokenEntity> beforeUpdate = authTokenDao.findTokenByHash(TOKEN_HASH);
@@ -110,9 +110,9 @@ class AuthTokenDaoIT {
         ZonedDateTime inserted = databaseHelper.getCurrentTime();
         ZonedDateTime lastUsed = inserted.plusMinutes(30);
         ZonedDateTime revoked = inserted.plusMinutes(45);
-        databaseHelper.insertAccount(TOKEN_HASH, TOKEN_LINK, API, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, TEST_USER_NAME, lastUsed);
-        databaseHelper.insertAccount(TOKEN_HASH_2, TOKEN_LINK_2, API, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, TEST_USER_NAME_2, lastUsed, DIRECT_DEBIT);
-        databaseHelper.insertAccount(TokenHash.of("TOKEN-3"), TokenLink.of("123456789101112131415161718192021224"), PRODUCTS, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, TEST_USER_NAME_2, lastUsed, DIRECT_DEBIT);
+        databaseHelper.insertAccount(TOKEN_HASH, TOKEN_LINK, API, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, TEST_USER_NAME, lastUsed, ServiceMode.TEST, SERVICE_EXTERNAL_ID);
+        databaseHelper.insertAccount(TOKEN_HASH_2, TOKEN_LINK_2, API, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, TEST_USER_NAME_2, lastUsed, DIRECT_DEBIT, ServiceMode.TEST, SERVICE_EXTERNAL_ID);
+        databaseHelper.insertAccount(TokenHash.of("TOKEN-3"), TokenLink.of("123456789101112131415161718192021224"), PRODUCTS, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, TEST_USER_NAME_2, lastUsed, DIRECT_DEBIT, ServiceMode.TEST, SERVICE_EXTERNAL_ID);
 
         List<TokenEntity> tokens = authTokenDao.findTokensBy(ACCOUNT_ID, ACTIVE, API);
 
@@ -166,7 +166,7 @@ class AuthTokenDaoIT {
     void shouldReturnCardTokensIfTokenPaymentTypeIsNull() {
         ZonedDateTime inserted = databaseHelper.getCurrentTime();
         ZonedDateTime lastUsed = inserted.plusMinutes(30);
-        databaseHelper.insertAccount(TOKEN_HASH_2, TOKEN_LINK_2, API, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, TEST_USER_NAME_2, lastUsed, null);
+        databaseHelper.insertAccount(TOKEN_HASH_2, TOKEN_LINK_2, API, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, TEST_USER_NAME_2, lastUsed, ServiceMode.TEST, SERVICE_EXTERNAL_ID);
 
         List<TokenEntity> tokens = authTokenDao.findTokensBy(ACCOUNT_ID, ACTIVE, API);
 
@@ -188,9 +188,9 @@ class AuthTokenDaoIT {
         ZonedDateTime inserted = databaseHelper.getCurrentTime();
         ZonedDateTime lastUsed = inserted.plusMinutes(30);
         ZonedDateTime revoked = inserted.plusMinutes(45);
-        databaseHelper.insertAccount(TOKEN_HASH, TOKEN_LINK, API, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, TEST_USER_NAME, lastUsed);
-        databaseHelper.insertAccount(TOKEN_HASH_2, TOKEN_LINK_2, API, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, TEST_USER_NAME_2, lastUsed);
-        databaseHelper.insertAccount(TokenHash.of("TOKEN-3"), TokenLink.of("123456789101112131415161718192021224"), PRODUCTS, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, TEST_USER_NAME, lastUsed);
+        databaseHelper.insertAccount(TOKEN_HASH, TOKEN_LINK, API, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, TEST_USER_NAME, lastUsed, ServiceMode.TEST, SERVICE_EXTERNAL_ID);
+        databaseHelper.insertAccount(TOKEN_HASH_2, TOKEN_LINK_2, API, ACCOUNT_ID, TOKEN_DESCRIPTION_2, null, TEST_USER_NAME_2, lastUsed, ServiceMode.TEST, SERVICE_EXTERNAL_ID);
+        databaseHelper.insertAccount(TokenHash.of("TOKEN-3"), TokenLink.of("123456789101112131415161718192021224"), PRODUCTS, ACCOUNT_ID, TOKEN_DESCRIPTION, revoked, TEST_USER_NAME, lastUsed, ServiceMode.TEST, SERVICE_EXTERNAL_ID);
 
         List<TokenEntity> tokens = authTokenDao.findTokensBy(ACCOUNT_ID, REVOKED, API);
 
@@ -227,7 +227,7 @@ class AuthTokenDaoIT {
 
     @Test
     void updateAnExistingToken() {
-        databaseHelper.insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, TEST_USER_NAME);
+        databaseHelper.insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, TEST_USER_NAME, ServiceMode.TEST, SERVICE_EXTERNAL_ID);
         boolean updateResult = authTokenDao.updateTokenDescription(TOKEN_LINK, TOKEN_DESCRIPTION_2);
 
         assertThat(updateResult, is(true));
@@ -238,7 +238,7 @@ class AuthTokenDaoIT {
     @Test
     void shouldFindTokenByTokenLink() {
         ZonedDateTime now = databaseHelper.getCurrentTime();
-        databaseHelper.insertAccount(TOKEN_HASH, TOKEN_LINK, PRODUCTS, ACCOUNT_ID, TOKEN_DESCRIPTION, null, TEST_USER_NAME, now, DIRECT_DEBIT);
+        databaseHelper.insertAccount(TOKEN_HASH, TOKEN_LINK, PRODUCTS, ACCOUNT_ID, TOKEN_DESCRIPTION, null, TEST_USER_NAME, now, DIRECT_DEBIT, ServiceMode.TEST, SERVICE_EXTERNAL_ID);
         Optional<TokenEntity> tokenMayBe = authTokenDao.findTokenByTokenLink(TOKEN_LINK);
         TokenEntity token = tokenMayBe.get();
 
@@ -255,7 +255,7 @@ class AuthTokenDaoIT {
     @Test
     void shouldFindTokenByAccountAndTokenLink() {
         ZonedDateTime now = databaseHelper.getCurrentTime();
-        databaseHelper.insertAccount(TOKEN_HASH, TOKEN_LINK, PRODUCTS, ACCOUNT_ID, TOKEN_DESCRIPTION, null, TEST_USER_NAME, now, CARD);
+        databaseHelper.insertAccount(TOKEN_HASH, TOKEN_LINK, PRODUCTS, ACCOUNT_ID, TOKEN_DESCRIPTION, null, TEST_USER_NAME, now, CARD, ServiceMode.TEST, SERVICE_EXTERNAL_ID);
         Optional<TokenEntity> tokenMayBe = authTokenDao.findTokenBy(ACCOUNT_ID, TOKEN_LINK);
         TokenEntity token = tokenMayBe.get();
 
@@ -306,7 +306,7 @@ class AuthTokenDaoIT {
     @Test
     void shouldFindByTokenLinkAndReturnCardTokensIfTokenPaymentTypeIsNull() {
         ZonedDateTime now = databaseHelper.getCurrentTime();
-        databaseHelper.insertAccount(TOKEN_HASH, TOKEN_LINK, API, ACCOUNT_ID, TOKEN_DESCRIPTION, null, TEST_USER_NAME, now, null);
+        databaseHelper.insertAccount(TOKEN_HASH, TOKEN_LINK, API, ACCOUNT_ID, TOKEN_DESCRIPTION, null, TEST_USER_NAME, now, null, ServiceMode.TEST, SERVICE_EXTERNAL_ID);
         Optional<TokenEntity> tokenMayBe = authTokenDao.findTokenByTokenLink(TOKEN_LINK);
         TokenEntity token = tokenMayBe.get();
         assertThat(TOKEN_LINK, is(token.getTokenLink()));
@@ -329,7 +329,7 @@ class AuthTokenDaoIT {
 
     @Test
     void notUpdateARevokedToken() {
-        databaseHelper.insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, ZonedDateTime.now(UTC), TEST_USER_NAME);
+        databaseHelper.insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, ZonedDateTime.now(UTC), TEST_USER_NAME, ServiceMode.TEST, SERVICE_EXTERNAL_ID);
 
         boolean updateResult = authTokenDao.updateTokenDescription(TOKEN_LINK, TOKEN_DESCRIPTION_2);
 
@@ -340,7 +340,7 @@ class AuthTokenDaoIT {
 
     @Test
     void shouldRevokeASingleTokenByTokenLink() {
-        databaseHelper.insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, TEST_USER_NAME);
+        databaseHelper.insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, TEST_USER_NAME, ServiceMode.TEST, SERVICE_EXTERNAL_ID);
 
         Optional<LocalDateTime> revokedDate = authTokenDao.revokeSingleToken(ACCOUNT_ID, TOKEN_LINK);
 
@@ -382,7 +382,7 @@ class AuthTokenDaoIT {
     
     @Test
     void shouldRevokeASingleTokenByTokenHash() {
-        databaseHelper.insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, TEST_USER_NAME);
+        databaseHelper.insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, TEST_USER_NAME, ServiceMode.TEST, SERVICE_EXTERNAL_ID);
 
         Optional<LocalDateTime> revokedDate = authTokenDao.revokeSingleToken(ACCOUNT_ID, TOKEN_HASH);
 
@@ -424,8 +424,8 @@ class AuthTokenDaoIT {
 
     @Test
     void shouldNotRevokeATokenForAnotherAccount() {
-        databaseHelper.insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, TEST_USER_NAME);
-        databaseHelper.insertAccount(TOKEN_HASH_2, TOKEN_LINK_2, ACCOUNT_ID_2, TOKEN_DESCRIPTION_2, TEST_USER_NAME);
+        databaseHelper.insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, TEST_USER_NAME, ServiceMode.TEST, SERVICE_EXTERNAL_ID);
+        databaseHelper.insertAccount(TOKEN_HASH_2, TOKEN_LINK_2, ACCOUNT_ID_2, TOKEN_DESCRIPTION_2, TEST_USER_NAME, ServiceMode.TEST, SERVICE_EXTERNAL_ID);
 
         Optional<LocalDateTime> revokedDate  = authTokenDao.revokeSingleToken(ACCOUNT_ID, TOKEN_LINK_2);
 
@@ -437,7 +437,7 @@ class AuthTokenDaoIT {
 
     @Test
     void shouldNotRevokeATokenAlreadyRevoked() {
-        databaseHelper.insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION,  ZonedDateTime.now(UTC), TEST_USER_NAME);
+        databaseHelper.insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION,  ZonedDateTime.now(UTC), TEST_USER_NAME, ServiceMode.TEST, SERVICE_EXTERNAL_ID);
 
         Optional<LocalDateTime> revokedDate = authTokenDao.revokeSingleToken(ACCOUNT_ID, TOKEN_LINK);
 
@@ -449,7 +449,7 @@ class AuthTokenDaoIT {
 
     @Test
     void shouldErrorIfTriesToSaveTheSameTokenTwice() {
-        databaseHelper.insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, TEST_USER_NAME);
+        databaseHelper.insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, TEST_USER_NAME, ServiceMode.TEST, SERVICE_EXTERNAL_ID);
         var createTokenRequest = new CreateTokenRequest(ACCOUNT_ID, TOKEN_DESCRIPTION, "test@email.com", CARD, API, LIVE, ServiceMode.LIVE, SERVICE_EXTERNAL_ID);
         Assertions.assertThrows(RuntimeException.class, () -> {
             authTokenDao.storeToken(TOKEN_HASH, createTokenRequest);
@@ -458,8 +458,8 @@ class AuthTokenDaoIT {
     
     @Test
     void shouldRevokeTokensByAccountId() {
-        databaseHelper.insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, TEST_USER_NAME);
-        databaseHelper.insertAccount(TOKEN_HASH_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, TEST_USER_NAME);
+        databaseHelper.insertAccount(TOKEN_HASH, TOKEN_LINK, ACCOUNT_ID, TOKEN_DESCRIPTION, TEST_USER_NAME, ServiceMode.TEST, SERVICE_EXTERNAL_ID);
+        databaseHelper.insertAccount(TOKEN_HASH_2, TOKEN_LINK_2, ACCOUNT_ID, TOKEN_DESCRIPTION_2, TEST_USER_NAME, ServiceMode.TEST, SERVICE_EXTERNAL_ID);
         
         var revokedTokensCount = authTokenDao.revokeTokens(ACCOUNT_ID);
         
