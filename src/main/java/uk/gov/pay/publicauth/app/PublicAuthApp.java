@@ -15,6 +15,7 @@ import io.dropwizard.migrations.MigrationsBundle;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.dropwizard.DropwizardExports;
 import io.prometheus.client.servlet.jakarta.exporter.MetricsServlet;
+import org.dhatim.dropwizard.sentry.logging.SentryAppenderFactory;
 import org.jdbi.v3.core.Jdbi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +38,6 @@ import uk.gov.pay.publicauth.resources.HealthCheckResource;
 import uk.gov.pay.publicauth.resources.PublicAuthResource;
 import uk.gov.pay.publicauth.service.TokenService;
 import uk.gov.pay.publicauth.util.DependentResourceWaitCommand;
-import uk.gov.service.payments.logging.SentryAppenderFactory;
 
 import java.util.concurrent.TimeUnit;
 
