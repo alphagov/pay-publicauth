@@ -30,31 +30,27 @@ api_live_ u3tl8gajo9paj0xki31jm1psr3 v21m5urh50zoa7a262w4ntzoo6cqhu82
 | `TOKEN_API_HMAC_SECRET` | secret provided via application environment                                                                       |
 | `TOKEN_DB_BCRYPT_SALT`  | bcrypt salt provided via application environment                                                                  |
 | `TOKEN_HASH`            | `bcrypt(TOKEN, TOKEN_DB_BCRYPT_SALT)` - the value we actually store in the database                               |
+| `TOKEN_LINK`            | `randomUUID()` - stored in `tokens` table, used as an external id for the API key                                 |
 
-API KEY generation algorithm:
+API key generation algorithm:
 
-1. `TOKEN` := 130 bit random number and encode to base32, optionally prefixed with a human readable string based on the
-   token account type
+1. `TOKEN` := generate a 130 bit random number and encode to base32, optionally prefix with a human-readable string
+   based on the token account type
 2. `CHECKSUM` := `hmacSha1(concat(TOKEN, TOKEN_API_HMAC_SECRET))`
 3. `API_KEY` := `concat(TOKEN, CHECKSUM)`
 4. `TOKEN_HASH` := `bcrypt(TOKEN, TOKEN_DB_BCRYPT_SALT)`
-5. store `TOKEN_HASH` in database
-6. return `API_KEY`
+5. Store `TOKEN_HASH` in database
+6. Return `API_KEY`
 
-API KEY validation algorithm:
+API key validation algorithm:
 
 1. `API_KEY` is provided as `Authorization: Bearer someverylongstringandachecksum`
 2. Extract `API_KEY` := `someverylongstringandachecksum`
-3. Split the string at a known character index based on the length of the sha1 suffix ie. `TOKEN` :=
+3. Split the string at a known character index based on the length of the sha1 suffix, i.e. `TOKEN` :=
    `someverylongstring` `ACTUAL_CHECKSUM` := `andachecksum`
-4. verify that `hmacsha1(concat(TOKEN, TOKEN_API_HMAC_SECRET))` == `ACTUAL_CHECKSUM`
+4. Verify that `hmacsha1(concat(TOKEN, TOKEN_API_HMAC_SECRET))` == `ACTUAL_CHECKSUM`
 5. `TOKEN_HASH` := `bcrypt(TOKEN, TOKEN_DB_BCRYPT_SALT)`
-6. lookup `TOKEN_HASH` in database; return `true` iff found
-
-TOKEN_LINK:
-
-1. `TOKEN_LINK` := `randomUUID()`
-2. Stored in `tokens` table, used as an external id for the API key
+6. Look up `TOKEN_HASH` in database; return `true` iff found
 
 ## Environment variables
 
