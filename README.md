@@ -11,13 +11,15 @@ examples.
 
 ## API Keys
 
-Anatomy of an api key:
+Anatomy of an API key:
+
+e.g. `api_live_u3tl8gajo9paj0xki31jm1psr3v21m5urh50zoa7a262w4ntzoo6cqhu82`
 
 ```
-api_live_u3tl8gajo9paj0xki31jm1psr3v21m5urh50zoa7a262w4ntzoo6cqhu82
-`-------`'-----------------------------------'
- PREFIX           RANDOM BASE32 STRING
-`--------------------------------------------'`------------------------'
+api_live_ u3tl8gajo9paj0xki31jm1psr3 v21m5urh50zoa7a262w4ntzoo6cqhu82
+--------- --------------------------
+ PREFIX      RANDOM BASE32 STRING
+------------------------------------ --------------------------------
                    TOKEN                        CHECKSUM
 ```
 
