@@ -62,7 +62,7 @@ API key validation algorithm:
 | `DB_PASSWORD`           | The password for the `DB_USER` user.                                                   |
 | `DB_SSL_OPTION`         | To turn TLS on this value must be set as `ssl=true`. Otherwise must be empty.          |
 | `DB_USER`               | The username to log into the database as.                                              |
-| `JAVA_HOME`             | The location of the JRE. Set to `/opt/java/openjdk` in the `Dockerfile`.               |
+| `JAVA_HOME`             | The location of the JRE.                                                               |
 | `JAVA_OPTS`             | Commandline arguments to pass to the java runtime. Optional.                           |
 | `PORT`                  | The port number to listen for requests on. Defaults to `8080`.                         |
 | `RUN_APP`               | Set to `true` to run the application. Defaults to `true`.                              |
