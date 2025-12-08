@@ -72,19 +72,10 @@ API key validation algorithm:
 
 ## Integration tests
 
-To run the integration tests, the `DOCKER_HOST` and `DOCKER_CERT_PATH` environment variables must be set up correctly.
-On OS X the environment can be set up with:
-
-```
-    eval $(boot2docker shellinit)
-    eval $(docker-machine env <virtual-machine-name>)
-
-```
-
 The command to run the integration tests is:
 
 ```
-    mvn test
+mvn verify
 ```
 
 ## Licence
