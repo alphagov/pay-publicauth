@@ -11,13 +11,15 @@ examples.
 
 ## API Keys
 
-Anatomy of an api key:
+Anatomy of an API key:
+
+e.g. `api_live_u3tl8gajo9paj0xki31jm1psr3v21m5urh50zoa7a262w4ntzoo6cqhu82`
 
 ```
-api_live_u3tl8gajo9paj0xki31jm1psr3v21m5urh50zoa7a262w4ntzoo6cqhu82
-`-------`'-----------------------------------'
- PREFIX           RANDOM BASE32 STRING
-`--------------------------------------------'`------------------------'
+api_live_ u3tl8gajo9paj0xki31jm1psr3 v21m5urh50zoa7a262w4ntzoo6cqhu82
+--------- --------------------------
+ PREFIX      RANDOM BASE32 STRING
+------------------------------------ --------------------------------
                    TOKEN                        CHECKSUM
 ```
 
@@ -28,31 +30,27 @@ api_live_u3tl8gajo9paj0xki31jm1psr3v21m5urh50zoa7a262w4ntzoo6cqhu82
 | `TOKEN_API_HMAC_SECRET` | secret provided via application environment                                                                       |
 | `TOKEN_DB_BCRYPT_SALT`  | bcrypt salt provided via application environment                                                                  |
 | `TOKEN_HASH`            | `bcrypt(TOKEN, TOKEN_DB_BCRYPT_SALT)` - the value we actually store in the database                               |
+| `TOKEN_LINK`            | `randomUUID()` - stored in `tokens` table, used as an external id for the API key                                 |
 
-API KEY generation algorithm:
+API key generation algorithm:
 
-1. `TOKEN` := 130 bit random number and encode to base32, optionally prefixed with a human readable string based on the
-   token account type
+1. `TOKEN` := generate a 130 bit random number and encode to base32, optionally prefix with a human-readable string
+   based on the token account type
 2. `CHECKSUM` := `hmacSha1(concat(TOKEN, TOKEN_API_HMAC_SECRET))`
 3. `API_KEY` := `concat(TOKEN, CHECKSUM)`
 4. `TOKEN_HASH` := `bcrypt(TOKEN, TOKEN_DB_BCRYPT_SALT)`
-5. store `TOKEN_HASH` in database
-6. return `API_KEY`
+5. Store `TOKEN_HASH` in database
+6. Return `API_KEY`
 
-API KEY validation algorithm:
+API key validation algorithm:
 
 1. `API_KEY` is provided as `Authorization: Bearer someverylongstringandachecksum`
 2. Extract `API_KEY` := `someverylongstringandachecksum`
-3. Split the string at a known character index based on the length of the sha1 suffix ie. `TOKEN` :=
+3. Split the string at a known character index based on the length of the sha1 suffix, i.e. `TOKEN` :=
    `someverylongstring` `ACTUAL_CHECKSUM` := `andachecksum`
-4. verify that `hmacsha1(concat(TOKEN, TOKEN_API_HMAC_SECRET))` == `ACTUAL_CHECKSUM`
+4. Verify that `hmacsha1(concat(TOKEN, TOKEN_API_HMAC_SECRET))` == `ACTUAL_CHECKSUM`
 5. `TOKEN_HASH` := `bcrypt(TOKEN, TOKEN_DB_BCRYPT_SALT)`
-6. lookup `TOKEN_HASH` in database; return `true` iff found
-
-TOKEN_LINK:
-
-1. `TOKEN_LINK` := `randomUUID()`
-2. Stored in `tokens` table, used as an external id for the API key
+6. Look up `TOKEN_HASH` in database; return `true` iff found
 
 ## Environment variables
 
@@ -64,7 +62,7 @@ TOKEN_LINK:
 | `DB_PASSWORD`           | The password for the `DB_USER` user.                                                   |
 | `DB_SSL_OPTION`         | To turn TLS on this value must be set as `ssl=true`. Otherwise must be empty.          |
 | `DB_USER`               | The username to log into the database as.                                              |
-| `JAVA_HOME`             | The location of the JRE. Set to `/opt/java/openjdk` in the `Dockerfile`.               |
+| `JAVA_HOME`             | The location of the JRE.                                                               |
 | `JAVA_OPTS`             | Commandline arguments to pass to the java runtime. Optional.                           |
 | `PORT`                  | The port number to listen for requests on. Defaults to `8080`.                         |
 | `RUN_APP`               | Set to `true` to run the application. Defaults to `true`.                              |
@@ -74,19 +72,10 @@ TOKEN_LINK:
 
 ## Integration tests
 
-To run the integration tests, the `DOCKER_HOST` and `DOCKER_CERT_PATH` environment variables must be set up correctly.
-On OS X the environment can be set up with:
-
-```
-    eval $(boot2docker shellinit)
-    eval $(docker-machine env <virtual-machine-name>)
-
-```
-
 The command to run the integration tests is:
 
 ```
-    mvn test
+mvn verify
 ```
 
 ## Licence
