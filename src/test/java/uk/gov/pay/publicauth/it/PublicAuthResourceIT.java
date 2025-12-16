@@ -632,6 +632,15 @@ class PublicAuthResourceIT {
             assertThat(secondToken.get("type"), is(PRODUCTS.toString()));
             assertThat(secondToken.get("last_used"), is(lastUsed.format(DATE_TIME_FORMAT)));
         }
+
+        @Test
+        public void respondWith200_andRetrieveProductsTokens_whenUrlEncodedQueryParam() {
+            String urlEncodedQueryParam = "AD001043%2F22"; // AD001043/22
+            List<Map<String, String>> retrievedTokens = getTokensByStateAndType("active", urlEncodedQueryParam)
+                    .statusCode(200)
+                    .body("tokens", hasSize(0))
+                    .extract().path("tokens");
+        }
     
         @Test
         public void respondWith200_andRetrieveActiveTokens() {
