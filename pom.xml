@@ -7,7 +7,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <pay-java-commons.version>1.0.20260309105541</pay-java-commons.version>
+        <pay-java-commons.version>1.0.20260316103545</pay-java-commons.version>
         <prometheus.version>0.16.0</prometheus.version>
         <swagger.version>2.2.45</swagger.version>
         <hamcrest.version>3.0</hamcrest.version>
