@@ -9,7 +9,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <pay-java-commons.version>1.0.20260817082240</pay-java-commons.version>
+        <pay-java-commons.version>1.0.20260825154634</pay-java-commons.version>
         <prometheus.version>0.16.0</prometheus.version>
         <swagger.version>2.2.54</swagger.version>
         <hamcrest.version>3.0</hamcrest.version>
@@ -17,6 +17,13 @@
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>uk.gov.service.payments</groupId>
+                <artifactId>platform-bom</artifactId>
+                <version>${pay-java-commons.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
             <dependency>
                 <groupId>io.dropwizard</groupId>
                 <artifactId>dropwizard-dependencies</artifactId>
