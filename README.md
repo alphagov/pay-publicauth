@@ -7,7 +7,7 @@ Payments Public API Authentication Service
 The [API Specification](openapi/publicauth_spec.yaml) provides more detail on the paths and operations including
 examples.
 
-[View the API specification for publicauth in Swagger Editor](https://editor.swagger.io/?url=https://raw.githubusercontent.com/alphagov/pay-publicauth/master/openapi/publicauth_spec.yaml).
+[View the API specification for publicauth in Swagger Editor](https://editor.swagger.io/?url=https://raw.githubusercontent.com/govuk-pay/pay-publicauth/master/openapi/publicauth_spec.yaml).
 
 ## API Keys
 
